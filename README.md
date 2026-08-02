@@ -21,9 +21,12 @@ Main features:
 - CodeMirror-based YAML editor with syntax highlighting
 - persisted YAML editor fold state across browser refreshes
 - YAML save with `Cmd+S` / `Ctrl+S`
+- YAML editor regex search with match count, current-line highlight, and `Enter` / `Shift+Enter` navigation
 - collapsible tag groups
 - group-level select/clear
+- board tag search with match count, current match highlight, automatic group expansion, and `Enter` / `Shift+Enter` navigation
 - board templates for saving, loading, and automatically restoring selected states
+- template save with `Cmd+S` / `Ctrl+S` from board-side controls, using the current Save mode
 - automatic replacement preview output
 
 ### Prompt Board Replace
@@ -123,6 +126,22 @@ Syntax token colors are also routed through CSS variables, so the theme file rem
 Board templates save the selected YAML file and selected tag state.
 
 When a workflow is reopened or the browser is refreshed, the last selected template for that node is restored automatically if the template still exists. If the template was removed, PromptBoard falls back to the workflow's saved YAML file and selection state.
+
+The template Save button has selectable modes:
+
+- `Save`: updates the typed template name
+- `Save (New)`: saves with the typed name, adding a numeric suffix when that name already exists
+
+Use `Cmd+S` on macOS or `Ctrl+S` on Windows/Linux while focus is in the board-side controls to run the currently selected Save mode.
+
+## Search
+
+PromptBoard has two regex search fields:
+
+- YAML editor search: searches YAML lines, scrolls the editor to the current match, and highlights the current line.
+- Board search: searches category names, tag labels, and tag values, expands a collapsed group when needed, scrolls to the current match, and highlights the matched group or tag.
+
+Both search fields show match position as `current/total`. Press `Enter` for the next match and `Shift+Enter` for the previous match.
 
 ## Development
 

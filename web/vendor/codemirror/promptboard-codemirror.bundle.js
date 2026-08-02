@@ -20366,13 +20366,14 @@ var frontmatterLanguage = /* @__PURE__ */ LRLanguage.define({
   })
 });
 export {
+  Decoration,
   EditorState,
   EditorView,
   HighlightStyle,
-  Decoration,
   StateEffect,
   StateField,
   bracketMatching,
+  defaultHighlightStyle,
   defaultKeymap,
   drawSelection,
   foldGutter,
