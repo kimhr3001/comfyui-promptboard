@@ -23,6 +23,8 @@ const NODE_BOTTOM_PADDING = 20;
 const SCROLL_BOTTOM_PADDING = 8;
 const CODEMIRROR_MODULE = "../vendor/codemirror/promptboard-codemirror.bundle.js";
 const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", import.meta.url).href;
+const EDITOR_STORAGE_PREFIX = "promptboard:editor:v1";
+const TEMPLATE_STORAGE_PREFIX = "promptboard:template:v1";
 
 let codeMirrorModulePromise = null;
 
@@ -93,6 +95,127 @@ function materialHighlightStyle(cm) {
       backgroundColor: "var(--pb-cm-error-bg)",
     },
   ]);
+}
+
+function currentWorkflowStorageKey() {
+  const location = globalThis.location;
+  if (!location) {
+    return "unknown";
+  }
+  return `${location.pathname || "/"}${location.hash || ""}`;
+}
+
+function textSignature(text) {
+  const source = String(text ?? "");
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `${source.length}:${hash >>> 0}`;
+}
+
+function editorFoldStorageKey(node) {
+  const nodeId = node?.id ?? "new";
+  const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
+  return `${EDITOR_STORAGE_PREFIX}:${currentWorkflowStorageKey()}:${nodeId}:${yamlFile}:fold`;
+}
+
+function templateStorageKey(node) {
+  const nodeId = node?.id ?? "new";
+  return `${TEMPLATE_STORAGE_PREFIX}:${currentWorkflowStorageKey()}:${nodeId}:state`;
+}
+
+function readStoredEditorFold(node, text) {
+  try {
+    const raw = globalThis.localStorage?.getItem(editorFoldStorageKey(node));
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    if (parsed?.signature !== textSignature(text) || !Array.isArray(parsed?.fold)) {
+      return null;
+    }
+    return parsed.fold;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredEditorFold(node, cm, state) {
+  try {
+    const text = state.doc.toString();
+    const json = state.toJSON({ fold: cm.foldState });
+    globalThis.localStorage?.setItem(
+      editorFoldStorageKey(node),
+      JSON.stringify({
+        signature: textSignature(text),
+        fold: Array.isArray(json.fold) ? json.fold : [],
+      }),
+    );
+  } catch {
+    // UI state persistence should never block editing.
+  }
+}
+
+function createEditorState(cm, node, text, extensions) {
+  const fold = readStoredEditorFold(node, text);
+  if (!fold) {
+    return cm.EditorState.create({ doc: text, extensions });
+  }
+
+  try {
+    return cm.EditorState.fromJSON(
+      {
+        doc: text,
+        selection: { ranges: [{ anchor: 0, head: 0 }], main: 0 },
+        fold,
+      },
+      { extensions },
+      { fold: cm.foldState },
+    );
+  } catch {
+    return cm.EditorState.create({ doc: text, extensions });
+  }
+}
+
+function readStoredTemplateState(node) {
+  try {
+    const raw = globalThis.localStorage?.getItem(templateStorageKey(node));
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    return {
+      selectedTemplate: typeof parsed?.selectedTemplate === "string" ? parsed.selectedTemplate : "",
+      templateName: typeof parsed?.templateName === "string" ? parsed.templateName : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredTemplateState(node) {
+  try {
+    globalThis.localStorage?.setItem(
+      templateStorageKey(node),
+      JSON.stringify({
+        selectedTemplate: node.promptboardSelectedTemplate ?? "",
+        templateName: node.promptboardTemplateName ?? "",
+      }),
+    );
+  } catch {
+    // Template UI state is only a convenience cache.
+  }
+}
+
+function restoreTemplateState(node) {
+  const stored = readStoredTemplateState(node);
+  if (!stored) {
+    return;
+  }
+  node.promptboardSelectedTemplate = stored.selectedTemplate;
+  node.promptboardTemplateName = stored.templateName || stored.selectedTemplate;
 }
 
 function updateYamlTextFromEditor(node, text) {
@@ -179,9 +302,11 @@ async function createCodeMirrorEditor(node, host, textarea) {
     ]);
 
     const view = new cm.EditorView({
-      state: cm.EditorState.create({
-        doc: widgetValue(node, "yaml_text", ""),
-        extensions: [
+      state: createEditorState(
+        cm,
+        node,
+        widgetValue(node, "yaml_text", ""),
+        [
           cm.lineNumbers(),
           cm.highlightActiveLineGutter(),
           cm.highlightSpecialChars(),
@@ -203,10 +328,20 @@ async function createCodeMirrorEditor(node, host, textarea) {
             }
             updateYamlTextFromEditor(node, text);
           }),
+          cm.EditorView.updateListener.of((update) => {
+            if (node.promptboardIgnoreCodeMirrorUpdate) {
+              return;
+            }
+            const previousFold = update.startState.field(cm.foldState, false);
+            const currentFold = update.state.field(cm.foldState, false);
+            if (update.docChanged || previousFold !== currentFold) {
+              writeStoredEditorFold(node, cm, update.state);
+            }
+          }),
           theme,
           saveKeymap,
         ],
-      }),
+      ),
       parent: host,
     });
 
@@ -1218,11 +1353,22 @@ async function refreshBoardTemplates(node, selectedTemplate = node.promptboardSe
     node.promptboardSelectedTemplate = node.promptboardTemplates.some((item) => item.name === selectedTemplate)
       ? selectedTemplate
       : "";
+    writeStoredTemplateState(node);
     updateTemplateControls(node);
   } catch (error) {
     node.promptboardTemplates = [];
     setTemplateStatus(node, `Template load error: ${error.message}`);
   }
+}
+
+async function refreshBoardTemplatesAndLoadStored(node) {
+  const storedTemplate = node.promptboardSelectedTemplate ?? "";
+  await refreshBoardTemplates(node, storedTemplate);
+  if (!node.promptboardSelectedTemplate) {
+    await loadSelectedYaml(node);
+    return;
+  }
+  await loadBoardTemplate(node, node.promptboardSelectedTemplate, { silent: true });
 }
 
 function uniqueTemplateName(node, rawName) {
@@ -1274,6 +1420,7 @@ async function saveBoardTemplate(node, rawName, options = {}) {
     }
     node.promptboardSelectedTemplate = data.name ?? name;
     node.promptboardTemplateName = data.name ?? name;
+    writeStoredTemplateState(node);
     setTemporaryTemplateStatus(node, `Saved: ${node.promptboardSelectedTemplate}`);
     showTemplateSaveDone(node, options.newTemplate ? TEMPLATE_SAVE_MODE_NEW : TEMPLATE_SAVE_MODE_SAVE);
     await refreshBoardTemplates(node, node.promptboardSelectedTemplate);
@@ -1313,6 +1460,7 @@ async function deleteBoardTemplate(node, rawName) {
     if (node.promptboardSelectedTemplate === name) {
       node.promptboardSelectedTemplate = "";
     }
+    writeStoredTemplateState(node);
     setTemporaryTemplateStatus(node, `Deleted: ${name}`);
     showTemplateDeleteDone(node);
     await refreshBoardTemplates(node, "");
@@ -1321,7 +1469,7 @@ async function deleteBoardTemplate(node, rawName) {
   }
 }
 
-async function loadBoardTemplate(node, name) {
+async function loadBoardTemplate(node, name, options = {}) {
   const templateName = String(name ?? "").trim();
   if (!templateName) {
     return;
@@ -1353,7 +1501,10 @@ async function loadBoardTemplate(node, name) {
     setWidgetValue(node, "selected_state", JSON.stringify(selectedState));
     node.promptboardSelectedTemplate = data.name ?? templateName;
     node.promptboardTemplateName = data.name ?? templateName;
-    setTemporaryTemplateStatus(node, `Loaded: ${node.promptboardSelectedTemplate}`);
+    writeStoredTemplateState(node);
+    if (!options.silent) {
+      setTemporaryTemplateStatus(node, `Loaded: ${node.promptboardSelectedTemplate}`);
+    }
     renderFromYaml(node);
     updateTemplateControls(node);
   } catch (error) {
@@ -1487,16 +1638,22 @@ function createSplitElement(node) {
   select.addEventListener("change", () => {
     setWidgetValue(node, "yaml_file", select.value);
     node.promptboardSelectedTemplate = "";
+    writeStoredTemplateState(node);
     updateTemplateControls(node);
     loadSelectedYaml(node);
   });
   templateSelect.addEventListener("change", () => {
-    if (templateSelect.value) {
-      loadBoardTemplate(node, templateSelect.value);
+    if (!templateSelect.value) {
+      node.promptboardSelectedTemplate = "";
+      writeStoredTemplateState(node);
+      updateTemplateControls(node);
+      return;
     }
+    loadBoardTemplate(node, templateSelect.value);
   });
   templateInput.addEventListener("input", () => {
     node.promptboardTemplateName = templateInput.value;
+    writeStoredTemplateState(node);
   });
   templateInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
@@ -1662,6 +1819,8 @@ function finalizeNode(node, info = null, isNewNode = false) {
   }
   if (isNewNode) {
     node.size = [MIN_NODE_WIDTH, 420];
+  } else {
+    restoreTemplateState(node);
   }
   clampSize(node);
   node.resizable = true;
@@ -1670,8 +1829,7 @@ function finalizeNode(node, info = null, isNewNode = false) {
   reorderWidgets(node);
   syncLayoutSize(node);
   scheduleLayoutSizeSync(node);
-  refreshBoardTemplates(node);
-  loadSelectedYaml(node);
+  refreshBoardTemplatesAndLoadStored(node);
   app.canvas?.setDirty(true, true);
 }
 
