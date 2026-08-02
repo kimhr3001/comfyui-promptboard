@@ -461,6 +461,23 @@ function ensureStyles() {
       opacity: 0.9;
     }
 
+    .promptboard-lora-info-save-preview.is-busy {
+      opacity: 0.72;
+      cursor: wait;
+    }
+
+    .promptboard-lora-info-save-preview.is-saved {
+      border-color: rgba(24, 128, 68, 0.45);
+      background: #dff3e7;
+      color: #17613b;
+    }
+
+    .promptboard-lora-info-save-preview.is-error {
+      border-color: rgba(180, 48, 48, 0.45);
+      background: #f7dddd;
+      color: #7a1f1f;
+    }
+
     .promptboard-lora-info-preview-actions {
       position: absolute;
       top: 8px;
@@ -478,7 +495,7 @@ function ensureStyles() {
       display: grid;
       gap: 6px;
       max-height: 42%;
-      overflow: auto;
+      overflow: hidden;
       padding: 10px;
       background: rgba(0, 0, 0, 0.68);
       color: #ffffff;
@@ -490,6 +507,8 @@ function ensureStyles() {
       display: grid;
       grid-template-columns: 64px minmax(0, 1fr);
       gap: 8px;
+      max-height: 72px;
+      min-height: 0;
       font-size: 12px;
       line-height: 1.35;
     }
@@ -501,10 +520,11 @@ function ensureStyles() {
     }
 
     .promptboard-lora-info-prompt-row span {
-      display: -webkit-box;
-      overflow: hidden;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 3;
+      display: block;
+      max-height: 72px;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
       overflow-wrap: anywhere;
     }
 
@@ -1382,41 +1402,63 @@ class LoraInfoDialog extends ModelInfoDialog {
 
     this.previewStage.append(
       $el("div.promptboard-lora-info-preview-actions", [
-      $el("button.promptboard-lora-info-save-preview", {
-        type: "button",
-        textContent: "Save",
-        title: "Save as local preview",
-        onclick: async () => {
-          const previewUrl = currentImage?.url || "";
-          if (!previewUrl) {
-            return;
-          }
+        $el("button.promptboard-lora-info-save-preview", {
+          type: "button",
+          textContent: "Save",
+          title: "Save as local preview",
+          onclick: async (event) => {
+            const button = event.currentTarget;
+            const previewUrl = currentImage?.url || "";
+            if (!previewUrl || button.disabled) {
+              return;
+            }
 
-          const save = await api.fetchApi(`/promptboard/model-info/preview/${encodePath(this.type, this.modelName)}`, {
-            method: "POST",
-            body: JSON.stringify({
-              url: previewUrl,
-            }),
-            headers: {
-              "content-type": "application/json",
-            },
-          });
-          if (!save.ok) {
-            alert(`Error saving preview: ${save.status} ${save.statusText}`);
-            return;
-          }
-          app.refreshComboInNodes?.();
-        },
-      }),
-      $el("button.promptboard-lora-info-save-preview", {
-        type: "button",
-        textContent: "Refresh",
-        title: "Refresh Civitai info",
-        onclick: () => {
-          this.close();
-          new this.constructor(this.name, this.node).show(this.type, this.modelName, { refreshCivitai: true });
-        },
-      }),
+            button.disabled = true;
+            button.textContent = "Saving";
+            button.classList.remove("is-saved", "is-error");
+            button.classList.add("is-busy");
+
+            try {
+              const save = await api.fetchApi(`/promptboard/model-info/preview/${encodePath(this.type, this.modelName)}`, {
+                method: "POST",
+                body: JSON.stringify({
+                  url: previewUrl,
+                }),
+                headers: {
+                  "content-type": "application/json",
+                },
+              });
+              if (!save.ok) {
+                throw new Error(`${save.status} ${save.statusText}`);
+              }
+              app.refreshComboInNodes?.();
+              button.textContent = "Saved";
+              button.classList.add("is-saved");
+            } catch (error) {
+              button.textContent = "Failed";
+              button.classList.add("is-error");
+              window.setTimeout(() => {
+                alert(`Error saving preview: ${error.message}`);
+              }, 0);
+            } finally {
+              button.classList.remove("is-busy");
+              window.setTimeout(() => {
+                button.disabled = false;
+                button.textContent = "Save";
+                button.classList.remove("is-saved", "is-error");
+              }, 1500);
+            }
+          },
+        }),
+        $el("button.promptboard-lora-info-save-preview", {
+          type: "button",
+          textContent: "Refresh",
+          title: "Refresh Civitai info",
+          onclick: () => {
+            this.close();
+            new this.constructor(this.name, this.node).show(this.type, this.modelName, { refreshCivitai: true });
+          },
+        }),
       ]),
       promptOverlay,
     );
