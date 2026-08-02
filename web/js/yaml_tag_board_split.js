@@ -5,10 +5,10 @@ import { app } from "../../../scripts/app.js";
 
 const NODE_NAME = "PromptBoard";
 const LAYOUT_WIDGET = "split_layout";
-const RESET_BUTTON = "Unselect and Close";
+const RESET_BUTTON = "Reset";
 const SAVE_TEMPLATE_BUTTON = "Save";
 const SAVE_TEMPLATE_NEW_BUTTON = "Save (New)";
-const DELETE_TEMPLATE_BUTTON = "Delete";
+const DELETE_TEMPLATE_BUTTON = "Del";
 const TEMPLATE_SAVE_MODE_SAVE = "save";
 const TEMPLATE_SAVE_MODE_NEW = "new";
 const DEFAULT_YAML_FILE = "default.yaml";
@@ -416,6 +416,17 @@ function handleYamlSaveShortcut(event, node) {
   return true;
 }
 
+function handleTemplateSaveShortcut(event, node) {
+  if (!(event.metaKey || event.ctrlKey) || event.key?.toLowerCase() !== "s") {
+    return false;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation?.();
+  saveBoardTemplateWithSelectedMode(node, node.promptboardTemplateInput?.value ?? node.promptboardTemplateName ?? "");
+  return true;
+}
+
 async function createCodeMirrorEditor(node, host, textarea) {
   try {
     ensureCodeMirrorThemeCss();
@@ -769,6 +780,168 @@ function resetSelectionAndCollapse(node) {
   }
 }
 
+function compileSearchRegex(input) {
+  const query = String(input ?? "").trim();
+  if (!query) {
+    return null;
+  }
+  return new RegExp(query, "i");
+}
+
+function collectBoardSearchMatches(node, regex) {
+  const config = node.promptboardConfig ?? {};
+  const matches = [];
+  for (const [category, item] of Object.entries(config)) {
+    if (regex.test(category)) {
+      matches.push({ category, tagText: "" });
+    }
+    for (const tag of item.tags ?? []) {
+      const label = tag.label || tag.text;
+      if (regex.test(label) || regex.test(tag.text)) {
+        matches.push({ category, tagText: tag.text });
+      }
+    }
+  }
+  return matches;
+}
+
+function boardSearchMatchKey(match) {
+  return `${match.category}\u0000${match.tagText}`;
+}
+
+function currentBoardSearchMatch(node) {
+  const state = node.promptboardBoardSearchState;
+  if (!state || state.index < 0 || !Array.isArray(state.matches)) {
+    return null;
+  }
+  return state.matches[state.index] ?? null;
+}
+
+function isCurrentBoardSearchMatch(node, category, tagText = "") {
+  const match = currentBoardSearchMatch(node);
+  return !!match && boardSearchMatchKey(match) === boardSearchMatchKey({ category, tagText });
+}
+
+function setBoardSearchCount(node, current, total) {
+  const count = node.promptboardBoardSearchCount;
+  if (!count) {
+    return;
+  }
+  count.textContent = total > 0 ? `${current}/${total}` : total === 0 ? "0/0" : "";
+}
+
+function applyBoardSearchCollapsedState(node, matches) {
+  const config = node.promptboardConfig ?? {};
+  const openCategories = new Set(matches.map((match) => match.category));
+  const collapsedSet = collapsedCategories(node);
+
+  collapsedSet.clear();
+  for (const category of Object.keys(config)) {
+    if (!openCategories.has(category)) {
+      collapsedSet.add(category);
+    }
+  }
+}
+
+function findBoardSearchElement(node, match) {
+  const scroll = node.promptboardScroll;
+  if (!scroll || !match) {
+    return null;
+  }
+
+  const selector = match.tagText ? ".promptboard-tag" : ".promptboard-card-title";
+  for (const element of scroll.querySelectorAll(selector)) {
+    if (element.dataset.category !== match.category) {
+      continue;
+    }
+    if (!match.tagText || element.dataset.tagText === match.tagText) {
+      return element;
+    }
+  }
+  return null;
+}
+
+function scrollBoardElementIntoView(node, element) {
+  const scroll = node.promptboardScroll;
+  if (!scroll || !element) {
+    return;
+  }
+
+  const scrollRect = scroll.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+  scroll.scrollTop += elementRect.top - scrollRect.top - 6;
+}
+
+function runBoardSearch(node, direction = 0) {
+  const input = node.promptboardBoardSearchInput;
+  if (!input) {
+    return;
+  }
+
+  input.classList.remove("is-invalid");
+  const query = String(input.value ?? "").trim();
+  let regex = null;
+  try {
+    regex = compileSearchRegex(query);
+  } catch {
+    node.promptboardBoardSearchState = null;
+    setBoardSearchCount(node, -1, -1);
+    input.classList.add("is-invalid");
+    renderCards(node);
+    return;
+  }
+
+  if (!regex) {
+    node.promptboardBoardSearchState = null;
+    setBoardSearchCount(node, -1, -1);
+    renderCards(node);
+    return;
+  }
+
+  const matches = collectBoardSearchMatches(node, regex);
+  if (!matches.length) {
+    node.promptboardBoardSearchState = { query, matches, index: -1 };
+    setBoardSearchCount(node, 0, 0);
+    applyBoardSearchCollapsedState(node, matches);
+    renderCards(node);
+    return;
+  }
+
+  const previous = node.promptboardBoardSearchState;
+  let index = 0;
+  if (previous?.query === query && previous.index >= 0) {
+    const previousMatch = previous.matches?.[previous.index];
+    const previousKey = previousMatch ? boardSearchMatchKey(previousMatch) : "";
+    const previousIndex = matches.findIndex((match) => boardSearchMatchKey(match) === previousKey);
+    index = previousIndex >= 0 ? previousIndex : 0;
+    if (direction) {
+      index = (index + direction + matches.length) % matches.length;
+    }
+  } else if (direction < 0) {
+    index = matches.length - 1;
+  }
+
+  node.promptboardBoardSearchState = { query, matches, index };
+  setBoardSearchCount(node, index + 1, matches.length);
+  const match = matches[index];
+  applyBoardSearchCollapsedState(node, matches);
+  renderCards(node);
+
+  requestAnimationFrame(() => {
+    scrollBoardElementIntoView(node, findBoardSearchElement(node, match));
+  });
+}
+
+function scheduleBoardSearch(node) {
+  if (node.promptboardBoardSearchTimer) {
+    clearTimeout(node.promptboardBoardSearchTimer);
+  }
+  node.promptboardBoardSearchTimer = setTimeout(() => {
+    node.promptboardBoardSearchTimer = null;
+    runBoardSearch(node);
+  }, SEARCH_DEBOUNCE_MS);
+}
+
 function hideWidget(item, hidden) {
   if (!item) {
     return;
@@ -865,7 +1038,22 @@ function ensureStyles() {
 
     .promptboard-toolbar {
       display: grid;
-      grid-template-columns: minmax(110px, 1fr) minmax(130px, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .promptboard-toolbar-left,
+    .promptboard-toolbar-right {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .promptboard-toolbar-left-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(48px, auto);
       gap: 4px;
       min-width: 0;
     }
@@ -896,17 +1084,22 @@ function ensureStyles() {
     .promptboard-search-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 42px;
-      gap: 4px;
       min-width: 0;
+    }
+
+    .promptboard-search-row .promptboard-input {
+      border-right: 0;
+      border-radius: 3px 0 0 3px;
     }
 
     .promptboard-search-count {
       box-sizing: border-box;
       height: 22px;
       padding: 4px 4px 0;
-      border: 1px solid rgba(95, 95, 95, 0.78);
-      border-radius: 3px;
-      background: rgba(28, 28, 28, 0.82);
+      border: 1px solid rgba(120, 120, 120, 0.78);
+      border-left: 0;
+      border-radius: 0 3px 3px 0;
+      background: rgba(28, 28, 28, 0.96);
       color: #cfcfcf;
       font: 10px Arial, sans-serif;
       text-align: center;
@@ -915,6 +1108,9 @@ function ensureStyles() {
 
     .promptboard-button {
       cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .promptboard-button:hover {
@@ -941,7 +1137,7 @@ function ensureStyles() {
 
     .promptboard-template-status {
       grid-column: 1 / -1;
-      min-height: 12px;
+      min-height: 14px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -951,7 +1147,7 @@ function ensureStyles() {
 
     .promptboard-template-save-row {
       display: grid;
-      grid-template-columns: minmax(112px, 1.45fr) minmax(64px, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(36px, auto);
       gap: 4px;
       min-width: 0;
     }
@@ -1157,6 +1353,11 @@ function ensureStyles() {
       filter: brightness(1.08);
     }
 
+    .promptboard-card-title.is-search-match {
+      outline: 1px solid rgba(216, 184, 92, 0.9);
+      background: rgba(112, 91, 42, 0.62);
+    }
+
     .promptboard-card-toggle {
       flex: 0 0 auto;
       width: 8px;
@@ -1206,6 +1407,18 @@ function ensureStyles() {
       border-color: #2d74be;
       background: #24496e;
       color: #fff;
+    }
+
+    .promptboard-tag.is-search-match {
+      border-color: rgba(218, 184, 92, 0.95);
+      box-shadow: inset 0 0 0 1px rgba(218, 184, 92, 0.5);
+      background: rgba(86, 72, 38, 0.88);
+    }
+
+    .promptboard-tag.is-on.is-search-match {
+      border-color: rgba(232, 197, 100, 0.95);
+      box-shadow: inset 0 0 0 1px rgba(232, 197, 100, 0.58);
+      background: #345778;
     }
 
     .promptboard-tag-label {
@@ -1272,6 +1485,9 @@ function createTagButton(node, state, category, tag) {
   button.type = "button";
   button.className = `promptboard-tag${selected ? " is-on" : ""}`;
   button.title = sourceLabel;
+  button.dataset.category = category;
+  button.dataset.tagText = tag.text;
+  button.classList.toggle("is-search-match", isCurrentBoardSearchMatch(node, category, tag.text));
   stopCanvasEvents(button);
   label.className = "promptboard-tag-label";
   label.textContent = sourceLabel;
@@ -1346,7 +1562,10 @@ function renderCards(node) {
     const collapsed = collapsedCategories(node).has(category);
 
     card.className = `promptboard-card tone-${index % 6}`;
+    card.dataset.category = category;
     title.className = "promptboard-card-title";
+    title.dataset.category = category;
+    title.classList.toggle("is-search-match", isCurrentBoardSearchMatch(node, category));
     title.role = "button";
     title.tabIndex = 0;
     stopCanvasEvents(title);
@@ -1473,7 +1692,7 @@ function updateTemplateControls(node) {
 
   if (status) {
     status.textContent = node.promptboardTemplateStatus ?? "";
-    status.style.display = status.textContent ? "" : "none";
+    status.style.display = "";
   }
 }
 
@@ -1799,6 +2018,12 @@ function createSplitElement(node) {
   const status = document.createElement("div");
   const toolbar = document.createElement("div");
   const templateSelect = document.createElement("select");
+  const toolbarLeft = document.createElement("div");
+  const toolbarLeftTop = document.createElement("div");
+  const toolbarRight = document.createElement("div");
+  const boardSearchRow = document.createElement("div");
+  const boardSearch = document.createElement("input");
+  const boardSearchCount = document.createElement("div");
   const templateInput = document.createElement("input");
   const templateSaveRow = document.createElement("div");
   const templateSaveCombo = document.createElement("div");
@@ -1821,7 +2046,13 @@ function createSplitElement(node) {
   save.className = "promptboard-button";
   status.className = "promptboard-status";
   toolbar.className = "promptboard-toolbar";
+  toolbarLeft.className = "promptboard-toolbar-left";
+  toolbarLeftTop.className = "promptboard-toolbar-left-top";
+  toolbarRight.className = "promptboard-toolbar-right";
+  boardSearchRow.className = "promptboard-search-row";
   templateSelect.className = "promptboard-select";
+  boardSearch.className = "promptboard-input";
+  boardSearchCount.className = "promptboard-search-count";
   templateInput.className = "promptboard-input";
   templateSaveRow.className = "promptboard-template-save-row";
   templateSaveCombo.className = "promptboard-save-combo";
@@ -1834,8 +2065,11 @@ function createSplitElement(node) {
   textarea.spellcheck = false;
   textarea.value = widgetValue(node, "yaml_text", "");
   yamlSearch.type = "text";
-  yamlSearch.placeholder = "search regex";
+  yamlSearch.placeholder = "search";
   yamlSearchCount.textContent = "";
+  boardSearch.type = "text";
+  boardSearch.placeholder = "search tags";
+  boardSearchCount.textContent = "";
   templateInput.type = "text";
   templateInput.placeholder = "template name";
   templateInput.value = node.promptboardTemplateName ?? "";
@@ -1863,6 +2097,7 @@ function createSplitElement(node) {
   stopCanvasEvents(yamlSearch);
   stopCanvasEvents(textarea);
   stopCanvasEvents(templateSelect);
+  stopCanvasEvents(boardSearch);
   stopCanvasEvents(templateInput);
   stopCanvasEvents(templateSave);
   stopCanvasEvents(templateSaveMode);
@@ -1897,11 +2132,35 @@ function createSplitElement(node) {
     }
     loadBoardTemplate(node, templateSelect.value);
   });
+  templateSelect.addEventListener("keydown", (event) => {
+    handleTemplateSaveShortcut(event, node);
+  });
   templateInput.addEventListener("input", () => {
     node.promptboardTemplateName = templateInput.value;
     writeStoredTemplateState(node);
   });
+  boardSearch.addEventListener("input", () => {
+    node.promptboardBoardSearchState = null;
+    scheduleBoardSearch(node);
+  });
+  boardSearch.addEventListener("keydown", (event) => {
+    if (handleTemplateSaveShortcut(event, node)) {
+      return;
+    }
+    event.stopPropagation();
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (node.promptboardBoardSearchTimer) {
+        clearTimeout(node.promptboardBoardSearchTimer);
+        node.promptboardBoardSearchTimer = null;
+      }
+      runBoardSearch(node, event.shiftKey ? -1 : 1);
+    }
+  });
   templateInput.addEventListener("keydown", (event) => {
+    if (handleTemplateSaveShortcut(event, node)) {
+      return;
+    }
     if (event.key === "Enter") {
       event.preventDefault();
       event.stopPropagation();
@@ -1912,6 +2171,9 @@ function createSplitElement(node) {
     node.promptboardTemplateSaveMode =
       templateSaveMode.value === TEMPLATE_SAVE_MODE_NEW ? TEMPLATE_SAVE_MODE_NEW : TEMPLATE_SAVE_MODE_SAVE;
     updateTemplateControls(node);
+  });
+  templateSaveMode.addEventListener("keydown", (event) => {
+    handleTemplateSaveShortcut(event, node);
   });
   textarea.addEventListener("input", () => {
     updateYamlTextFromEditor(node, textarea.value);
@@ -1929,10 +2191,16 @@ function createSplitElement(node) {
     event.stopPropagation();
     saveBoardTemplateWithSelectedMode(node, templateInput.value);
   });
+  templateSave.addEventListener("keydown", (event) => {
+    handleTemplateSaveShortcut(event, node);
+  });
   templateDelete.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
     deleteBoardTemplate(node, templateInput.value);
+  });
+  templateDelete.addEventListener("keydown", (event) => {
+    handleTemplateSaveShortcut(event, node);
   });
 
   yamlSearchRow.append(yamlSearch, yamlSearchCount);
@@ -1940,7 +2208,11 @@ function createSplitElement(node) {
   left.append(select, yamlSearchRow, editor, save, status);
   templateSaveCombo.append(templateSave, templateSaveMode);
   templateSaveRow.append(templateSaveCombo, templateDelete);
-  toolbar.append(templateSelect, templateInput, createResetButton(node), templateSaveRow, templateStatus);
+  toolbarLeftTop.append(templateSelect, createResetButton(node));
+  boardSearchRow.append(boardSearch, boardSearchCount);
+  toolbarLeft.append(toolbarLeftTop, boardSearchRow);
+  toolbarRight.append(templateInput, templateSaveRow);
+  toolbar.append(toolbarLeft, toolbarRight, templateStatus);
   right.append(toolbar, scroll);
   root.append(left, right);
 
@@ -1953,6 +2225,8 @@ function createSplitElement(node) {
   node.promptboardTextarea = textarea;
   node.promptboardStatusElement = status;
   node.promptboardTemplateSelect = templateSelect;
+  node.promptboardBoardSearchInput = boardSearch;
+  node.promptboardBoardSearchCount = boardSearchCount;
   node.promptboardTemplateInput = templateInput;
   node.promptboardTemplateSaveButton = templateSave;
   node.promptboardTemplateSaveModeSelect = templateSaveMode;
