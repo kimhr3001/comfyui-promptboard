@@ -25,6 +25,7 @@ const CODEMIRROR_MODULE = "../vendor/codemirror/promptboard-codemirror.bundle.js
 const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", import.meta.url).href;
 const EDITOR_STORAGE_PREFIX = "promptboard:editor:v1";
 const TEMPLATE_STORAGE_PREFIX = "promptboard:template:v1";
+const SEARCH_DEBOUNCE_MS = 150;
 
 let codeMirrorModulePromise = null;
 
@@ -256,11 +257,193 @@ function setYamlEditorText(node, text) {
   }
 }
 
+function lineStartOffset(text, lineIndex) {
+  let offset = 0;
+  for (let index = 0; index < lineIndex; index += 1) {
+    offset += String(text[index] ?? "").length + 1;
+  }
+  return offset;
+}
+
+function scrollTextareaToOffset(textarea, text, offset) {
+  textarea.setSelectionRange(offset, offset);
+
+  const lineIndex = String(text.slice(0, offset)).split("\n").length - 1;
+  const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight) || 14;
+  const targetTop = Math.max(0, lineIndex * lineHeight - textarea.clientHeight / 2);
+  textarea.scrollTop = targetTop;
+}
+
+function setYamlSearchInvalid(node, invalid) {
+  node.promptboardYamlSearchInput?.classList.toggle("is-invalid", invalid);
+}
+
+function setYamlSearchCount(node, current, total) {
+  const count = node.promptboardYamlSearchCount;
+  if (!count) {
+    return;
+  }
+  count.textContent = total > 0 ? `${current}/${total}` : total === 0 ? "0/0" : "";
+}
+
+function setYamlSearchHighlight(node, match) {
+  const view = node.promptboardCodeMirror;
+  const effect = node.promptboardSearchLineEffect;
+  if (!view || !effect) {
+    return;
+  }
+  view.dispatch({
+    effects: effect.of(match ? match.offset : null),
+  });
+}
+
+function findYamlSearchMatches(text, pattern) {
+  const matcher = new RegExp(pattern);
+  const lines = String(text ?? "").split("\n");
+  const matches = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    matcher.lastIndex = 0;
+    if (matcher.test(lines[index])) {
+      matches.push({
+        lineIndex: index,
+        offset: lineStartOffset(lines, index),
+      });
+    }
+  }
+  return matches;
+}
+
+function yamlSearchState(node, pattern, text) {
+  const signature = textSignature(text);
+  const current = node.promptboardYamlSearchState;
+  if (current?.pattern === pattern && current?.signature === signature) {
+    return current;
+  }
+
+  const next = {
+    pattern,
+    signature,
+    index: -1,
+    matches: findYamlSearchMatches(text, pattern),
+  };
+  node.promptboardYamlSearchState = next;
+  return next;
+}
+
+function scrollYamlEditorToMatch(node, match) {
+  if (!match) {
+    return;
+  }
+
+  const view = node.promptboardCodeMirror;
+  if (view) {
+    view.dispatch({
+      selection: { anchor: match.offset },
+      scrollIntoView: true,
+    });
+    return;
+  }
+
+  const textarea = node.promptboardTextarea;
+  if (textarea) {
+    scrollTextareaToOffset(textarea, widgetValue(node, "yaml_text", ""), match.offset);
+  }
+}
+
+function runYamlSearch(node, direction = 0) {
+  const input = node.promptboardYamlSearchInput;
+  const pattern = String(input?.value ?? "").trim();
+  if (!pattern) {
+    setYamlSearchInvalid(node, false);
+    node.promptboardYamlSearchState = null;
+    setYamlSearchCount(node, -1, -1);
+    setYamlSearchHighlight(node, null);
+    return;
+  }
+
+  const text = widgetValue(node, "yaml_text", "");
+  let state = null;
+  try {
+    state = yamlSearchState(node, pattern, text);
+  } catch (error) {
+    setYamlSearchInvalid(node, true);
+    setYamlSearchCount(node, -1, -1);
+    setYamlSearchHighlight(node, null);
+    setStatus(node, `Search regex error: ${error.message}`);
+    return;
+  }
+
+  setYamlSearchInvalid(node, false);
+  if (!state.matches.length) {
+    setYamlSearchCount(node, 0, 0);
+    setYamlSearchHighlight(node, null);
+    setStatus(node, "Search: no match");
+    return;
+  }
+
+  if (direction < 0) {
+    state.index = state.index <= 0 ? state.matches.length - 1 : state.index - 1;
+  } else if (direction > 0) {
+    state.index = state.index >= state.matches.length - 1 ? 0 : state.index + 1;
+  } else if (state.index < 0) {
+    state.index = 0;
+  }
+  const match = state.matches[state.index];
+  setYamlSearchCount(node, state.index + 1, state.matches.length);
+  setYamlSearchHighlight(node, match);
+  scrollYamlEditorToMatch(node, match);
+  setStatus(node, "");
+}
+
+function scheduleYamlSearch(node) {
+  if (node.promptboardYamlSearchTimer) {
+    clearTimeout(node.promptboardYamlSearchTimer);
+  }
+  node.promptboardYamlSearchTimer = setTimeout(() => {
+    node.promptboardYamlSearchTimer = null;
+    runYamlSearch(node);
+  }, SEARCH_DEBOUNCE_MS);
+}
+
+function handleYamlSaveShortcut(event, node) {
+  if (!(event.metaKey || event.ctrlKey) || event.key?.toLowerCase() !== "s") {
+    return false;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation?.();
+  saveSelectedYaml(node);
+  return true;
+}
+
 async function createCodeMirrorEditor(node, host, textarea) {
   try {
     ensureCodeMirrorThemeCss();
     const cm = await loadCodeMirrorModule();
     const materialSyntax = materialHighlightStyle(cm);
+    const setSearchLineEffect = cm.StateEffect.define();
+    const searchLineField = cm.StateField.define({
+      create: () => cm.Decoration.none,
+      update: (value, transaction) => {
+        let next = value.map(transaction.changes);
+        for (const effect of transaction.effects) {
+          if (!effect.is(setSearchLineEffect)) {
+            continue;
+          }
+          const position = effect.value;
+          if (typeof position !== "number" || position < 0 || position > transaction.state.doc.length) {
+            next = cm.Decoration.none;
+            continue;
+          }
+          const line = transaction.state.doc.lineAt(position);
+          next = cm.Decoration.set([
+            cm.Decoration.line({ class: "cm-promptboard-search-line" }).range(line.from),
+          ]);
+        }
+        return next;
+      },
+      provide: (field) => cm.EditorView.decorations.from(field),
+    });
 
     node.promptboardCodeMirror?.destroy?.();
     const theme = cm.EditorView.theme(
@@ -282,6 +465,10 @@ async function createCodeMirrorEditor(node, host, textarea) {
         },
         ".cm-foldGutter": {
           width: "12px",
+        },
+        ".cm-line.cm-promptboard-search-line": {
+          backgroundColor: "rgba(76, 126, 176, 0.34)",
+          outline: "1px solid rgba(116, 166, 216, 0.45)",
         },
       },
       { dark: true },
@@ -318,6 +505,7 @@ async function createCodeMirrorEditor(node, host, textarea) {
           cm.yaml(),
           cm.syntaxHighlighting(materialSyntax),
           cm.highlightActiveLine(),
+          searchLineField,
           cm.EditorView.updateListener.of((update) => {
             if (!update.docChanged || node.promptboardIgnoreCodeMirrorUpdate) {
               return;
@@ -345,7 +533,12 @@ async function createCodeMirrorEditor(node, host, textarea) {
       parent: host,
     });
 
+    stopCanvasEvents(view.dom);
+    view.dom.addEventListener("keydown", (event) => {
+      handleYamlSaveShortcut(event, node);
+    }, { capture: true });
     node.promptboardCodeMirror = view;
+    node.promptboardSearchLineEffect = setSearchLineEffect;
     textarea.style.display = "none";
     host.style.display = "block";
     syncLayoutSize(node);
@@ -613,16 +806,23 @@ function clampSize(node) {
   node.size = [width, height];
 }
 
-function layoutTop(node) {
+function layoutTopInfo(node) {
   const item = widget(node, LAYOUT_WIDGET);
   const top = Number(item?.y ?? item?.last_y);
-  return Number.isFinite(top) && top > 0 ? top : 78;
+  if (Number.isFinite(top) && top > 0) {
+    return { top, stable: true };
+  }
+  return { top: 78, stable: false };
 }
 
 function layoutHeight(node) {
+  const topInfo = layoutTopInfo(node);
+  if (!topInfo.stable && !node.promptboardLayoutReady) {
+    return MIN_LAYOUT_HEIGHT;
+  }
   return Math.max(
     MIN_LAYOUT_HEIGHT,
-    Math.floor(Number(node.size?.[1] ?? MIN_NODE_HEIGHT) - layoutTop(node) - NODE_BOTTOM_PADDING),
+    Math.floor(Number(node.size?.[1] ?? MIN_NODE_HEIGHT) - topInfo.top - NODE_BOTTOM_PADDING),
   );
 }
 
@@ -651,16 +851,16 @@ function ensureStyles() {
       min-width: 0;
       min-height: 0;
       display: grid;
-      grid-template-rows: auto 1fr auto auto;
+      grid-template-rows: auto auto 1fr auto auto;
       gap: 6px;
       border: 1px solid rgba(95, 95, 95, 0.8);
       background: rgba(35, 35, 35, 0.96);
       padding: 6px;
+      overflow: hidden;
     }
 
     .promptboard-right {
       grid-template-rows: auto 1fr;
-      overflow: hidden;
     }
 
     .promptboard-toolbar {
@@ -693,6 +893,26 @@ function ensureStyles() {
       padding: 0 6px;
     }
 
+    .promptboard-search-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 42px;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .promptboard-search-count {
+      box-sizing: border-box;
+      height: 22px;
+      padding: 4px 4px 0;
+      border: 1px solid rgba(95, 95, 95, 0.78);
+      border-radius: 3px;
+      background: rgba(28, 28, 28, 0.82);
+      color: #cfcfcf;
+      font: 10px Arial, sans-serif;
+      text-align: center;
+      white-space: nowrap;
+    }
+
     .promptboard-button {
       cursor: pointer;
     }
@@ -712,6 +932,11 @@ function ensureStyles() {
       border-color: rgba(202, 92, 92, 0.95);
       background: rgba(122, 44, 44, 0.92);
       color: #fff2f2;
+    }
+
+    .promptboard-input.is-invalid {
+      border-color: rgba(210, 92, 92, 0.95);
+      background: rgba(62, 32, 32, 0.96);
     }
 
     .promptboard-template-status {
@@ -1564,6 +1789,9 @@ function createSplitElement(node) {
   const left = document.createElement("div");
   const right = document.createElement("div");
   const select = document.createElement("select");
+  const yamlSearchRow = document.createElement("div");
+  const yamlSearch = document.createElement("input");
+  const yamlSearchCount = document.createElement("div");
   const editor = document.createElement("div");
   const editorHost = document.createElement("div");
   const textarea = document.createElement("textarea");
@@ -1584,6 +1812,9 @@ function createSplitElement(node) {
   left.className = "promptboard-panel";
   right.className = "promptboard-panel promptboard-right";
   select.className = "promptboard-select";
+  yamlSearchRow.className = "promptboard-search-row";
+  yamlSearch.className = "promptboard-input";
+  yamlSearchCount.className = "promptboard-search-count";
   editor.className = "promptboard-editor";
   editorHost.className = "promptboard-codemirror";
   textarea.className = "promptboard-textarea";
@@ -1602,6 +1833,9 @@ function createSplitElement(node) {
 
   textarea.spellcheck = false;
   textarea.value = widgetValue(node, "yaml_text", "");
+  yamlSearch.type = "text";
+  yamlSearch.placeholder = "search regex";
+  yamlSearchCount.textContent = "";
   templateInput.type = "text";
   templateInput.placeholder = "template name";
   templateInput.value = node.promptboardTemplateName ?? "";
@@ -1626,7 +1860,7 @@ function createSplitElement(node) {
   templateStatus.textContent = node.promptboardTemplateStatus ?? "";
 
   stopCanvasEvents(select);
-  stopCanvasEvents(editor);
+  stopCanvasEvents(yamlSearch);
   stopCanvasEvents(textarea);
   stopCanvasEvents(templateSelect);
   stopCanvasEvents(templateInput);
@@ -1641,6 +1875,18 @@ function createSplitElement(node) {
     writeStoredTemplateState(node);
     updateTemplateControls(node);
     loadSelectedYaml(node);
+  });
+  yamlSearch.addEventListener("input", () => {
+    node.promptboardYamlSearchState = null;
+    scheduleYamlSearch(node);
+  });
+  yamlSearch.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    runYamlSearch(node, event.shiftKey ? -1 : 1);
   });
   templateSelect.addEventListener("change", () => {
     if (!templateSelect.value) {
@@ -1671,11 +1917,7 @@ function createSplitElement(node) {
     updateYamlTextFromEditor(node, textarea.value);
   });
   textarea.addEventListener("keydown", (event) => {
-    if ((event.metaKey || event.ctrlKey) && event.key?.toLowerCase() === "s") {
-      event.preventDefault();
-      event.stopPropagation();
-      saveSelectedYaml(node);
-    }
+    handleYamlSaveShortcut(event, node);
   });
   save.addEventListener("click", (event) => {
     event.preventDefault();
@@ -1693,8 +1935,9 @@ function createSplitElement(node) {
     deleteBoardTemplate(node, templateInput.value);
   });
 
+  yamlSearchRow.append(yamlSearch, yamlSearchCount);
   editor.append(editorHost, textarea);
-  left.append(select, editor, save, status);
+  left.append(select, yamlSearchRow, editor, save, status);
   templateSaveCombo.append(templateSave, templateSaveMode);
   templateSaveRow.append(templateSaveCombo, templateDelete);
   toolbar.append(templateSelect, templateInput, createResetButton(node), templateSaveRow, templateStatus);
@@ -1703,6 +1946,8 @@ function createSplitElement(node) {
 
   node.promptboardElement = root;
   node.promptboardFileSelect = select;
+  node.promptboardYamlSearchInput = yamlSearch;
+  node.promptboardYamlSearchCount = yamlSearchCount;
   node.promptboardEditor = editor;
   node.promptboardEditorHost = editorHost;
   node.promptboardTextarea = textarea;
@@ -1775,6 +2020,7 @@ function scheduleLayoutSizeSync(node) {
         return;
       }
       node.promptboardLayoutFrames = null;
+      node.promptboardLayoutReady = true;
       syncLayoutSize(node);
       app.canvas?.setDirty(true, true);
     }));
@@ -1817,6 +2063,7 @@ function finalizeNode(node, info = null, isNewNode = false) {
   if (info) {
     applySavedValues(node, info);
   }
+  node.promptboardLayoutReady = !isNewNode;
   if (isNewNode) {
     node.size = [MIN_NODE_WIDTH, 420];
   } else {
