@@ -21,6 +21,10 @@ const EDITOR_PANEL_WIDTH = 320;
 const PANEL_GUTTER = 18;
 const NODE_BOTTOM_PADDING = 20;
 const SCROLL_BOTTOM_PADDING = 8;
+const CODEMIRROR_MODULE = "../vendor/codemirror/promptboard-codemirror.bundle.js";
+const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", import.meta.url).href;
+
+let codeMirrorModulePromise = null;
 
 function isSplitNode(node) {
   return node?.comfyClass === NODE_NAME;
@@ -38,6 +42,182 @@ function setWidgetValue(node, name, value) {
   const item = widget(node, name);
   if (item) {
     item.value = value;
+  }
+}
+
+function loadCodeMirrorModule() {
+  if (!codeMirrorModulePromise) {
+    codeMirrorModulePromise = import(CODEMIRROR_MODULE);
+  }
+  return codeMirrorModulePromise;
+}
+
+function ensureCodeMirrorThemeCss() {
+  if (document.getElementById("promptboard-codemirror-theme")) {
+    return;
+  }
+
+  const link = document.createElement("link");
+  link.id = "promptboard-codemirror-theme";
+  link.rel = "stylesheet";
+  link.href = CODEMIRROR_THEME_CSS;
+  document.head.appendChild(link);
+}
+
+function materialHighlightStyle(cm) {
+  const t = cm.tags;
+  return cm.HighlightStyle.define([
+    { tag: t.keyword, color: "var(--pb-cm-keyword)" },
+    { tag: t.operator, color: "var(--pb-cm-operator)" },
+    {
+      tag: [t.variableName, t.standard(t.variableName), t.definition(t.variableName)],
+      color: "var(--pb-cm-variable)",
+    },
+    { tag: t.local(t.variableName), color: "var(--pb-cm-variable-2)" },
+    { tag: [t.typeName, t.className], color: "var(--pb-cm-type)" },
+    { tag: t.atom, color: "var(--pb-cm-atom)" },
+    { tag: [t.number, t.integer, t.float], color: "var(--pb-cm-number)" },
+    { tag: [t.string, t.special(t.string)], color: "var(--pb-cm-string)" },
+    { tag: t.escape, color: "var(--pb-cm-string-2)" },
+    { tag: t.comment, color: "var(--pb-cm-comment)" },
+    { tag: t.meta, color: "var(--pb-cm-meta)" },
+    { tag: t.attributeName, color: "var(--pb-cm-attribute)" },
+    { tag: t.propertyName, color: "var(--pb-cm-property)" },
+    { tag: t.tagName, color: "var(--pb-cm-tag)" },
+    { tag: t.heading, color: "var(--pb-cm-heading)", fontWeight: "700" },
+    { tag: t.bool, color: "var(--pb-cm-bool)" },
+    { tag: t.null, color: "var(--pb-cm-null)" },
+    {
+      tag: t.invalid,
+      color: "var(--pb-cm-error-fg)",
+      backgroundColor: "var(--pb-cm-error-bg)",
+    },
+  ]);
+}
+
+function updateYamlTextFromEditor(node, text) {
+  setWidgetValue(node, "yaml_text", text);
+  renderFromYaml(node);
+  app.canvas?.setDirty(true, true);
+}
+
+function setYamlEditorText(node, text) {
+  const value = String(text ?? "");
+  setWidgetValue(node, "yaml_text", value);
+
+  if (node.promptboardTextarea && node.promptboardTextarea.value !== value) {
+    node.promptboardTextarea.value = value;
+  }
+
+  const view = node.promptboardCodeMirror;
+  if (!view) {
+    return;
+  }
+
+  const current = view.state.doc.toString();
+  if (current === value) {
+    return;
+  }
+
+  node.promptboardIgnoreCodeMirrorUpdate = true;
+  try {
+    view.dispatch({
+      changes: {
+        from: 0,
+        to: current.length,
+        insert: value,
+      },
+    });
+  } finally {
+    node.promptboardIgnoreCodeMirrorUpdate = false;
+  }
+}
+
+async function createCodeMirrorEditor(node, host, textarea) {
+  try {
+    ensureCodeMirrorThemeCss();
+    const cm = await loadCodeMirrorModule();
+    const materialSyntax = materialHighlightStyle(cm);
+
+    node.promptboardCodeMirror?.destroy?.();
+    const theme = cm.EditorView.theme(
+      {
+        "&": {
+          height: "100%",
+          fontSize: "11px",
+        },
+        ".cm-scroller": {
+          overflow: "auto",
+          fontFamily: "Menlo, Consolas, monospace",
+          lineHeight: "1.35",
+        },
+        ".cm-content": {
+          padding: "6px 0",
+        },
+        ".cm-line": {
+          padding: "0 6px",
+        },
+        ".cm-foldGutter": {
+          width: "12px",
+        },
+      },
+      { dark: true },
+    );
+
+    const saveKeymap = cm.keymap.of([
+      {
+        key: "Mod-s",
+        run: () => {
+          saveSelectedYaml(node);
+          return true;
+        },
+      },
+      cm.indentWithTab,
+      ...cm.foldKeymap,
+      ...cm.historyKeymap,
+      ...cm.defaultKeymap,
+    ]);
+
+    const view = new cm.EditorView({
+      state: cm.EditorState.create({
+        doc: widgetValue(node, "yaml_text", ""),
+        extensions: [
+          cm.lineNumbers(),
+          cm.highlightActiveLineGutter(),
+          cm.highlightSpecialChars(),
+          cm.history(),
+          cm.foldGutter(),
+          cm.drawSelection(),
+          cm.indentOnInput(),
+          cm.bracketMatching(),
+          cm.yaml(),
+          cm.syntaxHighlighting(materialSyntax),
+          cm.highlightActiveLine(),
+          cm.EditorView.updateListener.of((update) => {
+            if (!update.docChanged || node.promptboardIgnoreCodeMirrorUpdate) {
+              return;
+            }
+            const text = update.state.doc.toString();
+            if (textarea.value !== text) {
+              textarea.value = text;
+            }
+            updateYamlTextFromEditor(node, text);
+          }),
+          theme,
+          saveKeymap,
+        ],
+      }),
+      parent: host,
+    });
+
+    node.promptboardCodeMirror = view;
+    textarea.style.display = "none";
+    host.style.display = "block";
+    syncLayoutSize(node);
+  } catch (error) {
+    console.warn("PromptBoard CodeMirror load failed; falling back to textarea.", error);
+    host.style.display = "none";
+    textarea.style.display = "block";
   }
 }
 
@@ -486,14 +666,37 @@ function ensureStyles() {
       background: rgba(58, 58, 58, 0.82);
     }
 
-    .promptboard-textarea {
+    .promptboard-editor {
+      box-sizing: border-box;
       min-height: 0;
       height: 100%;
+      overflow: hidden;
+      border: 1px solid rgba(120, 120, 120, 0.78);
+      border-radius: 3px;
+      background: rgba(22, 22, 22, 0.98);
+    }
+
+    .promptboard-codemirror {
+      box-sizing: border-box;
+      display: none;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .promptboard-textarea {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 0;
+      height: 100%;
+      border: 0;
+      border-radius: 0;
       resize: none;
       padding: 6px;
       line-height: 1.35;
       white-space: pre;
       overflow: auto;
+      font-family: Menlo, Consolas, monospace;
     }
 
     .promptboard-status {
@@ -1143,10 +1346,7 @@ async function loadBoardTemplate(node, name) {
       if (!yamlResponse.ok || yamlData.error) {
         throw new Error(yamlData.error || `HTTP ${yamlResponse.status}`);
       }
-      setWidgetValue(node, "yaml_text", yamlData.text ?? "");
-      if (node.promptboardTextarea) {
-        node.promptboardTextarea.value = yamlData.text ?? "";
-      }
+      setYamlEditorText(node, yamlData.text ?? "");
     }
 
     const selectedState = data.selected_state && typeof data.selected_state === "object" ? data.selected_state : {};
@@ -1173,10 +1373,7 @@ async function loadSelectedYaml(node) {
     if (!response.ok || data.error) {
       throw new Error(data.error || `HTTP ${response.status}`);
     }
-    setWidgetValue(node, "yaml_text", data.text ?? "");
-    if (node.promptboardTextarea) {
-      node.promptboardTextarea.value = data.text ?? "";
-    }
+    setYamlEditorText(node, data.text ?? "");
     renderFromYaml(node, true);
     setStatus(node, "");
   } catch (error) {
@@ -1216,6 +1413,8 @@ function createSplitElement(node) {
   const left = document.createElement("div");
   const right = document.createElement("div");
   const select = document.createElement("select");
+  const editor = document.createElement("div");
+  const editorHost = document.createElement("div");
   const textarea = document.createElement("textarea");
   const save = document.createElement("button");
   const status = document.createElement("div");
@@ -1234,6 +1433,8 @@ function createSplitElement(node) {
   left.className = "promptboard-panel";
   right.className = "promptboard-panel promptboard-right";
   select.className = "promptboard-select";
+  editor.className = "promptboard-editor";
+  editorHost.className = "promptboard-codemirror";
   textarea.className = "promptboard-textarea";
   save.className = "promptboard-button";
   status.className = "promptboard-status";
@@ -1274,6 +1475,7 @@ function createSplitElement(node) {
   templateStatus.textContent = node.promptboardTemplateStatus ?? "";
 
   stopCanvasEvents(select);
+  stopCanvasEvents(editor);
   stopCanvasEvents(textarea);
   stopCanvasEvents(templateSelect);
   stopCanvasEvents(templateInput);
@@ -1309,9 +1511,7 @@ function createSplitElement(node) {
     updateTemplateControls(node);
   });
   textarea.addEventListener("input", () => {
-    setWidgetValue(node, "yaml_text", textarea.value);
-    renderFromYaml(node);
-    app.canvas?.setDirty(true, true);
+    updateYamlTextFromEditor(node, textarea.value);
   });
   textarea.addEventListener("keydown", (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key?.toLowerCase() === "s") {
@@ -1336,7 +1536,8 @@ function createSplitElement(node) {
     deleteBoardTemplate(node, templateInput.value);
   });
 
-  left.append(select, textarea, save, status);
+  editor.append(editorHost, textarea);
+  left.append(select, editor, save, status);
   templateSaveCombo.append(templateSave, templateSaveMode);
   templateSaveRow.append(templateSaveCombo, templateDelete);
   toolbar.append(templateSelect, templateInput, createResetButton(node), templateSaveRow, templateStatus);
@@ -1345,6 +1546,8 @@ function createSplitElement(node) {
 
   node.promptboardElement = root;
   node.promptboardFileSelect = select;
+  node.promptboardEditor = editor;
+  node.promptboardEditorHost = editorHost;
   node.promptboardTextarea = textarea;
   node.promptboardStatusElement = status;
   node.promptboardTemplateSelect = templateSelect;
@@ -1355,6 +1558,7 @@ function createSplitElement(node) {
   node.promptboardTemplateStatusElement = templateStatus;
   node.promptboardScroll = scroll;
   renderFromYaml(node);
+  createCodeMirrorEditor(node, editorHost, textarea);
   updateTemplateControls(node);
   refreshYamlFileOptions(node);
 
@@ -1390,6 +1594,7 @@ function syncLayoutSize(node) {
   }
   element.style.width = `${Math.max(320, Number(node.size?.[0] ?? MIN_NODE_WIDTH) - PANEL_GUTTER)}px`;
   element.style.height = `${layoutHeight(node)}px`;
+  node.promptboardCodeMirror?.requestMeasure?.();
 }
 
 function scheduleLayoutSizeSync(node) {

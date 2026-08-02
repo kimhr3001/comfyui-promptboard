@@ -1,0 +1,114 @@
+/*
+ * PromptBoard CodeMirror theme.
+ *
+ * This file intentionally owns the editor colors. Edit this file to change
+ * the YAML editor theme without touching the PromptBoard node script.
+ *
+ * Base: Material-style dark CodeMirror colors.
+ */
+
+.promptboard-codemirror {
+  --pb-cm-background: #263238;
+  --pb-cm-foreground: #eeffff;
+  --pb-cm-focus-outline: rgba(128, 203, 196, 0.72);
+  --pb-cm-caret: #ffcc00;
+  --pb-cm-gutter-foreground: #546e7a;
+  --pb-cm-gutter-border: rgba(84, 110, 122, 0.72);
+  --pb-cm-active-line: rgba(0, 0, 0, 0.24);
+  --pb-cm-active-line-gutter-foreground: #b0bec5;
+  --pb-cm-selection: rgba(128, 203, 196, 0.28);
+  --pb-cm-bracket-background: rgba(128, 203, 196, 0.18);
+  --pb-cm-bracket-outline: rgba(128, 203, 196, 0.54);
+  --pb-cm-fold-background: rgba(84, 110, 122, 0.48);
+  --pb-cm-fold-border: rgba(128, 203, 196, 0.38);
+  --pb-cm-fold-foreground: #cfd8dc;
+  --pb-cm-tooltip-background: #37474f;
+  --pb-cm-tooltip-border: rgba(128, 203, 196, 0.45);
+  --pb-cm-tooltip-selection: rgba(128, 203, 196, 0.24);
+
+  --pb-cm-keyword: #c792ea;
+  --pb-cm-operator: #89ddff;
+  --pb-cm-variable: #f07178;
+  --pb-cm-variable-2: #eeffff;
+  --pb-cm-type: #decb6b;
+  --pb-cm-atom: #f78c6c;
+  --pb-cm-number: #ff5370;
+  --pb-cm-string: #c3e88d;
+  --pb-cm-string-2: #f07178;
+  --pb-cm-comment: #546e7a;
+  --pb-cm-meta: #ffcb6b;
+  --pb-cm-attribute: #c792ea;
+  --pb-cm-property: #c792ea;
+  --pb-cm-tag: #ff5370;
+  --pb-cm-heading: #c792ea;
+  --pb-cm-bool: #f78c6c;
+  --pb-cm-null: #f78c6c;
+  --pb-cm-error-fg: #ffffff;
+  --pb-cm-error-bg: #ff5370;
+}
+
+.promptboard-codemirror .cm-editor {
+  height: 100%;
+  background: var(--pb-cm-background);
+  color: var(--pb-cm-foreground);
+}
+
+.promptboard-codemirror .cm-editor.cm-focused {
+  outline: 1px solid var(--pb-cm-focus-outline);
+}
+
+.promptboard-codemirror .cm-scroller {
+  background: var(--pb-cm-background);
+}
+
+.promptboard-codemirror .cm-content {
+  caret-color: var(--pb-cm-caret);
+}
+
+.promptboard-codemirror .cm-cursor,
+.promptboard-codemirror .cm-dropCursor {
+  border-left-color: var(--pb-cm-caret);
+}
+
+.promptboard-codemirror .cm-gutters {
+  background: var(--pb-cm-background);
+  color: var(--pb-cm-gutter-foreground);
+  border-right: 1px solid var(--pb-cm-gutter-border);
+}
+
+.promptboard-codemirror .cm-activeLine {
+  background: var(--pb-cm-active-line);
+}
+
+.promptboard-codemirror .cm-activeLineGutter {
+  background: var(--pb-cm-active-line);
+  color: var(--pb-cm-active-line-gutter-foreground);
+}
+
+.promptboard-codemirror .cm-selectionBackground,
+.promptboard-codemirror .cm-focused .cm-selectionBackground {
+  background: var(--pb-cm-selection);
+}
+
+.promptboard-codemirror .cm-matchingBracket,
+.promptboard-codemirror .cm-nonmatchingBracket {
+  background: var(--pb-cm-bracket-background);
+  outline: 1px solid var(--pb-cm-bracket-outline);
+}
+
+.promptboard-codemirror .cm-foldPlaceholder {
+  background: var(--pb-cm-fold-background);
+  border: 1px solid var(--pb-cm-fold-border);
+  color: var(--pb-cm-fold-foreground);
+}
+
+.promptboard-codemirror .cm-tooltip {
+  background: var(--pb-cm-tooltip-background);
+  border: 1px solid var(--pb-cm-tooltip-border);
+  color: var(--pb-cm-foreground);
+}
+
+.promptboard-codemirror .cm-tooltip-autocomplete ul li[aria-selected] {
+  background: var(--pb-cm-tooltip-selection);
+  color: var(--pb-cm-error-fg);
+}
