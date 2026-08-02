@@ -8,6 +8,7 @@ const MAX_WIDGET_HEIGHT = 260;
 const TOOLBAR_HEIGHT = 34;
 const EMPTY_ROWS_HEIGHT = 34;
 const ROW_HEIGHT = 32;
+const HORIZONTAL_SCROLLBAR_HEIGHT = 16;
 
 function parseRows(value) {
   try {
@@ -446,7 +447,7 @@ function createLoraWidget(node, inputName, inputData) {
   let widget = null;
 
   function widgetHeight() {
-    const rowsHeight = rows.length ? rows.length * ROW_HEIGHT : EMPTY_ROWS_HEIGHT;
+    const rowsHeight = rows.length ? rows.length * ROW_HEIGHT + HORIZONTAL_SCROLLBAR_HEIGHT : EMPTY_ROWS_HEIGHT;
     return Math.max(MIN_WIDGET_HEIGHT, Math.min(MAX_WIDGET_HEIGHT, TOOLBAR_HEIGHT + rowsHeight));
   }
 
