@@ -6,6 +6,7 @@ from .yaml_tag_board_split_nodes import (
     NODE_CLASS_MAPPINGS as YAML_TAG_BOARD_SPLIT_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as YAML_TAG_BOARD_SPLIT_NODE_DISPLAY_NAME_MAPPINGS,
 )
+from .model_info import register_model_info_routes
 
 NODE_CLASS_MAPPINGS = {
     **YAML_TAG_NODE_CLASS_MAPPINGS,
@@ -18,5 +19,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 }
 
 WEB_DIRECTORY = "./web"
+
+register_model_info_routes()
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
