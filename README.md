@@ -4,6 +4,8 @@ ComfyUI PromptBoard is a small custom node package for building prompt text from
 
 It keeps prompt fragments in editable YAML files, lets you select tags from a board-style UI, and replaces placeholders in source prompt text.
 
+It also adds a lightweight `View Checkpoint Info...` menu item to checkpoint loader nodes.
+
 ## Nodes
 
 ### Prompt Board
@@ -143,18 +145,38 @@ PromptBoard has two regex search fields:
 
 Both search fields show match position as `current/total`. Press `Enter` for the next match and `Shift+Enter` for the previous match.
 
+## Checkpoint Info
+
+Right-click a supported checkpoint loader node and choose `View Checkpoint Info...` to inspect local metadata, notes, SHA256, and matching Civitai model information when available.
+
+When Civitai preview images are available, the dialog can save the selected image next to the checkpoint as a local preview.
+
+Supported checkpoint widgets:
+
+- `CheckpointLoader`
+- `CheckpointLoaderSimple`
+- `CheckpointLoader|pysssss`
+- `Efficient Loader`
+- `Eff. Loader SDXL`
+
 ## Development
 
 Validate the Python files:
 
 ```bash
-python -m py_compile __init__.py yaml_tag_nodes.py yaml_tag_board_split_nodes.py
+python -m py_compile __init__.py yaml_tag_nodes.py yaml_tag_board_split_nodes.py model_info.py
 ```
 
 Validate the browser extension script:
 
 ```bash
 node --check web/js/yaml_tag_board_split.js
+```
+
+Validate the checkpoint info extension script:
+
+```bash
+node --check web/js/model_info.js
 ```
 
 Validate the bundled CodeMirror module:
