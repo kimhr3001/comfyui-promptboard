@@ -19,10 +19,11 @@ Main features:
 
 - YAML file selector
 - CodeMirror-based YAML editor with syntax highlighting
+- persisted YAML editor fold state across browser refreshes
 - YAML save with `Cmd+S` / `Ctrl+S`
 - collapsible tag groups
 - group-level select/clear
-- board templates for saving and loading selected states
+- board templates for saving, loading, and automatically restoring selected states
 - automatic replacement preview output
 
 ### Prompt Board Replace
@@ -105,6 +106,8 @@ Additional YAML files and saved board templates are user data and are ignored by
 
 The board uses a bundled CodeMirror 6 editor for YAML editing.
 
+Folded YAML sections are restored per workflow, node, and YAML file after a browser refresh. Fold state is kept in browser `localStorage` and is ignored when the YAML text changes.
+
 Editor colors are controlled by:
 
 ```text
@@ -114,6 +117,12 @@ web/vendor/codemirror/css/thema.css
 The default theme is Material-style dark. To change the editor appearance, edit the CSS variables in `thema.css`.
 
 Syntax token colors are also routed through CSS variables, so the theme file remains the single place for editor color changes.
+
+## Templates
+
+Board templates save the selected YAML file and selected tag state.
+
+When a workflow is reopened or the browser is refreshed, the last selected template for that node is restored automatically if the template still exists. If the template was removed, PromptBoard falls back to the workflow's saved YAML file and selection state.
 
 ## Development
 

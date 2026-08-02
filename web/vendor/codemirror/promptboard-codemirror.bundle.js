@@ -20374,6 +20374,7 @@ export {
   drawSelection,
   foldGutter,
   foldKeymap,
+  foldState,
   highlightActiveLine,
   highlightActiveLineGutter,
   highlightSpecialChars,
