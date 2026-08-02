@@ -18,7 +18,7 @@ Outputs:
 Main features:
 
 - YAML file selector
-- inline YAML editor
+- CodeMirror-based YAML editor with syntax highlighting
 - YAML save with `Cmd+S` / `Ctrl+S`
 - collapsible tag groups
 - group-level select/clear
@@ -101,6 +101,20 @@ Only `tags/default.yaml` is intended to be tracked by git.
 
 Additional YAML files and saved board templates are user data and are ignored by `.gitignore`.
 
+## Editor Theme
+
+The board uses a bundled CodeMirror 6 editor for YAML editing.
+
+Editor colors are controlled by:
+
+```text
+web/vendor/codemirror/css/thema.css
+```
+
+The default theme is Material-style dark. To change the editor appearance, edit the CSS variables in `thema.css`.
+
+Syntax token colors are also routed through CSS variables, so the theme file remains the single place for editor color changes.
+
 ## Development
 
 Validate the Python files:
@@ -115,9 +129,14 @@ Validate the browser extension script:
 node --check web/js/yaml_tag_board_split.js
 ```
 
+Validate the bundled CodeMirror module:
+
+```bash
+node --check web/vendor/codemirror/promptboard-codemirror.bundle.js
+```
+
 ## Contribution Policy
 
 This is a public personal project by `kimhr3001`.
 
 Pull requests are welcome, but merge permission is intentionally limited to the repository owner. Please keep PRs focused and describe the workflow impact clearly.
-
