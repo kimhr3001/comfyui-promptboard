@@ -1,0 +1,53 @@
+SUBJECT:
+  placeholder: <SUBJECT>
+  tags:
+  - portrait
+  - landscape
+  - city street
+  - forest path
+  - product photo
+
+STYLE:
+  placeholder: <STYLE>
+  tags:
+  - cinematic
+  - editorial
+  - watercolor
+  - pixel art
+  - isometric
+
+LIGHTING:
+  placeholder: <LIGHTING>
+  tags:
+  - soft light
+  - golden hour
+  - studio lighting
+  - neon glow
+  - overcast
+
+CAMERA:
+  placeholder: <CAMERA>
+  tags:
+  - close-up
+  - wide shot
+  - low angle
+  - top-down view
+  - shallow depth of field
+
+COLOR:
+  placeholder: <COLOR>
+  tags:
+  - warm
+  - cool
+  - pastel
+  - monochrome
+  - high contrast
+
+DETAIL:
+  placeholder: <DETAIL>
+  tags:
+  - highly detailed
+  - clean composition
+  - subtle texture
+  - crisp focus
+  - atmospheric

@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+
+tags/*
+!tags/default.yaml
+
+templates/*
