@@ -216,11 +216,42 @@ def _fetch_civitai_info(hash_value):
         return json.loads(response.read().decode("utf-8"))
 
 
+def _fetch_civitai_model_info(model_id):
+    request = urllib.request.Request(
+        f"https://civitai.com/api/v1/models/{model_id}",
+        headers={"User-Agent": "ComfyUI-PromptBoard/1.0"},
+    )
+    with urllib.request.urlopen(request, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _fill_civitai_model_description(info):
+    if info.get("description"):
+        return info
+
+    model_id = info.get("modelId")
+    if not model_id:
+        return info
+
+    try:
+        model_info = _fetch_civitai_model_info(model_id)
+    except Exception as exc:
+        info["promptboardModelDescriptionError"] = str(exc)
+        return info
+
+    description = model_info.get("description")
+    if description:
+        info["description"] = description
+        info["promptboardDescriptionSource"] = "model"
+    return info
+
+
 def _civitai_response(model_type, model_name, refresh=False):
     path = _model_path(model_type, model_name)
     if not refresh:
         cached = _load_civitai_cache(path)
         if cached is not None:
+            cached = _fill_civitai_model_description(cached)
             info = _prepare_civitai_preview_info(path, cached)
             with open(_civitai_cache_path(path), "wt", encoding="utf-8") as file:
                 json.dump(info, file, ensure_ascii=False, indent=2)
@@ -244,6 +275,7 @@ def _civitai_response(model_type, model_name, refresh=False):
             raise
         info["promptboardCivitaiError"] = str(exc)
 
+    info = _fill_civitai_model_description(info)
     info = _prepare_civitai_preview_info(path, info)
     with open(_civitai_cache_path(path), "wt", encoding="utf-8") as file:
         json.dump(info, file, ensure_ascii=False, indent=2)
