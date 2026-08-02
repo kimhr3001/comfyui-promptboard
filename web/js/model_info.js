@@ -152,6 +152,10 @@ function ensureStyles() {
       min-width: 0;
     }
 
+    .promptboard-lora-info-layout > * {
+      min-width: 0;
+    }
+
     .promptboard-lora-info-preview {
       display: flex;
       flex-direction: column;
@@ -206,6 +210,7 @@ function ensureStyles() {
     .promptboard-lora-info-summary {
       display: grid;
       gap: 10px;
+      min-width: 0;
     }
 
     .promptboard-lora-info-meta {
@@ -233,18 +238,26 @@ function ensureStyles() {
     }
 
     .promptboard-lora-info-row span {
+      min-width: 0;
       overflow-wrap: anywhere;
     }
 
     .promptboard-lora-info-row a {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       color: #245b9f;
       text-decoration: none;
     }
 
     .promptboard-lora-info-section {
+      min-width: 0;
       border: 1px solid rgba(0, 0, 0, 0.12);
       background: #ffffff;
       padding: 10px;
+      box-sizing: border-box;
     }
 
     .promptboard-lora-info-section-header {
@@ -256,6 +269,41 @@ function ensureStyles() {
       color: #242424;
       font-size: 13px;
       font-weight: 700;
+    }
+
+    details.promptboard-lora-info-section > summary.promptboard-lora-info-section-header {
+      cursor: pointer;
+      list-style: none;
+    }
+
+    details.promptboard-lora-info-section > summary.promptboard-lora-info-section-header::-webkit-details-marker {
+      display: none;
+    }
+
+    .promptboard-lora-info-section-toggle {
+      display: inline-block;
+      width: 12px;
+      margin-right: 4px;
+      color: rgba(0, 0, 0, 0.58);
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    details.promptboard-lora-info-section .promptboard-lora-info-section-toggle::before {
+      content: ">";
+    }
+
+    details.promptboard-lora-info-section[open] .promptboard-lora-info-section-toggle::before {
+      content: "v";
+    }
+
+    details.promptboard-lora-info-section:not([open]) > summary.promptboard-lora-info-section-header {
+      margin-bottom: 0;
+    }
+
+    .promptboard-lora-info-section-body {
+      min-width: 0;
+      overflow: hidden;
     }
 
     .promptboard-lora-trigger-words {
@@ -287,6 +335,82 @@ function ensureStyles() {
       overflow-wrap: anywhere;
       color: rgba(0, 0, 0, 0.78);
       line-height: 1.4;
+    }
+
+    .promptboard-lora-info-description-body {
+      min-width: 0;
+      max-width: 100%;
+      max-height: 180px;
+      overflow: auto;
+      overflow-wrap: anywhere;
+      color: rgba(0, 0, 0, 0.78);
+      line-height: 1.45;
+      box-sizing: border-box;
+    }
+
+    .promptboard-lora-info-description-body p {
+      margin: 0 0 8px;
+    }
+
+    .promptboard-lora-info-description-body p:last-child,
+    .promptboard-lora-info-description-body ul:last-child,
+    .promptboard-lora-info-description-body ol:last-child,
+    .promptboard-lora-info-description-body blockquote:last-child,
+    .promptboard-lora-info-description-body pre:last-child {
+      margin-bottom: 0;
+    }
+
+    .promptboard-lora-info-description-body ul,
+    .promptboard-lora-info-description-body ol {
+      margin: 0 0 8px;
+      padding-left: 20px;
+    }
+
+    .promptboard-lora-info-description-body li {
+      margin: 2px 0;
+    }
+
+    .promptboard-lora-info-description-body h1,
+    .promptboard-lora-info-description-body h2,
+    .promptboard-lora-info-description-body h3,
+    .promptboard-lora-info-description-body h4 {
+      margin: 10px 0 6px;
+      color: #242424;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+
+    .promptboard-lora-info-description-body blockquote {
+      margin: 0 0 8px;
+      padding: 6px 8px;
+      border-left: 3px solid rgba(0, 0, 0, 0.18);
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .promptboard-lora-info-description-body code {
+      padding: 1px 4px;
+      background: rgba(0, 0, 0, 0.07);
+      font-family: monospace;
+    }
+
+    .promptboard-lora-info-description-body pre {
+      max-width: 100%;
+      margin: 0 0 8px;
+      padding: 8px;
+      overflow: auto;
+      background: rgba(0, 0, 0, 0.07);
+      box-sizing: border-box;
+    }
+
+    .promptboard-lora-info-description-body pre code {
+      padding: 0;
+      background: transparent;
+    }
+
+    .promptboard-lora-info-description-body a {
+      color: #245b9f;
+      text-decoration: underline;
+      overflow-wrap: anywhere;
     }
 
     .promptboard-lora-info-notes-editor {
@@ -536,6 +660,83 @@ function textOrJson(value) {
     return "";
   }
   return typeof value === "object" ? JSON.stringify(value, null, 2) : String(value);
+}
+
+const DESCRIPTION_ALLOWED_TAGS = new Set([
+  "a",
+  "b",
+  "blockquote",
+  "br",
+  "code",
+  "em",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "i",
+  "li",
+  "ol",
+  "p",
+  "pre",
+  "strong",
+  "ul",
+]);
+
+function isAllowedUrl(value) {
+  try {
+    const url = new URL(value, window.location.href);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch (error) {
+    return false;
+  }
+}
+
+function sanitizeDescriptionNode(node) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return document.createTextNode(node.textContent || "");
+  }
+
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return document.createDocumentFragment();
+  }
+
+  const tag = node.tagName.toLowerCase();
+  const children = Array.from(node.childNodes).map(sanitizeDescriptionNode);
+  if (!DESCRIPTION_ALLOWED_TAGS.has(tag)) {
+    const fragment = document.createDocumentFragment();
+    fragment.append(...children);
+    return fragment;
+  }
+
+  const element = document.createElement(tag);
+  if (tag === "a") {
+    const href = node.getAttribute("href") || "";
+    if (isAllowedUrl(href)) {
+      element.href = href;
+      element.target = "_blank";
+      element.rel = "noopener noreferrer";
+    }
+  }
+  if (tag !== "br") {
+    element.append(...children);
+  }
+  return element;
+}
+
+function sanitizeDescriptionHtml(value) {
+  const html = textOrJson(value).trim();
+  if (!html) {
+    return null;
+  }
+
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const fragment = document.createDocumentFragment();
+  fragment.append(...Array.from(template.content.childNodes).map(sanitizeDescriptionNode));
+
+  const probe = document.createElement("div");
+  probe.append(fragment.cloneNode(true));
+  return probe.textContent.trim() ? fragment : null;
 }
 
 function firstMetadataText(metadata, keys) {
@@ -921,10 +1122,11 @@ class LoraInfoDialog extends ModelInfoDialog {
     this.preview.append(this.actions);
     this.info = $el("div.promptboard-lora-info-summary");
     this.meta = $el("div.promptboard-lora-info-meta");
-    this.triggers = this.createSection("Trigger Words");
+    this.triggers = this.createSection("Trigger Words", null, { collapsible: true });
+    this.descriptionSection = this.createSection("Model Description", null, { collapsible: true });
     this.notesSection = this.createSection("Notes");
     this.details = $el("div.promptboard-lora-info-details");
-    this.info.append(this.meta, this.triggers.container, this.notesSection.container);
+    this.info.append(this.meta, this.descriptionSection.container, this.triggers.container, this.notesSection.container);
     this.content = $el("div.promptboard-model-info-content.promptboard-lora-info-content", [
       $el("div.promptboard-lora-info-layout", [
         this.preview,
@@ -991,12 +1193,23 @@ class LoraInfoDialog extends ModelInfoDialog {
     this.customModal = null;
   }
 
-  createSection(title, action = null) {
-    const titleEl = $el("span", { textContent: title });
+  createSection(title, action = null, options = {}) {
+    const titleEl = options.collapsible
+      ? $el("span", [
+        $el("span.promptboard-lora-info-section-toggle", { "aria-hidden": "true" }),
+        $el("span", { textContent: title }),
+      ])
+      : $el("span", { textContent: title });
     const headerChildren = action ? [titleEl, action] : [titleEl];
-    const header = $el("div.promptboard-lora-info-section-header", headerChildren);
-    const body = $el("div");
-    const container = $el("div.promptboard-lora-info-section", [header, body]);
+    const headerTag = options.collapsible ? "summary" : "div";
+    const header = $el(`${headerTag}.promptboard-lora-info-section-header`, headerChildren);
+    const body = $el("div.promptboard-lora-info-section-body");
+    const container = options.collapsible
+      ? $el("details.promptboard-lora-info-section", [header, body])
+      : $el("div.promptboard-lora-info-section", [header, body]);
+    if (options.open) {
+      container.open = true;
+    }
     return { container, header, body };
   }
 
@@ -1035,6 +1248,19 @@ class LoraInfoDialog extends ModelInfoDialog {
         $el("summary", { textContent: title }),
         body,
       ]
+    );
+  }
+
+  addModelDescription(description) {
+    const fragment = sanitizeDescriptionHtml(description);
+    const body = $el("div.promptboard-lora-info-description-body");
+    if (fragment) {
+      body.append(fragment);
+    }
+    this.descriptionSection.body.replaceChildren(
+      fragment
+        ? body
+        : $el("div.promptboard-lora-info-muted", { textContent: "No description" })
     );
   }
 
@@ -1230,6 +1456,7 @@ class LoraInfoDialog extends ModelInfoDialog {
       this.addInfoEntry("Civitai", "No hash available");
       this.addInfoEntry("Base", "Unknown");
       this.addTriggerWords([]);
+      this.addModelDescription("");
       return null;
     }
 
@@ -1256,15 +1483,14 @@ class LoraInfoDialog extends ModelInfoDialog {
       this.addInfoEntry("Base", info.baseModel || "Unknown");
       this.addPreview(info);
       this.addTriggerWords(info.trainedWords);
-      if (info.description) {
-        this.addDetails("Description", info.description);
-      }
+      this.addModelDescription(info.description);
       return info;
     } catch (error) {
       loading.remove();
       this.addInfoEntry("Civitai", error.message);
       this.addInfoEntry("Base", "Unknown");
       this.addTriggerWords([]);
+      this.addModelDescription("");
       return null;
     }
   }
@@ -1294,6 +1520,7 @@ class CheckpointInfoDialog extends LoraInfoDialog {
     if (!this.hash) {
       this.addInfoEntry("Civitai", "No hash available");
       this.addInfoEntry("Base", "Unknown");
+      this.addModelDescription("");
       return null;
     }
 
@@ -1319,22 +1546,18 @@ class CheckpointInfoDialog extends LoraInfoDialog {
         : info.promptboardCivitaiDeferred ? "Local preview" : info.promptboardCivitaiError || "Unavailable");
       this.addInfoEntry("Base", info.baseModel || "Unknown");
       this.addPreview(info);
-      if (info.description) {
-        this.addDetails("Description", info.description);
-      }
+      this.addModelDescription(info.description);
       return info;
     } catch (error) {
       loading.remove();
       this.addInfoEntry("Civitai", error.message);
       this.addInfoEntry("Base", "Unknown");
+      this.addModelDescription("");
       return null;
     }
   }
 
   async addInfo() {
-    this.addInfoEntry("File", metadataValue(this.metadata, "promptboard.filename", titleFromPath(this.modelName)));
-    this.addInfoEntry("SHA256", this.hash || "Unknown");
-
     const usageHint = metadataValue(this.metadata, "modelspec.usage_hint");
     if (usageHint) {
       this.addInfoEntry("Usage Hint", usageHint);
