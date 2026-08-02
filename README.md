@@ -4,7 +4,7 @@ ComfyUI PromptBoard is a small custom node package for building prompt text from
 
 It keeps prompt fragments in editable YAML files, lets you select tags from a board-style UI, and replaces placeholders in source prompt text.
 
-It also adds a lightweight `View Checkpoint Info...` menu item to checkpoint loader nodes.
+It also includes a multi-LoRA loader and a shared checkpoint/LoRA model info dialog for local metadata, notes, Civitai data, and preview images.
 
 ## Nodes
 
@@ -42,6 +42,34 @@ Example source text:
 ```
 
 If the board selects `portrait`, `cinematic`, and `soft light`, the replace node writes those values into the matching placeholders.
+
+### PromptBoard LoRA Loader
+
+`PromptBoard LoRA Loader` applies multiple LoRAs to a `model` and `clip`.
+
+The node stores its rows as JSON internally while exposing a row-based UI for:
+
+- adding LoRA rows
+- enabling or disabling each row
+- searching and selecting a LoRA file
+- editing model and clip strengths
+- opening LoRA metadata and Civitai info
+- deleting rows
+
+Example `lora_config`:
+
+```json
+[
+  {
+    "enabled": true,
+    "lora_name": "example.safetensors",
+    "strength_model": 1.0,
+    "strength_clip": 1.0
+  }
+]
+```
+
+Disabled rows, empty names, `None`, and rows where both strengths are `0` are skipped.
 
 ## YAML Format
 
@@ -145,11 +173,28 @@ PromptBoard has two regex search fields:
 
 Both search fields show match position as `current/total`. Press `Enter` for the next match and `Shift+Enter` for the previous match.
 
-## Checkpoint Info
+## Model Info
 
-Right-click a supported checkpoint loader node and choose `View Checkpoint Info...` to inspect local metadata, notes, SHA256, and matching Civitai model information when available.
+Right-click a supported checkpoint loader node and choose `View Checkpoint Info...` to inspect local metadata, notes, SHA256, matching Civitai model information, and preview images when available.
 
-When Civitai preview images are available, the dialog can save the selected image next to the checkpoint as a local preview.
+LoRA rows in `PromptBoard LoRA Loader` also include an `i` button that opens a LoRA-specific info dialog for the selected LoRA.
+
+The checkpoint and LoRA dialogs share the same compact vertical UI. Preview galleries include bounded image height, previous/next navigation, prompt overlay text when Civitai image metadata provides it, and a `Save` button for storing the selected image next to the model file.
+
+PromptBoard stores Civitai JSON metadata next to the model as:
+
+```text
+<model>.civitai.json
+```
+
+Representative preview images are stored next to the model using the same basename and an image extension, for example:
+
+```text
+example.safetensors
+example.png
+```
+
+If a representative preview already exists, the info dialog can show that local image without contacting Civitai on first open. Use `Refresh` to fetch the latest Civitai metadata.
 
 Supported checkpoint widgets:
 
@@ -164,7 +209,7 @@ Supported checkpoint widgets:
 Validate the Python files:
 
 ```bash
-python -m py_compile __init__.py yaml_tag_nodes.py yaml_tag_board_split_nodes.py model_info.py
+python -m py_compile __init__.py yaml_tag_nodes.py yaml_tag_board_split_nodes.py lora_loader_nodes.py model_info.py
 ```
 
 Validate the browser extension script:
@@ -177,6 +222,12 @@ Validate the checkpoint info extension script:
 
 ```bash
 node --check web/js/model_info.js
+```
+
+Validate the LoRA loader extension script:
+
+```bash
+node --check web/js/lora_loader.js
 ```
 
 Validate the bundled CodeMirror module:
