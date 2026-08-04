@@ -272,7 +272,7 @@ def _normalize_bool(value):
 def _normalize_tag(entry):
     if isinstance(entry, str):
         text = entry.strip()
-        return {"text": text, "label": text, "default": False} if text else None
+        return {"text": text, "label": text, "description": "", "default": False} if text else None
 
     if not isinstance(entry, dict):
         return None
@@ -282,9 +282,11 @@ def _normalize_tag(entry):
         return None
 
     label = str(entry.get("label", text)).strip() or text
+    description = str(entry.get("description", "")).strip()
     return {
         "text": text,
         "label": label,
+        "description": description,
         "default": _normalize_bool(entry.get("default", False)),
     }
 
@@ -302,6 +304,7 @@ def _normalize_config(yaml_text):
             continue
 
         placeholder = str(value.get("placeholder", f"<{category}>")).strip()
+        ui_group = str(value.get("uiGroup", "")).strip()
         replace_inside_tags = _normalize_bool(value.get("replaceInsideTags", False))
         tags = []
 
@@ -312,6 +315,7 @@ def _normalize_config(yaml_text):
 
         config[category] = {
             "placeholder": placeholder,
+            "uiGroup": ui_group,
             "delimiter": FIXED_DELIMITER,
             "replaceInsideTags": replace_inside_tags,
             "tags": tags,
@@ -349,6 +353,7 @@ def _build_selection_payload(config, selected_state):
         selected = _selected_for_category(category, item["tags"], selected_state)
         payload[category] = {
             "placeholder": item["placeholder"],
+            "uiGroup": item.get("uiGroup", ""),
             "delimiter": FIXED_DELIMITER,
             "replaceInsideTags": item.get("replaceInsideTags", False),
             "selected": selected,
