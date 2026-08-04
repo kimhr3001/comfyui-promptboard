@@ -26,6 +26,26 @@ const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", impor
 const EDITOR_STORAGE_PREFIX = "promptboard:editor:v1";
 const TEMPLATE_STORAGE_PREFIX = "promptboard:template:v1";
 const SEARCH_DEBOUNCE_MS = 150;
+const GROUP_ALL = "전체";
+const DEFAULT_UI_GROUP = "기타";
+const PLACEHOLDER_UI_GROUPS = {
+  "<PHOTOSHOT>": "구도",
+  "<INTER>": "구도",
+  "<GIRL_POS>": "포즈",
+  "<GIRL_POSE>": "포즈",
+  "<GIRL_BODY>": "몸",
+  "<GIRL_FACE>": "얼굴",
+  "<HAIR>": "헤어",
+  "<CLOTHES>": "의상",
+  "<LOCATION>": "장소",
+  "<VIEW>": "화면",
+  "<UCO>": "색상",
+  "<TCO>": "색상",
+  "<BCO>": "색상",
+  "<OCO>": "색상",
+  "<ECO>": "색상",
+  "<HCO>": "색상",
+};
 
 let codeMirrorModulePromise = null;
 
@@ -601,6 +621,47 @@ function parseBool(value) {
   return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase());
 }
 
+function normalizeUiGroup(value) {
+  return String(value ?? "").trim();
+}
+
+function inferUiGroup(item) {
+  const placeholder = String(item?.placeholder ?? "").trim();
+  return PLACEHOLDER_UI_GROUPS[placeholder] || DEFAULT_UI_GROUP;
+}
+
+function categoryUiGroup(item) {
+  return normalizeUiGroup(item?.uiGroup) || inferUiGroup(item);
+}
+
+function availableUiGroups(config) {
+  const groups = new Set();
+  for (const item of Object.values(config ?? {})) {
+    groups.add(categoryUiGroup(item));
+  }
+  return [...groups];
+}
+
+function activeUiGroup(node, config = node.promptboardConfig ?? {}) {
+  const groups = availableUiGroups(config);
+  const active = normalizeUiGroup(node.promptboardActiveUiGroup) || GROUP_ALL;
+  if (active === GROUP_ALL || groups.includes(active)) {
+    return active;
+  }
+  node.promptboardActiveUiGroup = GROUP_ALL;
+  return GROUP_ALL;
+}
+
+function categoryMatchesActiveUiGroup(node, item) {
+  const active = activeUiGroup(node);
+  return active === GROUP_ALL || categoryUiGroup(item) === active;
+}
+
+function visibleCategoryEntries(node) {
+  const config = node.promptboardConfig ?? {};
+  return Object.entries(config).filter(([, item]) => categoryMatchesActiveUiGroup(node, item));
+}
+
 function parseYamlTags(yamlText) {
   const config = {};
   let currentCategory = null;
@@ -622,6 +683,7 @@ function parseYamlTags(yamlText) {
       if (currentCategory) {
         config[currentCategory] = {
           placeholder: `<${currentCategory}>`,
+          uiGroup: "",
           replaceInsideTags: false,
           tags: [],
         };
@@ -639,6 +701,12 @@ function parseYamlTags(yamlText) {
       continue;
     }
 
+    if (indent <= 2 && line.startsWith("uiGroup:")) {
+      inTags = false;
+      config[currentCategory].uiGroup = normalizeUiGroup(unquote(line.slice("uiGroup:".length)));
+      continue;
+    }
+
     if (indent <= 2 && line.startsWith("replaceInsideTags:")) {
       inTags = false;
       config[currentCategory].replaceInsideTags = parseBool(line.slice("replaceInsideTags:".length));
@@ -653,7 +721,7 @@ function parseYamlTags(yamlText) {
 
     if (inTags && indent >= 2 && line.startsWith("- ")) {
       const body = line.slice(2).trim();
-      currentTag = { text: "", label: "", default: false };
+      currentTag = { text: "", label: "", description: "", default: false };
 
       if (body.startsWith("text:")) {
         currentTag.text = unquote(body.slice("text:".length));
@@ -683,6 +751,8 @@ function parseYamlTags(yamlText) {
         }
       } else if (line.startsWith("label:")) {
         currentTag.label = unquote(line.slice("label:".length));
+      } else if (line.startsWith("description:")) {
+        currentTag.description = unquote(line.slice("description:".length));
       } else if (line.startsWith("default:")) {
         currentTag.default = parseBool(line.slice("default:".length));
       }
@@ -730,6 +800,17 @@ function pruneSelectedState(config, selectedState) {
 function selectedCount(state, category, tags) {
   const selected = new Set(Array.isArray(state[category]) ? state[category].map((item) => String(item)) : []);
   return tags.filter((tag) => selected.has(tag.text)).length;
+}
+
+function selectedCountsByUiGroup(config, state) {
+  const counts = { [GROUP_ALL]: 0 };
+  for (const [category, item] of Object.entries(config ?? {})) {
+    const count = selectedCount(state, category, item.tags ?? []);
+    const group = categoryUiGroup(item);
+    counts[GROUP_ALL] += count;
+    counts[group] = (counts[group] ?? 0) + count;
+  }
+  return counts;
 }
 
 function setSelected(state, category, tagText, enabled) {
@@ -812,16 +893,23 @@ function compileSearchRegex(input) {
 }
 
 function collectBoardSearchMatches(node, regex) {
-  const config = node.promptboardConfig ?? {};
   const matches = [];
-  for (const [category, item] of Object.entries(config)) {
+  for (const [category, item] of visibleCategoryEntries(node)) {
+    const uiGroup = categoryUiGroup(item);
     if (regex.test(category)) {
-      matches.push({ category, tagText: "" });
+      matches.push({ category, tagText: "", label: category, description: "", uiGroup });
     }
     for (const tag of item.tags ?? []) {
       const label = tag.label || tag.text;
-      if (regex.test(label) || regex.test(tag.text)) {
-        matches.push({ category, tagText: tag.text });
+      const description = tag.description || "";
+      if (regex.test(label) || regex.test(tag.text) || regex.test(description)) {
+        matches.push({
+          category,
+          tagText: tag.text,
+          label: String(label),
+          description: String(description),
+          uiGroup,
+        });
       }
     }
   }
@@ -851,6 +939,128 @@ function setBoardSearchCount(node, current, total) {
     return;
   }
   count.textContent = total > 0 ? `${current}/${total}` : total === 0 ? "0/0" : "";
+}
+
+function hideBoardSearchMenu(node) {
+  const menu = node.promptboardBoardSearchMenu;
+  if (menu) {
+    menu.remove();
+  }
+  node.promptboardBoardSearchInput?.setAttribute("aria-expanded", "false");
+}
+
+function showBoardSearchMenu(node) {
+  const input = node.promptboardBoardSearchInput;
+  const row = node.promptboardBoardSearchRow;
+  const menu = node.promptboardBoardSearchMenu;
+  if (!input || !row || !menu || document.activeElement !== input) {
+    hideBoardSearchMenu(node);
+    return;
+  }
+
+  const rect = row.getBoundingClientRect();
+  menu.style.left = `${rect.left}px`;
+  menu.style.top = `${rect.bottom + 2}px`;
+  menu.style.width = `${rect.width}px`;
+  menu.style.maxHeight = `${Math.max(96, Math.min(280, window.innerHeight - rect.bottom - 8))}px`;
+  if (!menu.parentElement) {
+    document.body.append(menu);
+  }
+  input.setAttribute("aria-expanded", "true");
+}
+
+function boardSearchMatchSelected(node, match) {
+  if (!match?.tagText) {
+    return false;
+  }
+  const selected = node.promptboardState?.[match.category];
+  return Array.isArray(selected) && selected.includes(match.tagText);
+}
+
+function renderBoardSearchMenu(node) {
+  const input = node.promptboardBoardSearchInput;
+  const menu = node.promptboardBoardSearchMenu;
+  const state = node.promptboardBoardSearchState;
+  if (!input || !menu || !String(input.value ?? "").trim()) {
+    hideBoardSearchMenu(node);
+    return;
+  }
+
+  menu.replaceChildren();
+  const matches = Array.isArray(state?.matches) ? state.matches : [];
+  if (node.promptboardBoardSearchError) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-search-menu-empty";
+    empty.textContent = node.promptboardBoardSearchError;
+    menu.append(empty);
+    showBoardSearchMenu(node);
+    return;
+  }
+  if (!matches.length) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-search-menu-empty";
+    empty.textContent = "No matches";
+    menu.append(empty);
+    showBoardSearchMenu(node);
+    return;
+  }
+
+  matches.forEach((match, index) => {
+    const option = document.createElement("button");
+    const heading = document.createElement("span");
+    const label = document.createElement("span");
+    const selected = document.createElement("span");
+    const tagText = document.createElement("span");
+    const context = document.createElement("span");
+    const isActive = index === state.index;
+    const isSelected = boardSearchMatchSelected(node, match);
+
+    option.type = "button";
+    option.className = `promptboard-search-menu-option${isActive ? " is-active" : ""}`;
+    option.dataset.index = String(index);
+    option.setAttribute("role", "option");
+    option.setAttribute("aria-selected", String(isActive));
+    option.title = match.description || match.tagText || match.category;
+    heading.className = "promptboard-search-menu-heading";
+    label.className = "promptboard-search-menu-label";
+    label.textContent = match.label || match.tagText || match.category;
+    selected.className = "promptboard-search-menu-selected";
+    selected.textContent = isSelected ? "선택됨" : "";
+    heading.append(label, selected);
+    option.append(heading);
+
+    if (match.tagText && match.tagText !== match.label) {
+      tagText.className = "promptboard-search-menu-tag";
+      tagText.textContent = match.tagText;
+      option.append(tagText);
+    }
+    context.className = "promptboard-search-menu-context";
+    context.textContent = `${match.category} · ${match.uiGroup}`;
+    option.append(context);
+    option.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+    option.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      navigateToBoardSearchMatch(node, index);
+    });
+    menu.append(option);
+  });
+
+  showBoardSearchMenu(node);
+  menu.querySelector(".promptboard-search-menu-option.is-active")?.scrollIntoView({ block: "nearest" });
+}
+
+function setBoardSearchMenuIndex(node, index) {
+  const state = node.promptboardBoardSearchState;
+  if (!state?.matches?.length) {
+    return;
+  }
+  state.index = (index + state.matches.length) % state.matches.length;
+  setBoardSearchCount(node, state.index + 1, state.matches.length);
+  renderBoardSearchMenu(node);
 }
 
 function applyBoardSearchCollapsedState(node, matches) {
@@ -895,6 +1105,23 @@ function scrollBoardElementIntoView(node, element) {
   scroll.scrollTop += elementRect.top - scrollRect.top - 6;
 }
 
+function navigateToBoardSearchMatch(node, index) {
+  const state = node.promptboardBoardSearchState;
+  if (!state?.matches?.length) {
+    return;
+  }
+
+  state.index = (index + state.matches.length) % state.matches.length;
+  const match = state.matches[state.index];
+  setBoardSearchCount(node, state.index + 1, state.matches.length);
+  applyBoardSearchCollapsedState(node, state.matches);
+  renderCards(node);
+  hideBoardSearchMenu(node);
+  requestAnimationFrame(() => {
+    scrollBoardElementIntoView(node, findBoardSearchElement(node, match));
+  });
+}
+
 function runBoardSearch(node, direction = 0) {
   const input = node.promptboardBoardSearchInput;
   if (!input) {
@@ -902,15 +1129,18 @@ function runBoardSearch(node, direction = 0) {
   }
 
   input.classList.remove("is-invalid");
+  node.promptboardBoardSearchError = "";
   const query = String(input.value ?? "").trim();
   let regex = null;
   try {
     regex = compileSearchRegex(query);
   } catch {
     node.promptboardBoardSearchState = null;
+    node.promptboardBoardSearchError = "Invalid search pattern";
     setBoardSearchCount(node, -1, -1);
     input.classList.add("is-invalid");
     renderCards(node);
+    renderBoardSearchMenu(node);
     return;
   }
 
@@ -918,6 +1148,7 @@ function runBoardSearch(node, direction = 0) {
     node.promptboardBoardSearchState = null;
     setBoardSearchCount(node, -1, -1);
     renderCards(node);
+    hideBoardSearchMenu(node);
     return;
   }
 
@@ -927,6 +1158,7 @@ function runBoardSearch(node, direction = 0) {
     setBoardSearchCount(node, 0, 0);
     applyBoardSearchCollapsedState(node, matches);
     renderCards(node);
+    renderBoardSearchMenu(node);
     return;
   }
 
@@ -946,13 +1178,13 @@ function runBoardSearch(node, direction = 0) {
 
   node.promptboardBoardSearchState = { query, matches, index };
   setBoardSearchCount(node, index + 1, matches.length);
-  const match = matches[index];
-  applyBoardSearchCollapsedState(node, matches);
-  renderCards(node);
-
-  requestAnimationFrame(() => {
-    scrollBoardElementIntoView(node, findBoardSearchElement(node, match));
-  });
+  if (direction) {
+    navigateToBoardSearchMatch(node, index);
+  } else {
+    applyBoardSearchCollapsedState(node, matches);
+    renderCards(node);
+    renderBoardSearchMenu(node);
+  }
 }
 
 function scheduleBoardSearch(node) {
@@ -1127,6 +1359,155 @@ function ensureStyles() {
       font: 10px Arial, sans-serif;
       text-align: center;
       white-space: nowrap;
+    }
+
+    .promptboard-search-menu {
+      position: fixed;
+      z-index: 10000;
+      overflow-x: hidden;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: #151515;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+      scrollbar-width: thin;
+    }
+
+    .promptboard-search-menu-option,
+    .promptboard-search-menu-empty {
+      box-sizing: border-box;
+      display: block;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.82);
+      font: 11px Arial, sans-serif;
+      text-align: left;
+    }
+
+    .promptboard-search-menu-option {
+      min-height: 44px;
+      padding: 5px 7px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      cursor: pointer;
+    }
+
+    .promptboard-search-menu-option:last-child {
+      border-bottom: 0;
+    }
+
+    .promptboard-search-menu-option:hover,
+    .promptboard-search-menu-option.is-active {
+      background: rgba(130, 166, 220, 0.22);
+      color: #fff;
+    }
+
+    .promptboard-search-menu-heading {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .promptboard-search-menu-label,
+    .promptboard-search-menu-tag,
+    .promptboard-search-menu-context {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .promptboard-search-menu-label {
+      min-width: 0;
+      color: #f0f0f0;
+      font-weight: 700;
+    }
+
+    .promptboard-search-menu-selected {
+      flex: 0 0 auto;
+      margin-left: auto;
+      color: #8ec5ff;
+      font-size: 9px;
+    }
+
+    .promptboard-search-menu-tag {
+      margin-top: 2px;
+      color: #c9c9c9;
+      font: 10px Menlo, Consolas, monospace;
+    }
+
+    .promptboard-search-menu-context {
+      margin-top: 2px;
+      color: #929292;
+      font-size: 9px;
+    }
+
+    .promptboard-search-menu-empty {
+      padding: 7px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .promptboard-group-filter {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-width: 0;
+      max-height: 48px;
+      overflow: auto;
+      scrollbar-width: thin;
+    }
+
+    .promptboard-group-button {
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex: 0 0 auto;
+      height: 20px;
+      padding: 0 7px;
+      border: 1px solid rgba(120, 120, 120, 0.72);
+      border-radius: 3px;
+      background: rgba(32, 32, 32, 0.92);
+      color: #d4d4d4;
+      font: 10px Arial, sans-serif;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .promptboard-group-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .promptboard-group-count {
+      box-sizing: border-box;
+      min-width: 14px;
+      height: 14px;
+      padding: 1px 4px 0;
+      border-radius: 7px;
+      background: rgba(105, 105, 105, 0.62);
+      color: #f0f0f0;
+      font-size: 9px;
+      line-height: 12px;
+      text-align: center;
+    }
+
+    .promptboard-group-button:hover {
+      border-color: #888;
+      background: rgba(48, 48, 48, 0.96);
+    }
+
+    .promptboard-group-button.is-active {
+      border-color: rgba(86, 148, 209, 0.95);
+      background: rgba(39, 82, 124, 0.92);
+      color: #f5fbff;
+    }
+
+    .promptboard-group-button.is-active .promptboard-group-count {
+      background: rgba(154, 196, 236, 0.32);
+      color: #ffffff;
     }
 
     .promptboard-button {
@@ -1498,22 +1879,75 @@ function createResetButton(node) {
   });
 }
 
+function createGroupFilterButton(node, label, active, count) {
+  const button = document.createElement("button");
+  const name = document.createElement("span");
+  const countLabel = document.createElement("span");
+
+  button.type = "button";
+  button.className = `promptboard-group-button${active ? " is-active" : ""}`;
+  button.title =
+    label === GROUP_ALL ? `Show all groups (${count} selected)` : `Show ${label} group (${count} selected)`;
+  button.dataset.group = label;
+  name.className = "promptboard-group-label";
+  name.textContent = label;
+  countLabel.className = "promptboard-group-count";
+  countLabel.textContent = String(count);
+  button.append(name, countLabel);
+  stopCanvasEvents(button);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    node.promptboardActiveUiGroup = label;
+    if (node.promptboardBoardSearchInput?.value?.trim()) {
+      node.promptboardBoardSearchState = null;
+      runBoardSearch(node);
+    } else {
+      renderCards(node);
+    }
+    if (node.promptboardScroll) {
+      node.promptboardScroll.scrollTop = 0;
+    }
+  });
+  return button;
+}
+
+function renderGroupFilter(node) {
+  const container = node.promptboardGroupFilter;
+  if (!container) {
+    return;
+  }
+
+  const config = node.promptboardConfig ?? {};
+  const state = node.promptboardState ?? {};
+  const groups = availableUiGroups(config);
+  const active = activeUiGroup(node, config);
+  const counts = selectedCountsByUiGroup(config, state);
+  container.replaceChildren();
+  for (const group of [GROUP_ALL, ...groups]) {
+    container.append(createGroupFilterButton(node, group, group === active, counts[group] ?? 0));
+  }
+}
+
 function createTagButton(node, state, category, tag) {
   const selected = Array.isArray(state[category]) && state[category].includes(tag.text);
   const button = document.createElement("button");
   const label = document.createElement("span");
   const stateLabel = document.createElement("span");
-  const sourceLabel = tag.label || tag.text;
+  const sourceLabel = String(tag.label || tag.text);
+  const tagText = String(tag.text ?? "");
+  const displayLabel = sourceLabel && sourceLabel !== tagText ? `[${sourceLabel}] ${tagText}` : tagText;
+  const description = String(tag.description ?? "").trim();
 
   button.type = "button";
   button.className = `promptboard-tag${selected ? " is-on" : ""}`;
-  button.title = sourceLabel;
+  button.title = description || displayLabel;
   button.dataset.category = category;
   button.dataset.tagText = tag.text;
   button.classList.toggle("is-search-match", isCurrentBoardSearchMatch(node, category, tag.text));
   stopCanvasEvents(button);
   label.className = "promptboard-tag-label";
-  label.textContent = sourceLabel;
+  label.textContent = displayLabel;
   stateLabel.className = "promptboard-tag-state";
   stateLabel.textContent = selected ? "on" : "off";
 
@@ -1563,6 +1997,7 @@ function renderCards(node) {
   if (!scroll) {
     return;
   }
+  renderGroupFilter(node);
   scroll.replaceChildren();
 
   if (!Object.keys(config).length) {
@@ -1573,10 +2008,19 @@ function renderCards(node) {
     return;
   }
 
+  const entries = visibleCategoryEntries(node);
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-empty";
+    empty.textContent = "No categories in this group";
+    scroll.append(empty);
+    return;
+  }
+
   const columns = document.createElement("div");
   columns.className = "promptboard-columns";
 
-  for (const [index, [category, item]] of Object.entries(config).entries()) {
+  for (const [index, [category, item]] of entries.entries()) {
     const card = document.createElement("section");
     const title = document.createElement("div");
     const toggle = document.createElement("span");
@@ -2047,6 +2491,8 @@ function createSplitElement(node) {
   const boardSearchRow = document.createElement("div");
   const boardSearch = document.createElement("input");
   const boardSearchCount = document.createElement("div");
+  const boardSearchMenu = document.createElement("div");
+  const groupFilter = document.createElement("div");
   const templateInput = document.createElement("input");
   const templateSaveRow = document.createElement("div");
   const templateSaveCombo = document.createElement("div");
@@ -2073,9 +2519,11 @@ function createSplitElement(node) {
   toolbarLeftTop.className = "promptboard-toolbar-left-top";
   toolbarRight.className = "promptboard-toolbar-right";
   boardSearchRow.className = "promptboard-search-row";
+  groupFilter.className = "promptboard-group-filter";
   templateSelect.className = "promptboard-select";
   boardSearch.className = "promptboard-input";
   boardSearchCount.className = "promptboard-search-count";
+  boardSearchMenu.className = "promptboard-search-menu";
   templateInput.className = "promptboard-input";
   templateSaveRow.className = "promptboard-template-save-row";
   templateSaveCombo.className = "promptboard-save-combo";
@@ -2092,6 +2540,14 @@ function createSplitElement(node) {
   yamlSearchCount.textContent = "";
   boardSearch.type = "text";
   boardSearch.placeholder = "search tags";
+  boardSearch.autocomplete = "off";
+  boardSearch.spellcheck = false;
+  boardSearch.setAttribute("role", "combobox");
+  boardSearch.setAttribute("aria-autocomplete", "list");
+  boardSearch.setAttribute("aria-expanded", "false");
+  boardSearchMenu.id = `promptboard-search-menu-${node.id ?? Date.now()}`;
+  boardSearchMenu.setAttribute("role", "listbox");
+  boardSearch.setAttribute("aria-controls", boardSearchMenu.id);
   boardSearchCount.textContent = "";
   templateInput.type = "text";
   templateInput.placeholder = "template name";
@@ -2121,6 +2577,8 @@ function createSplitElement(node) {
   stopCanvasEvents(textarea);
   stopCanvasEvents(templateSelect);
   stopCanvasEvents(boardSearch);
+  stopCanvasEvents(boardSearchMenu);
+  stopCanvasEvents(groupFilter);
   stopCanvasEvents(templateInput);
   stopCanvasEvents(templateSave);
   stopCanvasEvents(templateSaveMode);
@@ -2166,19 +2624,59 @@ function createSplitElement(node) {
     node.promptboardBoardSearchState = null;
     scheduleBoardSearch(node);
   });
+  boardSearch.addEventListener("focus", () => {
+    if (boardSearch.value.trim()) {
+      runBoardSearch(node);
+    }
+  });
   boardSearch.addEventListener("keydown", (event) => {
     if (handleTemplateSaveShortcut(event, node)) {
       return;
     }
     event.stopPropagation();
+    if (event.key === "Escape") {
+      event.preventDefault();
+      hideBoardSearchMenu(node);
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (node.promptboardBoardSearchTimer) {
+        clearTimeout(node.promptboardBoardSearchTimer);
+        node.promptboardBoardSearchTimer = null;
+      }
+      if (node.promptboardBoardSearchState?.query !== boardSearch.value.trim()) {
+        runBoardSearch(node);
+      }
+      const state = node.promptboardBoardSearchState;
+      if (state?.matches?.length) {
+        const direction = event.key === "ArrowDown" ? 1 : -1;
+        setBoardSearchMenuIndex(node, state.index + direction);
+      }
+      return;
+    }
     if (event.key === "Enter") {
       event.preventDefault();
       if (node.promptboardBoardSearchTimer) {
         clearTimeout(node.promptboardBoardSearchTimer);
         node.promptboardBoardSearchTimer = null;
       }
-      runBoardSearch(node, event.shiftKey ? -1 : 1);
+      if (node.promptboardBoardSearchState?.query !== boardSearch.value.trim()) {
+        runBoardSearch(node);
+      }
+      const state = node.promptboardBoardSearchState;
+      if (boardSearchMenu.parentElement && state?.matches?.length) {
+        if (event.shiftKey) {
+          state.index = (state.index - 1 + state.matches.length) % state.matches.length;
+        }
+        navigateToBoardSearchMatch(node, state.index);
+      } else {
+        runBoardSearch(node, event.shiftKey ? -1 : 1);
+      }
     }
+  });
+  boardSearch.addEventListener("blur", () => {
+    window.setTimeout(() => hideBoardSearchMenu(node), 120);
   });
   templateInput.addEventListener("keydown", (event) => {
     if (handleTemplateSaveShortcut(event, node)) {
@@ -2235,7 +2733,7 @@ function createSplitElement(node) {
   boardSearchRow.append(boardSearch, boardSearchCount);
   toolbarLeft.append(toolbarLeftTop, boardSearchRow);
   toolbarRight.append(templateInput, templateSaveRow);
-  toolbar.append(toolbarLeft, toolbarRight, templateStatus);
+  toolbar.append(toolbarLeft, toolbarRight, groupFilter, templateStatus);
   right.append(toolbar, scroll);
   root.append(left, right);
 
@@ -2250,6 +2748,9 @@ function createSplitElement(node) {
   node.promptboardTemplateSelect = templateSelect;
   node.promptboardBoardSearchInput = boardSearch;
   node.promptboardBoardSearchCount = boardSearchCount;
+  node.promptboardBoardSearchRow = boardSearchRow;
+  node.promptboardBoardSearchMenu = boardSearchMenu;
+  node.promptboardGroupFilter = groupFilter;
   node.promptboardTemplateInput = templateInput;
   node.promptboardTemplateSaveButton = templateSave;
   node.promptboardTemplateSaveModeSelect = templateSaveMode;
@@ -2420,9 +2921,18 @@ app.registerExtension({
       if (isSplitNode(this)) {
         clampSize(this);
         syncLayoutSize(this);
+        if (this.promptboardBoardSearchMenu?.parentElement) {
+          showBoardSearchMenu(this);
+        }
         app.canvas?.setDirty(true, true);
       }
       return result;
+    };
+
+    const onRemoved = nodeType.prototype.onRemoved;
+    nodeType.prototype.onRemoved = function () {
+      hideBoardSearchMenu(this);
+      return onRemoved?.apply(this, arguments);
     };
   },
 });
