@@ -11,6 +11,7 @@ const CHECKPOINT_WIDGETS = {
   "Efficient Loader": [""],
   "Eff. Loader SDXL": [""],
 };
+const GALLERY_IMAGE_WIDTH = 768;
 
 function ensureStyles() {
   if (document.getElementById("promptboard-model-info-style")) {
@@ -187,6 +188,10 @@ function ensureStyles() {
       font-size: 13px;
       padding: 24px;
       text-align: center;
+    }
+
+    .promptboard-lora-info-empty-preview.is-loading {
+      color: rgba(0, 0, 0, 0.7);
     }
 
     .promptboard-lora-info-actions {
@@ -784,6 +789,14 @@ function imagePromptInfo(image) {
   };
 }
 
+function galleryImageUrl(url) {
+  if (!url || !url.includes("image.civitai.com/")) {
+    return url || "";
+  }
+
+  return url.replace(/\/original=true\//, `/width=${GALLERY_IMAGE_WIDTH}/`);
+}
+
 class RawMetadataDialog extends ComfyDialog {
   constructor() {
     super();
@@ -1237,7 +1250,7 @@ class LoraInfoDialog extends ModelInfoDialog {
     if (image?.promptboardRepresentativePreview) {
       return api.apiURL(`/promptboard/model-info/local-preview/${encodePath(this.type, this.modelName)}`);
     }
-    return image?.url || "";
+    return galleryImageUrl(image?.url || "");
   }
 
   addInfoEntry(name, value) {
@@ -1388,14 +1401,31 @@ class LoraInfoDialog extends ModelInfoDialog {
     };
     const updatePreview = () => {
       currentImage = images[this.previewIndex];
+      this.previewImage.removeAttribute("src");
+      this.previewImage.style.display = "none";
+      this.previewEmpty.textContent = "Loading...";
+      this.previewEmpty.classList.add("is-loading");
+      this.previewEmpty.style.display = "";
       this.previewImage.src = this.previewUrl(currentImage);
-      this.previewImage.style.display = "";
       this.previewImage.title = `${this.previewIndex + 1}/${images.length}`;
-      this.previewEmpty.style.display = "none";
       updatePromptOverlay();
       if (this.previewCounter) {
         this.previewCounter.textContent = `${this.previewIndex + 1}/${images.length}`;
       }
+    };
+
+    this.previewImage.onload = () => {
+      this.previewImage.style.display = "";
+      this.previewEmpty.textContent = "No preview image";
+      this.previewEmpty.classList.remove("is-loading");
+      this.previewEmpty.style.display = "none";
+    };
+
+    this.previewImage.onerror = () => {
+      this.previewImage.style.display = "none";
+      this.previewEmpty.textContent = "Failed to load preview";
+      this.previewEmpty.classList.remove("is-loading");
+      this.previewEmpty.style.display = "";
     };
 
     updatePreview();
