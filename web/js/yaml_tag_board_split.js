@@ -23,6 +23,9 @@ const NODE_BOTTOM_PADDING = 20;
 const SCROLL_BOTTOM_PADDING = 8;
 const CODEMIRROR_MODULE = "../vendor/codemirror/promptboard-codemirror.bundle.js";
 const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", import.meta.url).href;
+const MASONRY_SCRIPT_URL = new URL("../vendor/masonry/masonry.pkgd.min.js", import.meta.url).href;
+const MASONRY_MIN_COLUMN_WIDTH = 170;
+const MASONRY_GUTTER = 8;
 const EDITOR_STORAGE_PREFIX = "promptboard:editor:v1";
 const TEMPLATE_STORAGE_PREFIX = "promptboard:template:v1";
 const SEARCH_DEBOUNCE_MS = 150;
@@ -48,6 +51,7 @@ const PLACEHOLDER_UI_GROUPS = {
 };
 
 let codeMirrorModulePromise = null;
+let masonryLibraryPromise = null;
 
 function isSplitNode(node) {
   return node?.comfyClass === NODE_NAME;
@@ -73,6 +77,126 @@ function loadCodeMirrorModule() {
     codeMirrorModulePromise = import(CODEMIRROR_MODULE);
   }
   return codeMirrorModulePromise;
+}
+
+function loadMasonryLibrary() {
+  if (globalThis.Masonry) {
+    return Promise.resolve(globalThis.Masonry);
+  }
+  if (masonryLibraryPromise) {
+    return masonryLibraryPromise;
+  }
+
+  masonryLibraryPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = MASONRY_SCRIPT_URL;
+    script.async = true;
+    script.addEventListener("load", () => {
+      if (globalThis.Masonry) {
+        resolve(globalThis.Masonry);
+        return;
+      }
+      reject(new Error("Masonry did not register a global constructor."));
+    }, { once: true });
+    script.addEventListener("error", () => {
+      reject(new Error(`Failed to load Masonry from ${MASONRY_SCRIPT_URL}`));
+    }, { once: true });
+    document.head.appendChild(script);
+  });
+
+  return masonryLibraryPromise;
+}
+
+function masonryCardWidth(container, cardCount) {
+  const containerWidth = Math.floor(container.clientWidth);
+  if (containerWidth <= 0 || cardCount <= 0) {
+    return 0;
+  }
+
+  const columns = Math.max(
+    1,
+    Math.min(cardCount, Math.floor((containerWidth + MASONRY_GUTTER) /
+      (MASONRY_MIN_COLUMN_WIDTH + MASONRY_GUTTER))),
+  );
+  return Math.floor((containerWidth - MASONRY_GUTTER * (columns - 1)) / columns);
+}
+
+function destroyBoardMasonry(node) {
+  node.promptboardMasonryRequest = Number(node.promptboardMasonryRequest ?? 0) + 1;
+  if (node.promptboardMasonryFrame != null) {
+    cancelAnimationFrame(node.promptboardMasonryFrame);
+    node.promptboardMasonryFrame = null;
+  }
+  node.promptboardMasonry?.destroy?.();
+  node.promptboardMasonry = null;
+  node.promptboardMasonryContainer = null;
+}
+
+function layoutBoardMasonry(node, Masonry, container, request) {
+  if (
+    node.promptboardMasonryRequest !== request ||
+    node.promptboardMasonryContainer !== container ||
+    !container.isConnected
+  ) {
+    return;
+  }
+
+  const cards = Array.from(container.querySelectorAll(":scope > .promptboard-card"));
+  const cardWidth = masonryCardWidth(container, cards.length);
+  if (!cardWidth) {
+    return;
+  }
+
+  for (const card of cards) {
+    card.style.width = `${cardWidth}px`;
+  }
+  container.classList.add("is-masonry");
+
+  if (node.promptboardMasonry?.element === container) {
+    node.promptboardMasonry.option({ columnWidth: cardWidth, gutter: MASONRY_GUTTER });
+    node.promptboardMasonry.layout();
+    return;
+  }
+
+  node.promptboardMasonry?.destroy?.();
+  node.promptboardMasonry = new Masonry(container, {
+    itemSelector: ".promptboard-card",
+    columnWidth: cardWidth,
+    gutter: MASONRY_GUTTER,
+    horizontalOrder: true,
+    transitionDuration: 0,
+    resize: false,
+  });
+}
+
+function scheduleBoardMasonry(node) {
+  const container = node.promptboardMasonryContainer;
+  if (!container || typeof requestAnimationFrame !== "function") {
+    return;
+  }
+
+  const request = Number(node.promptboardMasonryRequest ?? 0) + 1;
+  node.promptboardMasonryRequest = request;
+  if (node.promptboardMasonryFrame != null) {
+    cancelAnimationFrame(node.promptboardMasonryFrame);
+  }
+
+  loadMasonryLibrary()
+    .then((Masonry) => {
+      if (node.promptboardMasonryRequest !== request) {
+        return;
+      }
+      node.promptboardMasonryFrame = requestAnimationFrame(() => {
+        node.promptboardMasonryFrame = null;
+        layoutBoardMasonry(node, Masonry, container, request);
+      });
+    })
+    .catch((error) => {
+      if (!node.promptboardMasonryLoadError) {
+        node.promptboardMasonryLoadError = true;
+        console.warn("Prompt Board is using its fallback card layout.", error);
+      }
+    });
 }
 
 function ensureCodeMirrorThemeCss() {
@@ -1683,6 +1807,11 @@ function ensureStyles() {
       width: 100%;
     }
 
+    .promptboard-columns.is-masonry {
+      column-gap: normal;
+      column-width: auto;
+    }
+
     .promptboard-card {
       box-sizing: border-box;
       display: inline-block;
@@ -1998,6 +2127,7 @@ function renderCards(node) {
     return;
   }
   renderGroupFilter(node);
+  destroyBoardMasonry(node);
   scroll.replaceChildren();
 
   if (!Object.keys(config).length) {
@@ -2076,6 +2206,8 @@ function renderCards(node) {
   }
 
   scroll.append(columns);
+  node.promptboardMasonryContainer = columns;
+  scheduleBoardMasonry(node);
 }
 
 function setStatus(node, text) {
@@ -2795,6 +2927,7 @@ function syncLayoutSize(node) {
   element.style.width = `${Math.max(320, Number(node.size?.[0] ?? MIN_NODE_WIDTH) - PANEL_GUTTER)}px`;
   element.style.height = `${layoutHeight(node)}px`;
   node.promptboardCodeMirror?.requestMeasure?.();
+  scheduleBoardMasonry(node);
 }
 
 function scheduleLayoutSizeSync(node) {
@@ -2932,6 +3065,7 @@ app.registerExtension({
     const onRemoved = nodeType.prototype.onRemoved;
     nodeType.prototype.onRemoved = function () {
       hideBoardSearchMenu(this);
+      destroyBoardMasonry(this);
       return onRemoved?.apply(this, arguments);
     };
   },
