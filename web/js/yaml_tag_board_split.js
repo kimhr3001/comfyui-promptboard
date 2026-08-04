@@ -98,6 +98,29 @@ function materialHighlightStyle(cm) {
   ]);
 }
 
+function promptboardActiveLine(cm) {
+  const lineDecoration = cm.Decoration.line({ class: "cm-activeLine" });
+  const activeLineField = cm.StateField.define({
+    create: (state) => activeLineDecorations(cm, lineDecoration, state),
+    update: (decorations, transaction) => {
+      if (!transaction.docChanged && !transaction.selection) {
+        return decorations;
+      }
+      return activeLineDecorations(cm, lineDecoration, transaction.state);
+    },
+    provide: (field) => cm.EditorView.decorations.from(field),
+  });
+  return activeLineField;
+}
+
+function activeLineDecorations(cm, lineDecoration, state) {
+  if (state.selection.ranges.some((range) => !range.empty)) {
+    return cm.Decoration.none;
+  }
+  const line = state.doc.lineAt(state.selection.main.head);
+  return cm.Decoration.set([lineDecoration.range(line.from)]);
+}
+
 function currentWorkflowStorageKey() {
   const location = globalThis.location;
   if (!location) {
@@ -515,7 +538,7 @@ async function createCodeMirrorEditor(node, host, textarea) {
           cm.bracketMatching(),
           cm.yaml(),
           cm.syntaxHighlighting(materialSyntax),
-          cm.highlightActiveLine(),
+          promptboardActiveLine(cm),
           searchLineField,
           cm.EditorView.updateListener.of((update) => {
             if (!update.docChanged || node.promptboardIgnoreCodeMirrorUpdate) {

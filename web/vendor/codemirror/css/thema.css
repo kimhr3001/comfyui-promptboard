@@ -13,10 +13,10 @@
   --pb-cm-focus-outline: rgba(128, 203, 196, 0.72);
   --pb-cm-caret: #ffcc00;
   --pb-cm-gutter-foreground: #546e7a;
-  --pb-cm-gutter-border: rgba(84, 110, 122, 0.72);
-  --pb-cm-active-line: rgba(0, 0, 0, 0.24);
+  --pb-cm-gutter-border: transparent;
+  --pb-cm-active-line: rgba(0, 0, 0, 0.5);
   --pb-cm-active-line-gutter-foreground: #b0bec5;
-  --pb-cm-selection: rgba(128, 203, 196, 0.28);
+  --pb-cm-selection: rgba(128, 203, 196, 0.2);
   --pb-cm-bracket-background: rgba(128, 203, 196, 0.18);
   --pb-cm-bracket-outline: rgba(128, 203, 196, 0.54);
   --pb-cm-fold-background: rgba(84, 110, 122, 0.48);
@@ -87,6 +87,14 @@
 
 .promptboard-codemirror .cm-selectionBackground,
 .promptboard-codemirror .cm-focused .cm-selectionBackground {
+  background: var(--pb-cm-selection);
+}
+
+.promptboard-codemirror .cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground {
+  background: var(--pb-cm-selection);
+}
+
+.promptboard-codemirror .cm-content ::selection {
   background: var(--pb-cm-selection);
 }
 
