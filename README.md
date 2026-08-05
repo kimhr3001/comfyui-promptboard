@@ -75,7 +75,13 @@ Disabled rows, empty names, `None`, and rows where both strengths are `0` are sk
 
 ### Prompt Board
 
-The board screenshot below uses the included `default.yaml` starter tag file.
+The workflow screenshot below uses the included `default.yaml` starter tag file. It shows the current board structure and a complete text flow:
+
+- `Text Box (source_text)` provides source text with placeholders.
+- `Prompt Board` selects YAML-managed tags and sends `preview_text` to `Preview as Text - Board Preview`.
+- `Prompt Board Replace` receives `source_text` and `selection_json`, then sends its replaced `text` output to `Preview as Text - Replace Result`.
+
+The example also demonstrates `uiGroup` filters, tag labels, descriptions, selected-count badges, and nested replacement through `replaceInsideTags`.
 
 ![Prompt Board using default.yaml](docs/images/promptboard-default.png)
 
@@ -93,44 +99,111 @@ YAML files live in:
 ComfyUI/custom_nodes/comfyui-promptboard/tags/
 ```
 
-`default.yaml` is included as a starter file.
+`default.yaml` is included as a starter file and demonstrates the current YAML structure.
 
 Example:
 
 ```yaml
 STYLE:
   placeholder: <STYLE>
+  uiGroup: Look
   tags:
-  - cinematic
-  - editorial
-  - watercolor
+  - text: cinematic
+    label: Cinematic
+    description: Film-like lighting, composition, and mood.
+  - text: editorial
+    label: Editorial
+    description: Polished magazine-style visual direction.
+  - text: watercolor
+    label: Watercolor
+    description: Soft painted texture with translucent color.
 
 COLOR:
   placeholder: <COLOR>
+  uiGroup: Look
   tags:
-  - warm
-  - cool
-  - pastel
+  - text: warm
+    label: Warm
+    description: Reds, oranges, yellows, or warm color balance.
+  - text: cool
+    label: Cool
+    description: Blues, cyans, violets, or cool color balance.
+  - text: pastel
+    label: Pastel
+    description: Soft, low-saturation color palette.
 ```
+
+Each top-level key is a board category.
+
+- `placeholder`: the placeholder replaced by `Prompt Board Replace`
+- `uiGroup`: the board filter group shown above the cards
+- `tags`: selectable prompt fragments for the category
+
+Tags can be written as plain strings for quick editing:
+
+```yaml
+DETAIL:
+  placeholder: <DETAIL>
+  uiGroup: Detail
+  tags:
+  - highly detailed
+  - crisp focus
+```
+
+Use object tags when the UI should show a friendly label or description:
+
+```yaml
+DETAIL:
+  placeholder: <DETAIL>
+  uiGroup: Detail
+  tags:
+  - text: highly detailed
+    label: Highly Detailed
+    description: Extra visible detail in surfaces and objects.
+  - text: crisp focus
+    label: Crisp Focus
+    description: Sharp subject edges and clear focal detail.
+```
+
+Object tag fields:
+
+- `text`: the actual prompt text used for replacement
+- `label`: optional UI label shown on the board
+- `description`: optional tooltip/search description
+- `default`: optional boolean; selected automatically when the category has no saved selection
+
+`value` is also accepted as an alias for `text`, but new YAML files should use `text`.
 
 ### Nested Replacement
 
 Use `replaceInsideTags: true` when a category is meant to replace placeholders inside another selected tag.
 
 ```yaml
-CLOTHES:
-  placeholder: <CLOTHES>
+OBJECT:
+  placeholder: <OBJECT>
+  uiGroup: Content
   tags:
-  - <COLOR> jacket
-  - <COLOR> shirt
+  - text: <MATERIAL> sculpture
+    label: Material Sculpture
+    description: A sculpture whose material is filled by the MATERIAL category.
+  - text: <MATERIAL> chair
+    label: Material Chair
+    description: A chair whose material is filled by the MATERIAL category.
 
-COLOR:
-  placeholder: <COLOR>
+MATERIAL:
+  placeholder: <MATERIAL>
+  uiGroup: Content
   replaceInsideTags: true
   tags:
-  - black
-  - white
+  - text: glass
+    label: Glass
+    description: Transparent or reflective glass material.
+  - text: marble
+    label: Marble
+    description: Polished stone with natural veining.
 ```
+
+If `OBJECT` selects `<MATERIAL> sculpture` and `MATERIAL` selects `glass`, `Prompt Board Replace` resolves the selected object as `glass sculpture`.
 
 ## Installation
 

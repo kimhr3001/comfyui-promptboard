@@ -1,53 +1,148 @@
 SUBJECT:
   placeholder: <SUBJECT>
+  uiGroup: Content
   tags:
-  - portrait
-  - landscape
-  - city street
-  - forest path
-  - product photo
+  - text: portrait
+    label: Portrait
+    description: A single-person portrait or character-focused image.
+  - text: landscape
+    label: Landscape
+    description: A wide outdoor scene or environmental view.
+  - text: city street
+    label: City Street
+    description: An urban street setting with buildings or storefronts.
+  - text: forest path
+    label: Forest Path
+    description: A natural trail surrounded by trees or foliage.
+  - text: product photo
+    label: Product Photo
+    description: A clean product-centered composition.
+
+OBJECT:
+  placeholder: <OBJECT>
+  uiGroup: Content
+  tags:
+  - text: <MATERIAL> sculpture
+    label: Material Sculpture
+    description: A sculpture whose material is filled by the MATERIAL category.
+  - text: <MATERIAL> chair
+    label: Material Chair
+    description: A chair whose material is filled by the MATERIAL category.
+  - text: <MATERIAL> vase
+    label: Material Vase
+    description: A vase whose material is filled by the MATERIAL category.
+
+MATERIAL:
+  placeholder: <MATERIAL>
+  uiGroup: Content
+  replaceInsideTags: true
+  tags:
+  - text: glass
+    label: Glass
+    description: Transparent or reflective glass material.
+  - text: marble
+    label: Marble
+    description: Polished stone with natural veining.
+  - text: brushed metal
+    label: Brushed Metal
+    description: Satin-finished metal with subtle linear texture.
 
 STYLE:
   placeholder: <STYLE>
+  uiGroup: Look
   tags:
-  - cinematic
-  - editorial
-  - watercolor
-  - pixel art
-  - isometric
+  - text: cinematic
+    label: Cinematic
+    description: Film-like lighting, composition, and mood.
+  - text: editorial
+    label: Editorial
+    description: Polished magazine-style visual direction.
+  - text: watercolor
+    label: Watercolor
+    description: Soft painted texture with translucent color.
+  - text: pixel art
+    label: Pixel Art
+    description: Low-resolution pixel-based illustration style.
+  - text: isometric
+    label: Isometric
+    description: Angled orthographic view with a structured layout.
 
 LIGHTING:
   placeholder: <LIGHTING>
+  uiGroup: Look
   tags:
-  - soft light
-  - golden hour
-  - studio lighting
-  - neon glow
-  - overcast
+  - text: soft light
+    label: Soft Light
+    description: Gentle, low-contrast lighting.
+  - text: golden hour
+    label: Golden Hour
+    description: Warm sunlight near sunrise or sunset.
+  - text: studio lighting
+    label: Studio Lighting
+    description: Controlled lighting with a professional setup.
+  - text: neon glow
+    label: Neon Glow
+    description: Saturated colored light from neon signage or accents.
+  - text: overcast
+    label: Overcast
+    description: Diffused cloudy daylight.
 
 CAMERA:
   placeholder: <CAMERA>
+  uiGroup: Camera
   tags:
-  - close-up
-  - wide shot
-  - low angle
-  - top-down view
-  - shallow depth of field
+  - text: close-up
+    label: Close-up
+    description: Tight framing around the subject.
+  - text: wide shot
+    label: Wide Shot
+    description: Broad framing that shows the surrounding scene.
+  - text: low angle
+    label: Low Angle
+    description: Camera positioned below the subject.
+  - text: top-down view
+    label: Top-down
+    description: Camera looking down from above.
+  - text: shallow depth of field
+    label: Shallow Depth
+    description: Focused subject with a blurred background.
 
 COLOR:
   placeholder: <COLOR>
+  uiGroup: Look
   tags:
-  - warm
-  - cool
-  - pastel
-  - monochrome
-  - high contrast
+  - text: warm
+    label: Warm
+    description: Reds, oranges, yellows, or warm color balance.
+  - text: cool
+    label: Cool
+    description: Blues, cyans, violets, or cool color balance.
+  - text: pastel
+    label: Pastel
+    description: Soft, low-saturation color palette.
+  - text: monochrome
+    label: Monochrome
+    description: Single-color or grayscale palette.
+  - text: high contrast
+    label: High Contrast
+    description: Strong tonal separation between light and dark.
 
 DETAIL:
   placeholder: <DETAIL>
+  uiGroup: Detail
   tags:
-  - highly detailed
-  - clean composition
-  - subtle texture
-  - crisp focus
-  - atmospheric
+  - text: highly detailed
+    label: Highly Detailed
+    description: Extra visible detail in surfaces and objects.
+  - text: clean composition
+    label: Clean Composition
+    description: Minimal clutter with clear visual hierarchy.
+  - text: subtle texture
+    label: Subtle Texture
+    description: Light surface detail without visual noise.
+  - text: crisp focus
+    label: Crisp Focus
+    description: Sharp subject edges and clear focal detail.
+  - text: atmospheric
+    label: Atmospheric
+    description: Mood-driven haze, depth, or environmental feeling.
