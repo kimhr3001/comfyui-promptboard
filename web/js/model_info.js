@@ -86,11 +86,15 @@ function ensureStyles() {
 
     .promptboard-lora-info-content {
       box-sizing: border-box;
-      color: #242424;
-      width: min(560px, 82vw);
-      max-height: calc(92vh - 54px);
-      overflow: auto;
+      color: #edf0f3;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      max-height: min(92vh, 760px);
+      overflow-x: hidden;
+      overflow-y: auto;
       padding: 0;
+      background: #202327;
     }
 
     .promptboard-lora-modal {
@@ -100,7 +104,7 @@ function ensureStyles() {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 8px;
+      padding: 28px 16px;
       background: transparent;
       box-sizing: border-box;
     }
@@ -110,36 +114,99 @@ function ensureStyles() {
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      max-width: calc(100vw - 16px);
-      max-height: calc(100vh - 16px);
-      background: #f4f4f2;
-      color: #242424;
-      box-shadow: none;
-      border: 1px solid rgba(0, 0, 0, 0.18);
-      border-radius: 0;
-      padding: 44px 16px 10px;
+      width: min(440px, 100%);
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 56px);
+      overflow: hidden;
+      background: #202327;
+      color: #edf0f3;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 0;
     }
 
+    .promptboard-lora-info-header {
+      min-height: 62px;
+      padding: 12px 14px 11px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-sizing: border-box;
+    }
+
+    .promptboard-lora-info-title {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .promptboard-lora-info-title-main {
+      overflow: hidden;
+      color: #edf0f3;
+      font-size: 15px;
+      font-weight: 650;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .promptboard-lora-info-title-syntax {
+      margin-top: 3px;
+      overflow: hidden;
+      color: #7f8791;
+      font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .promptboard-lora-info-header-actions {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 4px;
+    }
+
+    .promptboard-lora-info-icon-button,
     .promptboard-lora-modal-close {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 4;
-      width: 28px;
-      height: 28px;
-      border: 1px solid rgba(0, 0, 0, 0.2);
-      border-radius: 0;
-      background: #ffffff;
-      color: #242424;
+      flex: 0 0 auto;
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #b3bac3;
       box-shadow: none;
       padding: 0;
       font-size: 18px;
       line-height: 1;
+      cursor: pointer;
+      font-size: 0;
+    }
+
+    .promptboard-lora-info-svg-icon {
+      width: 16px;
+      height: 16px;
+      display: block;
+      pointer-events: none;
+    }
+
+    .promptboard-lora-info-icon-button:hover,
+    .promptboard-lora-modal-close:hover,
+    .promptboard-lora-trigger-copy-all:hover,
+    .promptboard-lora-info-save-preview:hover,
+    .promptboard-lora-info-prompt-toggle:hover,
+    .promptboard-lora-info-edit-notes:hover,
+    .promptboard-lora-info-prompt-copy:hover,
+    .promptboard-lora-info-nav:hover {
+      background: #343a42;
+      color: #edf0f3;
     }
 
     .promptboard-lora-info-content h2 {
-      color: #242424;
+      color: #edf0f3;
       font-size: 17px;
       margin: 0 0 12px;
       font-weight: 700;
@@ -148,7 +215,7 @@ function ensureStyles() {
     .promptboard-lora-info-layout {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 10px;
+      gap: 0;
       align-items: start;
       min-width: 0;
     }
@@ -160,38 +227,49 @@ function ensureStyles() {
     .promptboard-lora-info-preview {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 0;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
     }
 
     .promptboard-lora-info-preview-stage {
       position: relative;
-      min-height: 220px;
-      max-height: min(360px, 40vh);
+      width: 100%;
+      max-width: 100%;
+      aspect-ratio: 16 / 7;
+      min-height: 0;
+      min-width: 0;
+      max-height: none;
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #e8e8e5;
-      border: 1px solid rgba(0, 0, 0, 0.16);
+      background: #17191c;
+      border-block: 1px solid #373c43;
     }
 
     .promptboard-lora-info-preview img {
+      position: absolute;
+      inset: 0;
       display: block;
       width: 100%;
-      max-height: min(360px, 40vh);
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
       object-fit: contain;
-      background: #e8e8e5;
+      background: #17191c;
     }
 
     .promptboard-lora-info-empty-preview {
-      color: rgba(0, 0, 0, 0.55);
+      color: #7f8791;
       font-size: 13px;
       padding: 24px;
       text-align: center;
     }
 
     .promptboard-lora-info-empty-preview.is-loading {
-      color: rgba(0, 0, 0, 0.7);
+      color: #b3bac3;
     }
 
     .promptboard-lora-info-actions {
@@ -203,47 +281,51 @@ function ensureStyles() {
     .promptboard-lora-info-actions button,
     .promptboard-lora-info-section button,
     .promptboard-lora-info-save-preview,
+    .promptboard-lora-info-prompt-toggle,
     .promptboard-lora-info-nav {
       min-height: 28px;
-      border: 1px solid rgba(0, 0, 0, 0.18);
-      background: #ffffff;
-      color: #242424;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #202327;
+      color: #edf0f3;
       box-shadow: none;
-      border-radius: 0;
+      border-radius: 7px;
     }
 
     .promptboard-lora-info-summary {
       display: grid;
-      gap: 10px;
+      gap: 0;
       min-width: 0;
     }
 
     .promptboard-lora-info-meta {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
+      min-height: 46px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #373c43;
+      box-sizing: border-box;
     }
 
     .promptboard-lora-info-row {
       display: flex;
-      flex-direction: column;
-      gap: 3px;
+      align-items: center;
+      gap: 7px;
       line-height: 1.35;
       min-width: 0;
-      padding: 8px;
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      background: #ffffff;
+      color: #b3bac3;
+      font-size: 12px;
     }
 
     .promptboard-lora-info-row label {
-      color: rgba(0, 0, 0, 0.52);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
+      color: #b3bac3;
+      font-weight: 500;
     }
 
     .promptboard-lora-info-row span {
       min-width: 0;
+      color: #edf0f3;
       overflow-wrap: anywhere;
     }
 
@@ -253,15 +335,16 @@ function ensureStyles() {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: #245b9f;
+      color: #8aa4ff;
       text-decoration: none;
     }
 
     .promptboard-lora-info-section {
       min-width: 0;
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      background: #ffffff;
-      padding: 10px;
+      border: 0;
+      border-bottom: 1px solid #373c43;
+      background: #202327;
+      padding: 14px 16px 15px;
       box-sizing: border-box;
     }
 
@@ -271,7 +354,7 @@ function ensureStyles() {
       align-items: center;
       gap: 8px;
       margin-bottom: 8px;
-      color: #242424;
+      color: #edf0f3;
       font-size: 13px;
       font-weight: 700;
     }
@@ -289,7 +372,7 @@ function ensureStyles() {
       display: inline-block;
       width: 12px;
       margin-right: 4px;
-      color: rgba(0, 0, 0, 0.58);
+      color: #7f8791;
       font-size: 11px;
       line-height: 1;
     }
@@ -318,17 +401,59 @@ function ensureStyles() {
     }
 
     .promptboard-lora-trigger-word {
-      border: 1px solid rgba(0, 0, 0, 0.14);
-      border-radius: 4px;
-      background: #f1f1ef;
-      color: #242424;
-      padding: 4px 7px;
+      min-height: 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 7px;
+      background: #2a2e34;
+      color: #edf0f3;
+      padding: 5px 8px;
       font-size: 12px;
+      line-height: 1.25;
       overflow-wrap: anywhere;
+      cursor: pointer;
+    }
+
+    .promptboard-lora-trigger-word:hover {
+      background: #343a42;
+    }
+
+    .promptboard-lora-trigger-copy-all,
+    .promptboard-lora-info-prompt-copy {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 0;
+    }
+
+    .promptboard-lora-trigger-copy-all {
+      flex: 0 0 auto;
+      width: 28px;
+      min-height: 28px;
+    }
+
+    .promptboard-lora-trigger-copy-all .promptboard-lora-info-svg-icon,
+    .promptboard-lora-info-prompt-copy .promptboard-lora-info-svg-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    .promptboard-lora-trigger-word.is-copied,
+    .promptboard-lora-trigger-copy-all.is-copied {
+      border-color: rgba(158, 211, 178, 0.45);
+      background: rgba(158, 211, 178, 0.18);
+      color: #9ed3b2;
+    }
+
+    .promptboard-lora-trigger-word.is-error,
+    .promptboard-lora-trigger-copy-all.is-error {
+      border-color: rgba(235, 112, 112, 0.5);
+      background: rgba(235, 112, 112, 0.14);
+      color: #f0a2a2;
     }
 
     .promptboard-lora-info-muted {
-      color: rgba(0, 0, 0, 0.55);
+      color: #7f8791;
       font-size: 13px;
       line-height: 1.4;
     }
@@ -338,7 +463,8 @@ function ensureStyles() {
       overflow: auto;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
-      color: rgba(0, 0, 0, 0.78);
+      color: #b3bac3;
+      font-size: 12px;
       line-height: 1.4;
     }
 
@@ -348,7 +474,8 @@ function ensureStyles() {
       max-height: 180px;
       overflow: auto;
       overflow-wrap: anywhere;
-      color: rgba(0, 0, 0, 0.78);
+      color: #b3bac3;
+      font-size: 12px;
       line-height: 1.45;
       box-sizing: border-box;
     }
@@ -380,21 +507,21 @@ function ensureStyles() {
     .promptboard-lora-info-description-body h3,
     .promptboard-lora-info-description-body h4 {
       margin: 10px 0 6px;
-      color: #242424;
-      font-size: 14px;
+      color: #edf0f3;
+      font-size: 13px;
       line-height: 1.3;
     }
 
     .promptboard-lora-info-description-body blockquote {
       margin: 0 0 8px;
       padding: 6px 8px;
-      border-left: 3px solid rgba(0, 0, 0, 0.18);
-      background: rgba(0, 0, 0, 0.04);
+      border-left: 3px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .promptboard-lora-info-description-body code {
       padding: 1px 4px;
-      background: rgba(0, 0, 0, 0.07);
+      background: rgba(255, 255, 255, 0.08);
       font-family: monospace;
     }
 
@@ -403,7 +530,7 @@ function ensureStyles() {
       margin: 0 0 8px;
       padding: 8px;
       overflow: auto;
-      background: rgba(0, 0, 0, 0.07);
+      background: rgba(255, 255, 255, 0.08);
       box-sizing: border-box;
     }
 
@@ -413,7 +540,7 @@ function ensureStyles() {
     }
 
     .promptboard-lora-info-description-body a {
-      color: #245b9f;
+      color: #8aa4ff;
       text-decoration: underline;
       overflow-wrap: anywhere;
     }
@@ -423,9 +550,10 @@ function ensureStyles() {
       min-height: 92px;
       box-sizing: border-box;
       resize: vertical;
-      background: #ffffff;
-      color: #242424;
-      border: 1px solid rgba(0, 0, 0, 0.18);
+      background: #17191c;
+      color: #edf0f3;
+      border: 1px solid #373c43;
+      font-size: 12px;
     }
 
     .promptboard-lora-info-nav {
@@ -434,36 +562,49 @@ function ensureStyles() {
       transform: translateY(-50%);
       width: 30px;
       min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       padding: 0;
       font-size: 18px;
-      opacity: 0.82;
+      opacity: 0.88;
       z-index: 3;
+      background: rgba(14, 16, 18, 0.58);
+      border: 0;
     }
 
     .promptboard-lora-info-nav.prev {
-      left: 8px;
+      left: 0;
+      border-radius: 0 7px 7px 0;
     }
 
     .promptboard-lora-info-nav.next {
-      right: 8px;
+      right: 0;
+      border-radius: 7px 0 0 7px;
     }
 
     .promptboard-lora-info-counter {
       position: absolute;
-      right: 8px;
-      bottom: 8px;
+      left: 8px;
+      top: 8px;
       padding: 2px 6px;
-      background: rgba(255, 255, 255, 0.82);
-      color: rgba(0, 0, 0, 0.74);
+      border-radius: 5px;
+      background: rgba(13, 15, 17, 0.64);
+      color: #b3bac3;
       font-size: 12px;
       z-index: 3;
     }
 
     .promptboard-lora-info-save-preview {
+      width: 28px;
       min-height: 24px;
-      padding: 2px 8px;
-      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 0;
       opacity: 0.9;
+      background: rgba(14, 16, 18, 0.72);
     }
 
     .promptboard-lora-info-save-preview.is-busy {
@@ -483,6 +624,24 @@ function ensureStyles() {
       color: #7a1f1f;
     }
 
+    .promptboard-lora-info-prompt-toggle {
+      width: 28px;
+      min-height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 0;
+      opacity: 0.9;
+      background: rgba(14, 16, 18, 0.72);
+    }
+
+    .promptboard-lora-info-prompt-toggle.is-active {
+      border-color: rgba(138, 164, 255, 0.48);
+      color: #d7deff;
+      background: rgba(138, 164, 255, 0.18);
+    }
+
     .promptboard-lora-info-preview-actions {
       position: absolute;
       top: 8px;
@@ -499,8 +658,9 @@ function ensureStyles() {
       bottom: 0;
       display: grid;
       gap: 6px;
-      max-height: 42%;
-      overflow: hidden;
+      max-height: calc(100% - 42px);
+      overflow-x: hidden;
+      overflow-y: auto;
       padding: 10px;
       background: rgba(0, 0, 0, 0.68);
       color: #ffffff;
@@ -510,9 +670,8 @@ function ensureStyles() {
 
     .promptboard-lora-info-prompt-row {
       display: grid;
-      grid-template-columns: 64px minmax(0, 1fr);
+      grid-template-columns: 64px minmax(0, 1fr) 26px;
       gap: 8px;
-      max-height: 72px;
       min-height: 0;
       font-size: 12px;
       line-height: 1.35;
@@ -526,11 +685,49 @@ function ensureStyles() {
 
     .promptboard-lora-info-prompt-row span {
       display: block;
-      max-height: 72px;
       min-height: 0;
-      overflow-x: hidden;
-      overflow-y: auto;
       overflow-wrap: anywhere;
+    }
+
+    .promptboard-lora-info-edit-notes {
+      width: 28px;
+      min-height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 0;
+    }
+
+    .promptboard-lora-info-prompt-copy {
+      align-self: start;
+      --pb-copy-icon-width: 9px;
+      --pb-copy-icon-height: 11px;
+      --pb-copy-icon-back-left: 6px;
+      --pb-copy-icon-back-top: 8px;
+      --pb-copy-icon-front-left: 9px;
+      --pb-copy-icon-front-top: 5px;
+      width: 24px;
+      min-height: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 6px;
+      background: rgba(14, 16, 18, 0.58);
+      color: rgba(255, 255, 255, 0.76);
+      padding: 0;
+      font-size: 0;
+      line-height: 1;
+    }
+
+    .promptboard-lora-info-prompt-copy.is-copied {
+      border-color: rgba(158, 211, 178, 0.54);
+      color: #9ed3b2;
+      background: rgba(158, 211, 178, 0.18);
+    }
+
+    .promptboard-lora-info-prompt-copy.is-error {
+      border-color: rgba(235, 112, 112, 0.54);
+      color: #f0a2a2;
+      background: rgba(235, 112, 112, 0.14);
     }
 
     .promptboard-lora-info-details {
@@ -540,14 +737,14 @@ function ensureStyles() {
     }
 
     .promptboard-lora-info-details details {
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      background: #ffffff;
+      border: 1px solid #373c43;
+      background: #202327;
       padding: 8px;
     }
 
     .promptboard-lora-info-details summary {
       cursor: pointer;
-      color: #242424;
+      color: #edf0f3;
       font-weight: 700;
     }
 
@@ -560,39 +757,33 @@ function ensureStyles() {
       margin: 8px 0 0;
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 480px) {
       .promptboard-lora-modal {
-        padding: 4px;
-        align-items: flex-start;
+        display: block;
+        padding: 0;
+        background: #202327;
       }
 
       .promptboard-lora-modal-surface {
         width: 100%;
-        max-width: calc(100vw - 8px);
-        max-height: calc(100vh - 8px);
-        padding: 40px 8px 6px;
+        max-width: 100%;
+        min-height: 100vh;
+        max-height: 100vh;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
       }
 
       .promptboard-lora-info-content {
         width: 100%;
         max-width: 100%;
-        max-height: calc(100vh - 58px);
+        max-height: 100vh;
         min-width: 0;
         padding-right: 0;
       }
 
-      .promptboard-lora-modal-close {
-        top: 6px;
-        right: 6px;
-      }
-
-      .promptboard-lora-info-preview img {
-        max-height: 32vh;
-      }
-
       .promptboard-lora-info-preview-stage {
-        min-height: 160px;
-        max-height: 32vh;
+        aspect-ratio: 16 / 8;
       }
 
       .promptboard-lora-info-prompt-overlay {
@@ -601,7 +792,7 @@ function ensureStyles() {
       }
 
       .promptboard-lora-info-prompt-row {
-        grid-template-columns: 58px minmax(0, 1fr);
+        grid-template-columns: 58px minmax(0, 1fr) 26px;
       }
 
       .promptboard-lora-info-meta {
@@ -795,6 +986,99 @@ function galleryImageUrl(url) {
   }
 
   return url.replace(/\/original=true\//, `/width=${GALLERY_IMAGE_WIDTH}/`);
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) {
+    throw new Error("Clipboard unavailable");
+  }
+}
+
+function flashCopyState(element, className = "is-copied", duration = 1200) {
+  element.classList.remove("is-copied", "is-error");
+  element.classList.add(className);
+  window.setTimeout(() => {
+    element.classList.remove(className);
+  }, duration);
+}
+
+function modelSyntax(type, name) {
+  if (type !== LORA_TYPE) {
+    return "";
+  }
+
+  const baseName = titleFromPath(name).replace(/\.(safetensors|ckpt|pt|bin)$/i, "");
+  return `<lora:${baseName}:1>`;
+}
+
+function iconSvg(name) {
+  const namespace = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(namespace, "svg");
+  svg.setAttribute("class", "promptboard-lora-info-svg-icon");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "2");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.setAttribute("stroke-linejoin", "round");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+
+  const appendPath = (d) => {
+    const path = document.createElementNS(namespace, "path");
+    path.setAttribute("d", d);
+    svg.append(path);
+  };
+  const appendRect = (attributes) => {
+    const rect = document.createElementNS(namespace, "rect");
+    for (const [key, value] of Object.entries(attributes)) {
+      rect.setAttribute(key, value);
+    }
+    svg.append(rect);
+  };
+
+  if (name === "refresh-cw") {
+    appendPath("M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8");
+    appendPath("M21 3v5h-5");
+    appendPath("M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16");
+    appendPath("M8 16H3v5");
+  } else if (name === "x") {
+    appendPath("M18 6 6 18");
+    appendPath("m6 6 12 12");
+  } else if (name === "copy") {
+    appendRect({ x: "9", y: "9", width: "13", height: "13", rx: "2", ry: "2" });
+    appendPath("M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1");
+  } else if (name === "message-square") {
+    appendPath("M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z");
+  } else if (name === "save") {
+    appendPath("M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z");
+    appendPath("M17 21v-8H7v8");
+    appendPath("M7 3v5h8");
+  } else if (name === "pencil") {
+    appendPath("M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z");
+    appendPath("m15 5 4 4");
+  } else if (name === "chevron-left") {
+    appendPath("m15 18-6-6 6-6");
+  } else if (name === "chevron-right") {
+    appendPath("m9 18 6-6-6-6");
+  }
+
+  return svg;
 }
 
 class RawMetadataDialog extends ComfyDialog {
@@ -1147,6 +1431,27 @@ class LoraInfoDialog extends ModelInfoDialog {
   }
 
   createContent() {
+    const syntax = modelSyntax(this.type, this.modelName);
+    this.header = $el("header.promptboard-lora-info-header", [
+      $el("div.promptboard-lora-info-title", [
+        $el("div.promptboard-lora-info-title-main", { textContent: titleFromPath(this.name) }),
+        syntax ? $el("div.promptboard-lora-info-title-syntax", { textContent: syntax }) : null,
+      ].filter(Boolean)),
+      $el("div.promptboard-lora-info-header-actions", [
+        $el("button.promptboard-lora-info-icon-button.promptboard-lora-info-icon-refresh", {
+          type: "button",
+          title: "Refresh Civitai info",
+          "aria-label": "Refresh Civitai info",
+          onclick: () => this.reload(true),
+        }, [iconSvg("refresh-cw")]),
+        $el("button.promptboard-lora-modal-close", {
+          type: "button",
+          title: "Close",
+          "aria-label": "Close",
+          onclick: () => this.close(),
+        }, [iconSvg("x")]),
+      ]),
+    ]);
     this.previewImage = $el("img", { style: { display: "none" } });
     this.previewEmpty = $el("div.promptboard-lora-info-empty-preview", { textContent: "No preview image" });
     this.previewStage = $el("div.promptboard-lora-info-preview-stage", [this.previewEmpty, this.previewImage]);
@@ -1161,6 +1466,7 @@ class LoraInfoDialog extends ModelInfoDialog {
     this.details = $el("div.promptboard-lora-info-details");
     this.info.append(this.meta, this.descriptionSection.container, this.triggers.container, this.notesSection.container);
     this.content = $el("div.promptboard-model-info-content.promptboard-lora-info-content", [
+      this.header,
       $el("div.promptboard-lora-info-layout", [
         this.preview,
         $el("div", [this.info, this.details]),
@@ -1176,13 +1482,7 @@ class LoraInfoDialog extends ModelInfoDialog {
 
     this.createContent();
     const loading = $el("div.promptboard-lora-info-muted", { textContent: "Loading...", parent: this.info });
-    const closeButton = $el("button.promptboard-lora-modal-close", {
-      type: "button",
-      textContent: "X",
-      title: "Close",
-      onclick: () => this.close(),
-    });
-    const surface = $el("div.promptboard-lora-modal-surface", [closeButton, this.content]);
+    const surface = $el("div.promptboard-lora-modal-surface", [this.content]);
     this.customModal = $el("div.promptboard-lora-modal", {
       onclick: (event) => {
         if (event.target === this.customModal) {
@@ -1215,6 +1515,11 @@ class LoraInfoDialog extends ModelInfoDialog {
     } catch (error) {
       loading.textContent = this.errorText(error);
     }
+  }
+
+  reload(refreshCivitai = false) {
+    this.close();
+    new this.constructor(this.name, this.node).show(this.type, this.modelName, { refreshCivitai });
   }
 
   close() {
@@ -1300,9 +1605,10 @@ class LoraInfoDialog extends ModelInfoDialog {
   addNotes() {
     let textarea = null;
     const notesBody = $el("div.promptboard-lora-info-notes-body", { textContent: this.notes || "No notes" });
-    const edit = $el("button", {
+    const edit = $el("button.promptboard-lora-info-edit-notes", {
       type: "button",
-      textContent: "Edit Notes",
+      title: "Edit notes",
+      "aria-label": "Edit notes",
       onclick: async () => {
         if (textarea) {
           this.notes = textarea.value;
@@ -1317,16 +1623,20 @@ class LoraInfoDialog extends ModelInfoDialog {
           textarea.replaceWith(notesBody);
           notesBody.textContent = this.notes || "No notes";
           textarea = null;
-          edit.textContent = "Edit Notes";
+          edit.title = "Edit notes";
+          edit.setAttribute("aria-label", "Edit notes");
+          edit.replaceChildren(iconSvg("pencil"));
           return;
         }
 
-        edit.textContent = "Save Notes";
+        edit.title = "Save notes";
+        edit.setAttribute("aria-label", "Save notes");
+        edit.replaceChildren(iconSvg("save"));
         textarea = $el("textarea.promptboard-lora-info-notes-editor", { value: this.notes });
         notesBody.replaceWith(textarea);
         textarea.focus();
       },
-    });
+    }, [iconSvg("pencil")]);
     this.notesSection.header.append(edit);
     this.notesSection.body.replaceChildren(notesBody);
   }
@@ -1341,23 +1651,34 @@ class LoraInfoDialog extends ModelInfoDialog {
 
     const normalizedWords = words.map((word) => String(word));
     const chips = $el("div.promptboard-lora-trigger-words", normalizedWords.map((word) =>
-      $el("span.promptboard-lora-trigger-word", { textContent: String(word) })
+      $el("button.promptboard-lora-trigger-word", {
+        type: "button",
+        textContent: String(word),
+        title: "Copy trigger word",
+        onclick: async (event) => {
+          const chip = event.currentTarget;
+          try {
+            await copyTextToClipboard(word);
+            flashCopyState(chip, "is-copied");
+          } catch (error) {
+            flashCopyState(chip, "is-error");
+          }
+        },
+      })
     ));
-    const copy = $el("button", {
+    const copy = $el("button.promptboard-lora-trigger-copy-all", {
       type: "button",
-      textContent: "Copy All",
+      title: "Copy all trigger words",
+      "aria-label": "Copy all trigger words",
       onclick: async () => {
         try {
-          await navigator.clipboard?.writeText(normalizedWords.join(", "));
-          copy.textContent = "Copied";
+          await copyTextToClipboard(normalizedWords.join(", "));
+          flashCopyState(copy, "is-copied");
         } catch (error) {
-          copy.textContent = "Copy Failed";
+          flashCopyState(copy, "is-error");
         }
-        window.setTimeout(() => {
-          copy.textContent = "Copy All";
-        }, 1500);
       },
-    });
+    }, [iconSvg("copy")]);
     this.triggers.header.append(copy);
     this.triggers.body.append(chips);
   }
@@ -1369,21 +1690,52 @@ class LoraInfoDialog extends ModelInfoDialog {
     }
 
     let currentImage = images[this.previewIndex];
+    let promptOverlayVisible = false;
     const promptOverlay = $el("div.promptboard-lora-info-prompt-overlay", { style: { display: "none" } });
+    const promptToggle = $el("button.promptboard-lora-info-prompt-toggle", {
+      type: "button",
+      title: "Show prompts",
+      "aria-label": "Show prompts",
+      onclick: () => {
+        promptOverlayVisible = !promptOverlayVisible;
+        promptToggle.classList.toggle("is-active", promptOverlayVisible);
+        promptToggle.title = promptOverlayVisible ? "Hide prompts" : "Show prompts";
+        promptToggle.setAttribute("aria-label", promptToggle.title);
+        updatePromptOverlay();
+      },
+    }, [iconSvg("message-square")]);
+    const promptCopyButton = (text, title) => $el("button.promptboard-lora-info-prompt-copy", {
+      type: "button",
+      title,
+      "aria-label": title,
+      onclick: async (event) => {
+        event.stopPropagation();
+        const button = event.currentTarget;
+        try {
+          await copyTextToClipboard(text);
+          flashCopyState(button, "is-copied");
+        } catch (error) {
+          flashCopyState(button, "is-error");
+        }
+      },
+    }, [iconSvg("copy")]);
     const updatePromptOverlay = () => {
       const prompts = imagePromptInfo(currentImage);
       promptOverlay.replaceChildren();
 
       if (!prompts.positive && !prompts.negative) {
         promptOverlay.style.display = "none";
+        promptToggle.style.display = "none";
         return;
       }
 
+      promptToggle.style.display = "";
       if (prompts.positive) {
         promptOverlay.append(
           $el("div.promptboard-lora-info-prompt-row", [
             $el("label", { textContent: "Positive" }),
             $el("span", { textContent: prompts.positive }),
+            promptCopyButton(prompts.positive, "Copy positive prompt"),
           ])
         );
       }
@@ -1393,11 +1745,12 @@ class LoraInfoDialog extends ModelInfoDialog {
           $el("div.promptboard-lora-info-prompt-row", [
             $el("label", { textContent: "Negative" }),
             $el("span", { textContent: prompts.negative }),
+            promptCopyButton(prompts.negative, "Copy negative prompt"),
           ])
         );
       }
 
-      promptOverlay.style.display = "";
+      promptOverlay.style.display = promptOverlayVisible ? "" : "none";
     };
     const updatePreview = () => {
       currentImage = images[this.previewIndex];
@@ -1432,10 +1785,11 @@ class LoraInfoDialog extends ModelInfoDialog {
 
     this.previewStage.append(
       $el("div.promptboard-lora-info-preview-actions", [
+        promptToggle,
         $el("button.promptboard-lora-info-save-preview", {
           type: "button",
-          textContent: "Save",
           title: "Save as local preview",
+          "aria-label": "Save as local preview",
           onclick: async (event) => {
             const button = event.currentTarget;
             const previewUrl = currentImage?.url || "";
@@ -1444,7 +1798,8 @@ class LoraInfoDialog extends ModelInfoDialog {
             }
 
             button.disabled = true;
-            button.textContent = "Saving";
+            button.title = "Saving preview";
+            button.setAttribute("aria-label", "Saving preview");
             button.classList.remove("is-saved", "is-error");
             button.classList.add("is-busy");
 
@@ -1462,10 +1817,12 @@ class LoraInfoDialog extends ModelInfoDialog {
                 throw new Error(`${save.status} ${save.statusText}`);
               }
               app.refreshComboInNodes?.();
-              button.textContent = "Saved";
+              button.title = "Saved preview";
+              button.setAttribute("aria-label", "Saved preview");
               button.classList.add("is-saved");
             } catch (error) {
-              button.textContent = "Failed";
+              button.title = "Failed to save preview";
+              button.setAttribute("aria-label", "Failed to save preview");
               button.classList.add("is-error");
               window.setTimeout(() => {
                 alert(`Error saving preview: ${error.message}`);
@@ -1474,21 +1831,13 @@ class LoraInfoDialog extends ModelInfoDialog {
               button.classList.remove("is-busy");
               window.setTimeout(() => {
                 button.disabled = false;
-                button.textContent = "Save";
+                button.title = "Save as local preview";
+                button.setAttribute("aria-label", "Save as local preview");
                 button.classList.remove("is-saved", "is-error");
               }, 1500);
             }
           },
-        }),
-        $el("button.promptboard-lora-info-save-preview", {
-          type: "button",
-          textContent: "Refresh",
-          title: "Refresh Civitai info",
-          onclick: () => {
-            this.close();
-            new this.constructor(this.name, this.node).show(this.type, this.modelName, { refreshCivitai: true });
-          },
-        }),
+        }, [iconSvg("save")]),
       ]),
       promptOverlay,
     );
@@ -1501,23 +1850,21 @@ class LoraInfoDialog extends ModelInfoDialog {
         $el("button", {
           className: "promptboard-lora-info-nav prev",
           type: "button",
-          textContent: "<",
           title: "Previous preview",
           onclick: () => {
             this.previewIndex = (this.previewIndex + images.length - 1) % images.length;
             updatePreview();
           },
-        }),
+        }, [iconSvg("chevron-left")]),
         $el("button", {
           className: "promptboard-lora-info-nav next",
           type: "button",
-          textContent: ">",
           title: "Next preview",
           onclick: () => {
             this.previewIndex = (this.previewIndex + 1) % images.length;
             updatePreview();
           },
-        }),
+        }, [iconSvg("chevron-right")]),
         this.previewCounter,
       );
     }
