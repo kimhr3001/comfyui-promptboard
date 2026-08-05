@@ -71,6 +71,20 @@ Example `lora_config`:
 
 Disabled rows, empty names, `None`, and rows where both strengths are `0` are skipped.
 
+## Screenshots
+
+### Prompt Board
+
+The board screenshot below uses the included `default.yaml` starter tag file.
+
+![Prompt Board using default.yaml](docs/images/promptboard-default.png)
+
+### LoRA Info Dialog
+
+The compact LoRA info dialog screenshot below uses `TMP/texta.safetensors`.
+
+![LoRA info dialog for texta](docs/images/lora-modal-texta.png)
+
 ## YAML Format
 
 YAML files live in:
@@ -179,7 +193,11 @@ Right-click a supported checkpoint loader node and choose `View Checkpoint Info.
 
 LoRA rows in `PromptBoard LoRA Loader` also include an `i` button that opens a LoRA-specific info dialog for the selected LoRA.
 
-The checkpoint and LoRA dialogs share the same compact vertical UI. Preview galleries include bounded image height, previous/next navigation, prompt overlay text when Civitai image metadata provides it, and a `Save` button for storing the selected image next to the model file.
+The checkpoint and LoRA dialogs share the same compact vertical UI. Preview galleries include bounded image height, previous/next navigation, a prompt overlay toggle when Civitai image metadata provides positive or negative prompts, and an icon button for storing the selected image next to the model file.
+
+Trigger words are shown as clickable chips when available. Click a chip to copy a single trigger word, or use the copy icon in the Trigger Words header to copy all trigger words as a comma-separated prompt fragment.
+
+The prompt overlay includes separate copy buttons for positive and negative prompt text. Notes can be edited directly from the dialog and are stored next to the model metadata.
 
 PromptBoard stores Civitai JSON metadata next to the model as:
 
