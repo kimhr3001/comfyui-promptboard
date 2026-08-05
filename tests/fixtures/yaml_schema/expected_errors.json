@@ -6,6 +6,12 @@
     "message": "Unsupported schema version: 3"
   },
   {
+    "fixture": "invalid_yaml_root.yaml",
+    "code": "invalid_yaml_root",
+    "path": "$",
+    "message": "YAML root must be a mapping"
+  },
+  {
     "fixture": "schema_version_required.yaml",
     "code": "schema_version_required",
     "path": "_promptboard.schemaVersion",
@@ -34,6 +40,12 @@
     "code": "invalid_attribute_mode",
     "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.color.mode",
     "message": "Unsupported attribute mode: optional"
+  },
+  {
+    "fixture": "missing_attribute_source.yaml",
+    "code": "missing_required_field",
+    "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.color.source",
+    "message": "Missing required field: _promptboard.attributeBoards.clothing.targets.top.attributes.color.source"
   },
   {
     "fixture": "placeholder_collision.yaml",

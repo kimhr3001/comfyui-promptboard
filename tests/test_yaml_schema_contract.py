@@ -13,8 +13,12 @@ INVALID_ROOT = FIXTURE_ROOT / "invalid"
 EXPECTED_ROOT = FIXTURE_ROOT / "expected"
 
 
+def parse_yaml(path):
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
 def load_yaml(path):
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    data = parse_yaml(path) or {}
     if not isinstance(data, dict):
         raise AssertionError(f"Fixture root must be a mapping: {path}")
     return data
@@ -81,12 +85,16 @@ def normalize_v1_contract(source):
 
 
 class YamlSchemaContractFixtureTests(unittest.TestCase):
-    def test_all_source_fixtures_are_valid_yaml_mappings(self):
-        fixture_paths = sorted(VALID_ROOT.glob("*.yaml")) + sorted(INVALID_ROOT.glob("*.yaml"))
-        self.assertGreater(len(fixture_paths), 0)
-        for path in fixture_paths:
+    def test_all_source_fixtures_are_valid_yaml(self):
+        valid_paths = sorted(VALID_ROOT.glob("*.yaml"))
+        invalid_paths = sorted(INVALID_ROOT.glob("*.yaml"))
+        self.assertGreater(len(valid_paths) + len(invalid_paths), 0)
+        for path in valid_paths:
             with self.subTest(path=path.name):
                 self.assertIsInstance(load_yaml(path), dict)
+        for path in invalid_paths:
+            with self.subTest(path=path.name):
+                parse_yaml(path)
 
     def test_valid_fixtures_have_normalized_snapshots(self):
         for source_path in sorted(VALID_ROOT.glob("*.yaml")):

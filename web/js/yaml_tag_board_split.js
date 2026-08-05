@@ -2,6 +2,7 @@
  * Prompt Board node UI.
  */
 import { app } from "../../../scripts/app.js";
+import { normalizeYamlDocument } from "./promptboard_yaml.mjs";
 
 const NODE_NAME = "PromptBoard";
 const LAYOUT_WIDGET = "split_layout";
@@ -727,24 +728,6 @@ async function createCodeMirrorEditor(node, host, textarea) {
   }
 }
 
-function unquote(value) {
-  let text = String(value ?? "").trim();
-  if (
-    (text.startsWith('"') && text.endsWith('"')) ||
-    (text.startsWith("'") && text.endsWith("'"))
-  ) {
-    text = text.slice(1, -1);
-  }
-  return text;
-}
-
-function parseBool(value) {
-  if (typeof value === "boolean") {
-    return value;
-  }
-  return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase());
-}
-
 function normalizeUiGroup(value) {
   return String(value ?? "").trim();
 }
@@ -784,106 +767,6 @@ function categoryMatchesActiveUiGroup(node, item) {
 function visibleCategoryEntries(node) {
   const config = node.promptboardConfig ?? {};
   return Object.entries(config).filter(([, item]) => categoryMatchesActiveUiGroup(node, item));
-}
-
-function parseYamlTags(yamlText) {
-  const config = {};
-  let currentCategory = null;
-  let currentTag = null;
-  let inTags = false;
-
-  for (const rawLine of String(yamlText ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n")) {
-    if (!rawLine.trim() || rawLine.trimStart().startsWith("#")) {
-      continue;
-    }
-
-    const indent = rawLine.match(/^ */)?.[0]?.length ?? 0;
-    const line = rawLine.trim();
-
-    if (indent === 0 && line.endsWith(":")) {
-      currentCategory = unquote(line.slice(0, -1));
-      currentTag = null;
-      inTags = false;
-      if (currentCategory) {
-        config[currentCategory] = {
-          placeholder: `<${currentCategory}>`,
-          uiGroup: "",
-          replaceInsideTags: false,
-          tags: [],
-        };
-      }
-      continue;
-    }
-
-    if (!currentCategory || !config[currentCategory]) {
-      continue;
-    }
-
-    if (indent <= 2 && line.startsWith("placeholder:")) {
-      inTags = false;
-      config[currentCategory].placeholder = unquote(line.slice("placeholder:".length));
-      continue;
-    }
-
-    if (indent <= 2 && line.startsWith("uiGroup:")) {
-      inTags = false;
-      config[currentCategory].uiGroup = normalizeUiGroup(unquote(line.slice("uiGroup:".length)));
-      continue;
-    }
-
-    if (indent <= 2 && line.startsWith("replaceInsideTags:")) {
-      inTags = false;
-      config[currentCategory].replaceInsideTags = parseBool(line.slice("replaceInsideTags:".length));
-      continue;
-    }
-
-    if (indent <= 2 && line === "tags:") {
-      currentTag = null;
-      inTags = true;
-      continue;
-    }
-
-    if (inTags && indent >= 2 && line.startsWith("- ")) {
-      const body = line.slice(2).trim();
-      currentTag = { text: "", label: "", description: "", default: false };
-
-      if (body.startsWith("text:")) {
-        currentTag.text = unquote(body.slice("text:".length));
-      } else if (body.startsWith("value:")) {
-        currentTag.text = unquote(body.slice("value:".length));
-      } else {
-        currentTag.text = unquote(body);
-      }
-
-      currentTag.label = currentTag.text;
-      if (currentTag.text) {
-        config[currentCategory].tags.push(currentTag);
-      }
-      continue;
-    }
-
-    if (inTags && indent >= 4 && currentTag) {
-      if (line.startsWith("text:")) {
-        currentTag.text = unquote(line.slice("text:".length));
-        if (!currentTag.label) {
-          currentTag.label = currentTag.text;
-        }
-      } else if (line.startsWith("value:")) {
-        currentTag.text = unquote(line.slice("value:".length));
-        if (!currentTag.label) {
-          currentTag.label = currentTag.text;
-        }
-      } else if (line.startsWith("label:")) {
-        currentTag.label = unquote(line.slice("label:".length));
-      } else if (line.startsWith("description:")) {
-        currentTag.description = unquote(line.slice("description:".length));
-      } else if (line.startsWith("default:")) {
-        currentTag.default = parseBool(line.slice("default:".length));
-      }
-    }
-  }
-
-  return config;
 }
 
 function parseSelectedState(node) {
@@ -2342,14 +2225,20 @@ function showTemplateDeleteDone(node) {
 }
 
 function renderFromYaml(node, resetState = false) {
-  let config = {};
+  let model;
   try {
-    config = parseYamlTags(widgetValue(node, "yaml_text", ""));
+    model = normalizeYamlDocument(widgetValue(node, "yaml_text", ""));
   } catch (error) {
     setStatus(node, `YAML error: ${error.message}`);
+    return;
+  }
+  if (String(node.promptboardStatus ?? "").startsWith("YAML error:")) {
+    setStatus(node, "");
   }
 
+  const config = model.categories;
   const state = pruneSelectedState(config, resetState ? {} : parseSelectedState(node));
+  node.promptboardYamlModel = model;
   node.promptboardConfig = config;
   ensureInitialCollapsedCategories(node, config);
   syncState(node, state);

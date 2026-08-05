@@ -196,9 +196,12 @@ Semantic validation errors use this stable shape:
 | --- | --- | --- |
 | `unsupported_schema_version` | `_promptboard.schemaVersion` | Explicit version is not supported |
 | `schema_version_required` | `_promptboard.schemaVersion` | A v2 field exists without `schemaVersion: 2` |
+| `invalid_yaml_root` | `$` | Parsed YAML root is not a mapping |
 | `reserved_category_name` | category key | Category uses a reserved name or prefix |
 | `invalid_identifier` | offending ID path | Machine identifier does not match the ID pattern |
 | `unknown_schema_field` | offending field path | Schema v2 configuration contains an unsupported field |
+| `invalid_schema_type` | offending field path | A mapping or sequence field has the wrong type |
+| `missing_required_field` | missing field path | A required schema v2 field is absent |
 | `unknown_tag_set` | `tagSet` or attribute `source` | Referenced tag set does not exist |
 | `ambiguous_category_source` | category path | Category declares both `tags` and `tagSet` |
 | `invalid_attribute_mode` | attribute `mode` | Mode is not `single` or `multiple` |
@@ -230,3 +233,8 @@ tests/fixtures/yaml_schema/
 The browser parser introduced in Phase 1 / Turn 2 and the Python normalizer
 extended in Phase 1 / Turn 3 must consume these same fixtures without separate
 implementation-specific expectations.
+
+The bundled browser parser is js-yaml 5.2.3, loaded from the local extension
+files with its default YAML 1.2 core schema. Normalization converts supported
+legacy boolean strings such as `yes` and `on` after parsing so v1 behavior is
+preserved.
