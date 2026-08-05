@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 2,
+  "tagSets": {
+    "colors": {
+      "label": "색상",
+      "tags": [
+        {
+          "text": "black",
+          "label": "black",
+          "description": "",
+          "default": false
+        },
+        {
+          "text": "white",
+          "label": "white",
+          "description": "",
+          "default": false
+        }
+      ]
+    },
+    "clothingMaterials": {
+      "label": "의상 소재",
+      "tags": [
+        {
+          "text": "leather",
+          "label": "leather",
+          "description": "",
+          "default": false
+        },
+        {
+          "text": "denim",
+          "label": "denim",
+          "description": "",
+          "default": false
+        }
+      ]
+    }
+  },
+  "attributeBoards": {
+    "clothing": {
+      "label": "의상 속성",
+      "uiGroup": "의상",
+      "targets": {
+        "top": {
+          "label": "상의",
+          "placeholder": "<TOP_ATTRS>",
+          "compose": {
+            "separator": " "
+          },
+          "attributes": {
+            "color": {
+              "label": "색상",
+              "source": "colors",
+              "mode": "single",
+              "migrateFrom": "상의색상"
+            },
+            "material": {
+              "label": "소재",
+              "source": "clothingMaterials",
+              "mode": "multiple",
+              "migrateFrom": null
+            }
+          }
+        },
+        "bottom": {
+          "label": "하의",
+          "placeholder": "<BOTTOM_ATTRS>",
+          "compose": {
+            "separator": " "
+          },
+          "attributes": {
+            "color": {
+              "label": "color",
+              "source": "colors",
+              "mode": "single",
+              "migrateFrom": null
+            }
+          }
+        }
+      }
+    }
+  },
+  "categories": {
+    "상의": {
+      "placeholder": "<CLOTHES>",
+      "uiGroup": "의상",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "<TOP_ATTRS> sports bra",
+          "label": "스포츠 브라",
+          "description": "",
+          "default": false
+        }
+      ]
+    },
+    "하의": {
+      "placeholder": "<CLOTHES>",
+      "uiGroup": "의상",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "<BOTTOM_ATTRS> skirt",
+          "label": "치마",
+          "description": "",
+          "default": false
+        }
+      ]
+    }
+  }
+}

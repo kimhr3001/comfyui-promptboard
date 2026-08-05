@@ -1,0 +1,12 @@
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      tags:
+      - black
+
+상의색상:
+  placeholder: <TCO>
+  tagSet: colors
+  tags:
+  - white

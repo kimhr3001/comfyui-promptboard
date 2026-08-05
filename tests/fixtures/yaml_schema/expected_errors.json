@@ -1,0 +1,44 @@
+[
+  {
+    "fixture": "unsupported_schema_version.yaml",
+    "code": "unsupported_schema_version",
+    "path": "_promptboard.schemaVersion",
+    "message": "Unsupported schema version: 3"
+  },
+  {
+    "fixture": "schema_version_required.yaml",
+    "code": "schema_version_required",
+    "path": "_promptboard.schemaVersion",
+    "message": "schemaVersion: 2 is required for tagSets or attributeBoards"
+  },
+  {
+    "fixture": "reserved_category_name.yaml",
+    "code": "reserved_category_name",
+    "path": "$attributes",
+    "message": "Reserved category name: $attributes"
+  },
+  {
+    "fixture": "unknown_tag_set.yaml",
+    "code": "unknown_tag_set",
+    "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.color.source",
+    "message": "Unknown tag set: missingColors"
+  },
+  {
+    "fixture": "ambiguous_category_source.yaml",
+    "code": "ambiguous_category_source",
+    "path": "상의색상",
+    "message": "Category must declare either tags or tagSet, not both: 상의색상"
+  },
+  {
+    "fixture": "invalid_attribute_mode.yaml",
+    "code": "invalid_attribute_mode",
+    "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.color.mode",
+    "message": "Unsupported attribute mode: optional"
+  },
+  {
+    "fixture": "placeholder_collision.yaml",
+    "code": "placeholder_collision",
+    "path": "_promptboard.attributeBoards.clothing.targets.top.placeholder",
+    "message": "Attribute target placeholder conflicts with category placeholder: <CLOTHES>"
+  }
+]

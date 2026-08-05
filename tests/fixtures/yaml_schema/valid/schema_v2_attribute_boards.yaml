@@ -1,0 +1,53 @@
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      label: 색상
+      tags:
+      - black
+      - white
+    clothingMaterials:
+      label: 의상 소재
+      tags:
+      - leather
+      - denim
+  attributeBoards:
+    clothing:
+      label: 의상 속성
+      uiGroup: 의상
+      targets:
+        top:
+          label: 상의
+          placeholder: <TOP_ATTRS>
+          compose:
+            separator: " "
+          attributes:
+            color:
+              label: 색상
+              source: colors
+              mode: single
+              migrateFrom: 상의색상
+            material:
+              label: 소재
+              source: clothingMaterials
+              mode: multiple
+        bottom:
+          label: 하의
+          placeholder: <BOTTOM_ATTRS>
+          attributes:
+            color:
+              source: colors
+
+상의:
+  placeholder: <CLOTHES>
+  uiGroup: 의상
+  tags:
+  - text: <TOP_ATTRS> sports bra
+    label: 스포츠 브라
+
+하의:
+  placeholder: <CLOTHES>
+  uiGroup: 의상
+  tags:
+  - text: <BOTTOM_ATTRS> skirt
+    label: 치마

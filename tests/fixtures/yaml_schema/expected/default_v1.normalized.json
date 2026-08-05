@@ -1,0 +1,289 @@
+{
+  "schemaVersion": 1,
+  "tagSets": {
+  },
+  "attributeBoards": {
+  },
+  "categories": {
+    "SUBJECT": {
+      "placeholder": "<SUBJECT>",
+      "uiGroup": "Content",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "portrait",
+          "label": "Portrait",
+          "description": "A single-person portrait or character-focused image.",
+          "default": false
+        },
+        {
+          "text": "landscape",
+          "label": "Landscape",
+          "description": "A wide outdoor scene or environmental view.",
+          "default": false
+        },
+        {
+          "text": "city street",
+          "label": "City Street",
+          "description": "An urban street setting with buildings or storefronts.",
+          "default": false
+        },
+        {
+          "text": "forest path",
+          "label": "Forest Path",
+          "description": "A natural trail surrounded by trees or foliage.",
+          "default": false
+        },
+        {
+          "text": "product photo",
+          "label": "Product Photo",
+          "description": "A clean product-centered composition.",
+          "default": false
+        }
+      ]
+    },
+    "OBJECT": {
+      "placeholder": "<OBJECT>",
+      "uiGroup": "Content",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "<MATERIAL> sculpture",
+          "label": "Material Sculpture",
+          "description": "A sculpture whose material is filled by the MATERIAL category.",
+          "default": false
+        },
+        {
+          "text": "<MATERIAL> chair",
+          "label": "Material Chair",
+          "description": "A chair whose material is filled by the MATERIAL category.",
+          "default": false
+        },
+        {
+          "text": "<MATERIAL> vase",
+          "label": "Material Vase",
+          "description": "A vase whose material is filled by the MATERIAL category.",
+          "default": false
+        }
+      ]
+    },
+    "MATERIAL": {
+      "placeholder": "<MATERIAL>",
+      "uiGroup": "Content",
+      "replaceInsideTags": true,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "glass",
+          "label": "Glass",
+          "description": "Transparent or reflective glass material.",
+          "default": false
+        },
+        {
+          "text": "marble",
+          "label": "Marble",
+          "description": "Polished stone with natural veining.",
+          "default": false
+        },
+        {
+          "text": "brushed metal",
+          "label": "Brushed Metal",
+          "description": "Satin-finished metal with subtle linear texture.",
+          "default": false
+        }
+      ]
+    },
+    "STYLE": {
+      "placeholder": "<STYLE>",
+      "uiGroup": "Look",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "cinematic",
+          "label": "Cinematic",
+          "description": "Film-like lighting, composition, and mood.",
+          "default": false
+        },
+        {
+          "text": "editorial",
+          "label": "Editorial",
+          "description": "Polished magazine-style visual direction.",
+          "default": false
+        },
+        {
+          "text": "watercolor",
+          "label": "Watercolor",
+          "description": "Soft painted texture with translucent color.",
+          "default": false
+        },
+        {
+          "text": "pixel art",
+          "label": "Pixel Art",
+          "description": "Low-resolution pixel-based illustration style.",
+          "default": false
+        },
+        {
+          "text": "isometric",
+          "label": "Isometric",
+          "description": "Angled orthographic view with a structured layout.",
+          "default": false
+        }
+      ]
+    },
+    "LIGHTING": {
+      "placeholder": "<LIGHTING>",
+      "uiGroup": "Look",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "soft light",
+          "label": "Soft Light",
+          "description": "Gentle, low-contrast lighting.",
+          "default": false
+        },
+        {
+          "text": "golden hour",
+          "label": "Golden Hour",
+          "description": "Warm sunlight near sunrise or sunset.",
+          "default": false
+        },
+        {
+          "text": "studio lighting",
+          "label": "Studio Lighting",
+          "description": "Controlled lighting with a professional setup.",
+          "default": false
+        },
+        {
+          "text": "neon glow",
+          "label": "Neon Glow",
+          "description": "Saturated colored light from neon signage or accents.",
+          "default": false
+        },
+        {
+          "text": "overcast",
+          "label": "Overcast",
+          "description": "Diffused cloudy daylight.",
+          "default": false
+        }
+      ]
+    },
+    "CAMERA": {
+      "placeholder": "<CAMERA>",
+      "uiGroup": "Camera",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "close-up",
+          "label": "Close-up",
+          "description": "Tight framing around the subject.",
+          "default": false
+        },
+        {
+          "text": "wide shot",
+          "label": "Wide Shot",
+          "description": "Broad framing that shows the surrounding scene.",
+          "default": false
+        },
+        {
+          "text": "low angle",
+          "label": "Low Angle",
+          "description": "Camera positioned below the subject.",
+          "default": false
+        },
+        {
+          "text": "top-down view",
+          "label": "Top-down",
+          "description": "Camera looking down from above.",
+          "default": false
+        },
+        {
+          "text": "shallow depth of field",
+          "label": "Shallow Depth",
+          "description": "Focused subject with a blurred background.",
+          "default": false
+        }
+      ]
+    },
+    "COLOR": {
+      "placeholder": "<COLOR>",
+      "uiGroup": "Look",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "warm",
+          "label": "Warm",
+          "description": "Reds, oranges, yellows, or warm color balance.",
+          "default": false
+        },
+        {
+          "text": "cool",
+          "label": "Cool",
+          "description": "Blues, cyans, violets, or cool color balance.",
+          "default": false
+        },
+        {
+          "text": "pastel",
+          "label": "Pastel",
+          "description": "Soft, low-saturation color palette.",
+          "default": false
+        },
+        {
+          "text": "monochrome",
+          "label": "Monochrome",
+          "description": "Single-color or grayscale palette.",
+          "default": false
+        },
+        {
+          "text": "high contrast",
+          "label": "High Contrast",
+          "description": "Strong tonal separation between light and dark.",
+          "default": false
+        }
+      ]
+    },
+    "DETAIL": {
+      "placeholder": "<DETAIL>",
+      "uiGroup": "Detail",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "highly detailed",
+          "label": "Highly Detailed",
+          "description": "Extra visible detail in surfaces and objects.",
+          "default": false
+        },
+        {
+          "text": "clean composition",
+          "label": "Clean Composition",
+          "description": "Minimal clutter with clear visual hierarchy.",
+          "default": false
+        },
+        {
+          "text": "subtle texture",
+          "label": "Subtle Texture",
+          "description": "Light surface detail without visual noise.",
+          "default": false
+        },
+        {
+          "text": "crisp focus",
+          "label": "Crisp Focus",
+          "description": "Sharp subject edges and clear focal detail.",
+          "default": false
+        },
+        {
+          "text": "atmospheric",
+          "label": "Atmospheric",
+          "description": "Mood-driven haze, depth, or environmental feeling.",
+          "default": false
+        }
+      ]
+    }
+  }
+}

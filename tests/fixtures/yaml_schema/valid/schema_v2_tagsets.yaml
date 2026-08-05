@@ -1,0 +1,25 @@
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      label: 색상
+      tags:
+      - text: black
+        label: 검정
+        description: 검은색
+      - white
+      - text: red
+        label: 빨강
+        default: true
+
+상의색상:
+  placeholder: <TCO>
+  uiGroup: 색상
+  replaceInsideTags: true
+  tagSet: colors
+
+하의색상:
+  placeholder: <BCO>
+  uiGroup: 색상
+  replaceInsideTags: true
+  tagSet: colors
