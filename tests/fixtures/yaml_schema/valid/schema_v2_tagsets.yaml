@@ -11,6 +11,9 @@ _promptboard:
       - text: red
         label: 빨강
         default: true
+      - text: affirmative
+        label: yes
+        description: 2026-08-05
 
 상의색상:
   placeholder: <TCO>

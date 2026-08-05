@@ -21,6 +21,12 @@
           "label": "빨강",
           "description": "",
           "default": true
+        },
+        {
+          "text": "affirmative",
+          "label": "yes",
+          "description": "2026-08-05",
+          "default": false
         }
       ]
     }

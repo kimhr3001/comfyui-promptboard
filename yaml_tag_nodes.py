@@ -2,7 +2,10 @@ import json
 import re
 from pathlib import Path
 
-import yaml
+try:
+    from .promptboard_yaml import normalize_yaml_document
+except ImportError:
+    from promptboard_yaml import normalize_yaml_document
 
 
 FALLBACK_YAML = """GIRL_POS:
@@ -104,7 +107,7 @@ def _write_yaml_file(yaml_file, text):
     path = _safe_yaml_path(yaml_file)
     if path is None:
         raise ValueError("Select a YAML file before saving.")
-    _load_yaml_config(text)
+    normalize_yaml_document(text)
     path.write_text(str(text or ""), encoding="utf-8")
 
 
@@ -254,73 +257,17 @@ def _register_api_routes():
             return web.json_response({"error": str(exc)}, status=400)
 
 
-def _load_yaml_config(yaml_text):
-    data = yaml.safe_load(yaml_text or "") or {}
-    if not isinstance(data, dict):
-        raise ValueError("YAML root must be a mapping.")
-    return data
-
-
-def _normalize_bool(value):
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        return value.strip().lower() in {"1", "true", "yes", "on"}
-    return bool(value)
-
-
-def _normalize_tag(entry):
-    if isinstance(entry, str):
-        text = entry.strip()
-        return {"text": text, "label": text, "description": "", "default": False} if text else None
-
-    if not isinstance(entry, dict):
-        return None
-
-    text = str(entry.get("text", entry.get("value", ""))).strip()
-    if not text:
-        return None
-
-    label = str(entry.get("label", text)).strip() or text
-    description = str(entry.get("description", "")).strip()
-    return {
-        "text": text,
-        "label": label,
-        "description": description,
-        "default": _normalize_bool(entry.get("default", False)),
-    }
-
-
 def _normalize_config(yaml_text):
-    raw = _load_yaml_config(yaml_text)
+    model = normalize_yaml_document(yaml_text)
     config = {}
-
-    for key, value in raw.items():
-        if not isinstance(value, dict):
-            continue
-
-        category = str(key).strip()
-        if not category:
-            continue
-
-        placeholder = str(value.get("placeholder", f"<{category}>")).strip()
-        ui_group = str(value.get("uiGroup", "")).strip()
-        replace_inside_tags = _normalize_bool(value.get("replaceInsideTags", False))
-        tags = []
-
-        for tag in value.get("tags", []) or []:
-            normalized = _normalize_tag(tag)
-            if normalized is not None:
-                tags.append(normalized)
-
+    for category, item in model["categories"].items():
         config[category] = {
-            "placeholder": placeholder,
-            "uiGroup": ui_group,
+            "placeholder": item["placeholder"],
+            "uiGroup": item["uiGroup"],
             "delimiter": FIXED_DELIMITER,
-            "replaceInsideTags": replace_inside_tags,
-            "tags": tags,
+            "replaceInsideTags": item["replaceInsideTags"],
+            "tags": item["tags"],
         }
-
     return config
 
 

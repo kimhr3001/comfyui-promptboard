@@ -69,6 +69,17 @@ test("includes parser line and column in YAML syntax errors", () => {
   );
 });
 
+test("rejects duplicate mapping keys", () => {
+  assert.throws(
+    () => normalizeYamlDocument("STYLE:\n  tags: []\nSTYLE:\n  tags: []\n"),
+    (error) => {
+      assert.equal(error.code, "yaml_parse_error");
+      assert.match(error.message, /duplicat(?:e|ed) mapping key/i);
+      return true;
+    },
+  );
+});
+
 test("preserves structured quoted values that the line parser could not safely read", () => {
   const categories = parseYamlCategories(`
 DETAIL:
