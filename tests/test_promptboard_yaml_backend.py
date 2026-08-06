@@ -86,7 +86,7 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
         self.assertEqual(shared_replaced, direct_replaced)
         self.assertEqual(shared_replaced[0], "top: black; bottom: white")
 
-    def test_template_round_trips_attribute_state_without_affecting_selection_output(self):
+    def test_template_round_trips_attribute_state_and_emits_attribute_payload(self):
         selected_state = {
             "상의": ["<TOP_ATTRS> sports bra"],
             "$attributes": {
@@ -110,7 +110,69 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
             yaml_text=source,
             selected_state=json.dumps(selected_state, ensure_ascii=False),
         )
-        self.assertNotIn("$attributes", json.loads(selection_json))
+        payload = json.loads(selection_json)
+        self.assertNotIn("$attributes", payload)
+        self.assertEqual(
+            payload["$attribute:clothing.top"],
+            {
+                "placeholder": "<TOP_ATTRS>",
+                "uiGroup": "",
+                "delimiter": ",",
+                "replaceInsideTags": True,
+                "selected": ["black leather denim"],
+            },
+        )
+        self.assertEqual(
+            payload["$attribute:clothing.bottom"],
+            {
+                "placeholder": "<BOTTOM_ATTRS>",
+                "uiGroup": "",
+                "delimiter": ",",
+                "replaceInsideTags": True,
+                "selected": ["white"],
+            },
+        )
+
+    def test_attribute_payload_uses_existing_replace_path(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
+        selected_state = {
+            "상의": ["<TOP_ATTRS> sports bra"],
+            "하의": ["<BOTTOM_ATTRS> skirt"],
+            "$attributes": {
+                "clothing": {
+                    "top": {
+                        "color": ["black"],
+                        "material": ["denim", "leather"],
+                    },
+                    "bottom": {"color": ["white"]},
+                }
+            },
+        }
+        selection_json, _preview, selected_text = _select_tags_outputs(
+            yaml_text=source,
+            selected_state=json.dumps(selected_state, ensure_ascii=False),
+        )
+
+        replaced, report = PromptBoardReplace().replace_tags("outfit: <CLOTHES>", selection_json)
+        self.assertEqual(replaced, "outfit: black leather denim sports bra,white skirt")
+        self.assertEqual(report, "")
+        self.assertEqual(
+            selected_text,
+            "<TOP_ATTRS> sports bra,<BOTTOM_ATTRS> skirt,black leather denim,white",
+        )
+
+    def test_category_only_outputs_remain_unchanged_when_no_attribute_boards_exist(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "legacy_v1.yaml")
+        state = json.dumps({"STYLE": ["cinematic"], "MATERIAL": ["glass"]}, ensure_ascii=False)
+
+        selection_json, preview, selected_text = _select_tags_outputs(
+            yaml_text=source,
+            selected_state=state,
+        )
+
+        self.assertEqual(sorted(json.loads(selection_json)), ["DETAIL", "MATERIAL", "STYLE"])
+        self.assertEqual(preview, "<STYLE>: cinematic\n<MATERIAL>: glass")
+        self.assertEqual(selected_text, "cinematic,glass")
 
     def test_composes_attribute_targets_deterministically(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")

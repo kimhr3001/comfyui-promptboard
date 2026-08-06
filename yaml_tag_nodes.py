@@ -38,6 +38,7 @@ NODE_ROOT = Path(__file__).resolve().parent
 YAML_FILE_ROOTS = (("tags", NODE_ROOT / "tags"),)
 TEMPLATE_FILE = NODE_ROOT / "templates" / "tag_board_templates.json"
 ATTRIBUTE_STATE_KEY = "$attributes"
+ATTRIBUTE_ENTRY_PREFIX = "$attribute:"
 
 
 def _yaml_file_options():
@@ -260,6 +261,10 @@ def _register_api_routes():
 
 def _normalize_config(yaml_text):
     model = normalize_yaml_document(yaml_text)
+    return _config_from_model(model)
+
+
+def _config_from_model(model):
     config = {}
     for category, item in model["categories"].items():
         config[category] = {
@@ -432,6 +437,24 @@ def _build_selection_payload(config, selected_state):
     return payload, selected_values
 
 
+def _build_attribute_selection_payload(model, selected_state, warnings=None):
+    payload = {}
+    selected_values = []
+    for key, item in _compose_attribute_targets(model, selected_state, warnings).items():
+        text = item["text"]
+        selected = [text] if text else []
+        entry_name = f"{ATTRIBUTE_ENTRY_PREFIX}{key}"
+        payload[entry_name] = {
+            "placeholder": item["placeholder"],
+            "uiGroup": "",
+            "delimiter": FIXED_DELIMITER,
+            "replaceInsideTags": True,
+            "selected": selected,
+        }
+        selected_values.extend(selected)
+    return payload, selected_values
+
+
 def _preview_text(payload, replacements=None):
     lines = []
     replacements = replacements or {}
@@ -551,9 +574,13 @@ def _select_tags_outputs(yaml_file=DEFAULT_YAML_FILE, yaml_text="", selected_sta
         if not str(source_yaml or "").strip():
             loaded_yaml = _read_yaml_file(yaml_file)
             source_yaml = loaded_yaml if loaded_yaml is not None else FALLBACK_YAML
-        config = _normalize_config(source_yaml)
+        model = normalize_yaml_document(source_yaml)
+        config = _config_from_model(model)
         state = _load_selected_state(selected_state)
         payload, selected_values = _build_selection_payload(config, state)
+        attribute_payload, attribute_selected_values = _build_attribute_selection_payload(model, state)
+        payload.update(attribute_payload)
+        selected_values.extend(attribute_selected_values)
         replacements, report, _ = _resolve_selection_replacements(payload)
         selection_json = json.dumps(payload, ensure_ascii=False)
         preview = _preview_text(payload, replacements)
