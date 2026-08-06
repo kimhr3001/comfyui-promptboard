@@ -78,6 +78,17 @@ function warnUnknownSavedPaths(model, savedRoot, warnings) {
   }
 }
 
+function selectedStateValues(selectedState, category) {
+  if (!hasOwn(selectedState, category)) {
+    return null;
+  }
+  let selected = selectedState[category];
+  if (isMapping(selected)) {
+    selected = selected.selected;
+  }
+  return Array.isArray(selected) ? selected.map((value) => String(value)) : [];
+}
+
 export function normalizeAttributeState(model, selectedState = {}, warnings = []) {
   const savedRoot = isMapping(selectedState?.[ATTRIBUTE_STATE_KEY])
     ? selectedState[ATTRIBUTE_STATE_KEY]
@@ -94,11 +105,17 @@ export function normalizeAttributeState(model, selectedState = {}, warnings = []
         const path = `${ATTRIBUTE_STATE_KEY}.${boardId}.${targetId}.${attributeId}`;
         const savedTarget = savedRoot?.[boardId]?.[targetId];
         const hasSavedValue = hasOwn(savedTarget, attributeId);
+        const migratedValues = !hasSavedValue && attribute.migrateFrom
+          ? selectedStateValues(selectedState, attribute.migrateFrom)
+          : null;
+        if (migratedValues !== null) {
+          warnings.push(`${path} migrated from ${attribute.migrateFrom}.`);
+        }
         nextTarget[attributeId] = normalizedValues(
           tagSet?.tags ?? [],
-          hasSavedValue ? savedTarget[attributeId] : [],
+          hasSavedValue ? savedTarget[attributeId] : migratedValues ?? [],
           attribute.mode,
-          !hasSavedValue,
+          !hasSavedValue && migratedValues === null,
           path,
           warnings,
         );

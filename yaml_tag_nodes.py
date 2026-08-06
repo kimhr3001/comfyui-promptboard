@@ -358,6 +358,15 @@ def _warn_unknown_attribute_paths(model, saved_root, warnings):
                     )
 
 
+def _selected_state_values(selected_state, category):
+    if category not in selected_state:
+        return None
+    selected = selected_state[category]
+    if isinstance(selected, dict):
+        selected = selected.get("selected", [])
+    return [str(value) for value in selected] if isinstance(selected, list) else []
+
+
 def _normalize_attribute_state(model, selected_state=None, warnings=None):
     selected_state = selected_state if isinstance(selected_state, dict) else {}
     warnings = warnings if isinstance(warnings, list) else []
@@ -380,11 +389,18 @@ def _normalize_attribute_state(model, selected_state=None, warnings=None):
                 tag_set = (model.get("tagSets") or {}).get(attribute.get("source")) or {}
                 path = f"{ATTRIBUTE_STATE_KEY}.{board_id}.{target_id}.{attribute_id}"
                 has_saved_value = attribute_id in saved_target
+                migrated_values = (
+                    _selected_state_values(selected_state, attribute["migrateFrom"])
+                    if not has_saved_value and attribute.get("migrateFrom")
+                    else None
+                )
+                if migrated_values is not None:
+                    warnings.append(f"{path} migrated from {attribute['migrateFrom']}.")
                 next_target[attribute_id] = _normalize_attribute_values(
                     tag_set.get("tags") or [],
-                    saved_target.get(attribute_id, []),
+                    saved_target.get(attribute_id, []) if has_saved_value else migrated_values or [],
                     attribute.get("mode", "single"),
-                    not has_saved_value,
+                    not has_saved_value and migrated_values is None,
                     path,
                     warnings,
                 )

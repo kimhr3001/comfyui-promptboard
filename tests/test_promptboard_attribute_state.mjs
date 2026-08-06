@@ -88,6 +88,30 @@ test("v1 models do not gain an attribute state key", () => {
   assert.deepEqual(emptyAttributeState(model), { [ATTRIBUTE_STATE_KEY]: {} });
 });
 
+test("migrates legacy category selections only when new attribute state is missing", async () => {
+  const model = await fixtureModel();
+  const warnings = [];
+  const state = {
+    상의색상: ["white", "missing"],
+  };
+
+  assert.deepEqual(normalizeAttributeState(model, state, warnings).clothing.top.color, ["white"]);
+  assert.match(warnings.join("\n"), /\$attributes\.clothing\.top\.color migrated from 상의색상/);
+  assert.match(warnings.join("\n"), /removed unknown tags: missing/);
+
+  const nextState = {
+    상의색상: ["white"],
+    [ATTRIBUTE_STATE_KEY]: {
+      clothing: {
+        top: {
+          color: ["black"],
+        },
+      },
+    },
+  };
+  assert.deepEqual(normalizeAttributeState(model, nextState).clothing.top.color, ["black"]);
+});
+
 test("composes attribute targets in attribute and YAML tag order", async () => {
   const model = await fixtureModel();
   const warnings = [];

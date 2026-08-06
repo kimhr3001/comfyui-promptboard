@@ -174,6 +174,7 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
     def test_attribute_preview_reports_state_warnings_with_paths(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
         selected_state = {
+            "상의색상": ["white"],
             "$attributes": {
                 "clothing": {
                     "top": {
@@ -195,6 +196,22 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
         self.assertIn("warning: $attributes.clothing.removed no longer exists and was removed.", preview)
         self.assertIn("warning: $attributes.clothing.top.unused no longer exists and was removed.", preview)
         self.assertIn("warning: $attributes.clothing.top.color must be an array", preview)
+
+    def test_preview_reports_migration_source_for_legacy_templates(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
+        selected_state = {
+            "상의": ["<TOP_ATTRS> sports bra"],
+            "상의색상": ["white"],
+        }
+
+        selection_json, preview, _selected_text = _select_tags_outputs(
+            yaml_text=source,
+            selected_state=json.dumps(selected_state, ensure_ascii=False),
+        )
+
+        self.assertEqual(json.loads(selection_json)["$attribute:clothing.top"]["selected"], ["white"])
+        self.assertIn("<CLOTHES>: white sports bra", preview)
+        self.assertIn("warning: $attributes.clothing.top.color migrated from 상의색상.", preview)
 
     def test_attribute_preview_reports_cycles_from_existing_replace_resolver(self):
         source = """
@@ -280,6 +297,36 @@ _promptboard:
             },
         )
         self.assertEqual(warnings, [])
+
+    def test_migrates_legacy_category_selection_when_attribute_state_is_missing(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
+        model = normalize_yaml_document(source)
+        warnings = []
+
+        self.assertEqual(
+            _compose_attribute_targets(model, {"상의색상": ["white", "missing"]}, warnings)["clothing.top"],
+            {
+                "boardId": "clothing",
+                "targetId": "top",
+                "placeholder": "<TOP_ATTRS>",
+                "selected": ["white"],
+                "text": "white",
+            },
+        )
+        self.assertIn("$attributes.clothing.top.color migrated from 상의색상.", warnings)
+        self.assertIn("$attributes.clothing.top.color removed unknown tags: missing", warnings)
+
+        new_state = {
+            "상의색상": ["white"],
+            "$attributes": {
+                "clothing": {
+                    "top": {
+                        "color": ["black"],
+                    }
+                }
+            },
+        }
+        self.assertEqual(_compose_attribute_targets(model, new_state)["clothing.top"]["text"], "black")
 
     def test_attribute_composition_skips_empty_values_and_honors_custom_separators(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
