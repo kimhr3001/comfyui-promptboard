@@ -167,3 +167,29 @@ export function setAttributeSelected(
     .filter((text) => current.has(text));
   return true;
 }
+
+export function composeAttributeTargets(model, selectedState = {}, warnings = []) {
+  const state = { [ATTRIBUTE_STATE_KEY]: normalizeAttributeState(model, selectedState, warnings) };
+  const targets = {};
+
+  for (const [boardId, board] of Object.entries(model?.attributeBoards ?? {})) {
+    for (const [targetId, target] of Object.entries(board.targets ?? {})) {
+      const values = [];
+      for (const attributeId of Object.keys(target.attributes ?? {})) {
+        values.push(...attributeSelectedTexts(state, boardId, targetId, attributeId));
+      }
+
+      const separator = String(target.compose?.separator ?? " ");
+      const key = `${boardId}.${targetId}`;
+      targets[key] = {
+        boardId,
+        targetId,
+        placeholder: target.placeholder,
+        selected: values,
+        text: values.join(separator),
+      };
+    }
+  }
+
+  return targets;
+}

@@ -7,6 +7,7 @@ from unittest.mock import patch
 from promptboard_yaml import PromptBoardYamlError, normalize_yaml_document
 from yaml_tag_nodes import (
     PromptBoardReplace,
+    _compose_attribute_targets,
     _get_board_template,
     _save_board_template,
     _select_tags_outputs,
@@ -110,6 +111,75 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
             selected_state=json.dumps(selected_state, ensure_ascii=False),
         )
         self.assertNotIn("$attributes", json.loads(selection_json))
+
+    def test_composes_attribute_targets_deterministically(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
+        model = normalize_yaml_document(source)
+        state = {
+            "$attributes": {
+                "clothing": {
+                    "top": {
+                        "material": ["denim", "leather"],
+                        "color": ["black"],
+                    },
+                    "bottom": {"color": ["white"]},
+                }
+            }
+        }
+        warnings = []
+
+        self.assertEqual(
+            _compose_attribute_targets(model, state, warnings),
+            {
+                "clothing.top": {
+                    "boardId": "clothing",
+                    "targetId": "top",
+                    "placeholder": "<TOP_ATTRS>",
+                    "selected": ["black", "leather", "denim"],
+                    "text": "black leather denim",
+                },
+                "clothing.bottom": {
+                    "boardId": "clothing",
+                    "targetId": "bottom",
+                    "placeholder": "<BOTTOM_ATTRS>",
+                    "selected": ["white"],
+                    "text": "white",
+                },
+            },
+        )
+        self.assertEqual(warnings, [])
+
+    def test_attribute_composition_skips_empty_values_and_honors_custom_separators(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
+        model = normalize_yaml_document(source)
+        model["attributeBoards"]["clothing"]["targets"]["top"]["compose"]["separator"] = ", "
+        state = {
+            "$attributes": {
+                "clothing": {
+                    "top": {
+                        "color": [],
+                        "material": ["denim"],
+                    }
+                }
+            }
+        }
+
+        self.assertEqual(
+            _compose_attribute_targets(model, state)["clothing.top"],
+            {
+                "boardId": "clothing",
+                "targetId": "top",
+                "placeholder": "<TOP_ATTRS>",
+                "selected": ["denim"],
+                "text": "denim",
+            },
+        )
+
+        state["$attributes"]["clothing"]["top"]["color"] = ["black"]
+        self.assertEqual(_compose_attribute_targets(model, state)["clothing.top"]["text"], "black, denim")
+
+        model["attributeBoards"]["clothing"]["targets"]["top"]["compose"]["separator"] = ""
+        self.assertEqual(_compose_attribute_targets(model, state)["clothing.top"]["text"], "blackdenim")
 
     def test_reports_shared_semantic_errors(self):
         manifest = read_json(FIXTURE_ROOT / "expected_errors.json")

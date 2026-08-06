@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   ATTRIBUTE_STATE_KEY,
   attributeSelectedTexts,
+  composeAttributeTargets,
   emptyAttributeState,
   normalizeAttributeState,
   setAttributeSelected,
@@ -85,4 +86,69 @@ test("v1 models do not gain an attribute state key", () => {
   const model = normalizeYamlDocument("STYLE:\n  tags:\n  - cinematic\n");
   assert.deepEqual(normalizeAttributeState(model, {}), {});
   assert.deepEqual(emptyAttributeState(model), { [ATTRIBUTE_STATE_KEY]: {} });
+});
+
+test("composes attribute targets in attribute and YAML tag order", async () => {
+  const model = await fixtureModel();
+  const warnings = [];
+  const state = {
+    [ATTRIBUTE_STATE_KEY]: {
+      clothing: {
+        top: {
+          material: ["denim", "leather"],
+          color: ["black"],
+        },
+        bottom: {
+          color: ["white"],
+        },
+      },
+    },
+  };
+
+  assert.deepEqual(composeAttributeTargets(model, state, warnings), {
+    "clothing.top": {
+      boardId: "clothing",
+      targetId: "top",
+      placeholder: "<TOP_ATTRS>",
+      selected: ["black", "leather", "denim"],
+      text: "black leather denim",
+    },
+    "clothing.bottom": {
+      boardId: "clothing",
+      targetId: "bottom",
+      placeholder: "<BOTTOM_ATTRS>",
+      selected: ["white"],
+      text: "white",
+    },
+  });
+  assert.deepEqual(warnings, []);
+});
+
+test("attribute composition skips empty values and honors custom separators", async () => {
+  const model = await fixtureModel();
+  model.attributeBoards.clothing.targets.top.compose.separator = ", ";
+  const state = {
+    [ATTRIBUTE_STATE_KEY]: {
+      clothing: {
+        top: {
+          color: [],
+          material: ["denim"],
+        },
+      },
+    },
+  };
+
+  assert.deepEqual(composeAttributeTargets(model, state)["clothing.top"], {
+    boardId: "clothing",
+    targetId: "top",
+    placeholder: "<TOP_ATTRS>",
+    selected: ["denim"],
+    text: "denim",
+  });
+
+  state[ATTRIBUTE_STATE_KEY].clothing.top.color = ["black"];
+  assert.equal(composeAttributeTargets(model, state)["clothing.top"].text, "black, denim");
+
+  model.attributeBoards.clothing.targets.top.compose.separator = "";
+  assert.equal(composeAttributeTargets(model, state)["clothing.top"].text, "blackdenim");
 });

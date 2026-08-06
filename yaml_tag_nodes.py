@@ -37,6 +37,7 @@ FIXED_DELIMITER = ","
 NODE_ROOT = Path(__file__).resolve().parent
 YAML_FILE_ROOTS = (("tags", NODE_ROOT / "tags"),)
 TEMPLATE_FILE = NODE_ROOT / "templates" / "tag_board_templates.json"
+ATTRIBUTE_STATE_KEY = "$attributes"
 
 
 def _yaml_file_options():
@@ -290,6 +291,127 @@ def _selected_for_category(category, tags, selected_state):
             return [tag["text"] for tag in tags if tag["text"] in selected]
 
     return [tag["text"] for tag in tags if tag.get("default")]
+
+
+def _normalize_attribute_values(tags, raw_values, mode, use_defaults, path, warnings):
+    available = {tag["text"] for tag in tags}
+    source_values = (
+        [tag["text"] for tag in tags if tag.get("default")]
+        if use_defaults
+        else raw_values
+    )
+
+    if not use_defaults and not isinstance(raw_values, list):
+        warnings.append(f"{path} must be an array; the saved value was cleared.")
+        return []
+
+    requested = [str(value) for value in source_values] if isinstance(source_values, list) else []
+    invalid = [value for value in requested if value not in available]
+    if invalid:
+        warnings.append(f"{path} removed unknown tags: {', '.join(dict.fromkeys(invalid))}")
+
+    valid_requested = [value for value in requested if value in available]
+    if mode == "single":
+        if len(valid_requested) > 1:
+            warnings.append(f"{path} kept only one tag because its mode is single.")
+        return valid_requested[:1]
+
+    selected = set(valid_requested)
+    return [tag["text"] for tag in tags if tag["text"] in selected]
+
+
+def _warn_unknown_attribute_paths(model, saved_root, warnings):
+    if not isinstance(saved_root, dict):
+        return
+    for board_id, saved_board in saved_root.items():
+        board = (model.get("attributeBoards") or {}).get(board_id)
+        if not board:
+            warnings.append(f"{ATTRIBUTE_STATE_KEY}.{board_id} no longer exists and was removed.")
+            continue
+        if not isinstance(saved_board, dict):
+            continue
+        for target_id, saved_target in saved_board.items():
+            target = (board.get("targets") or {}).get(target_id)
+            if not target:
+                warnings.append(f"{ATTRIBUTE_STATE_KEY}.{board_id}.{target_id} no longer exists and was removed.")
+                continue
+            if not isinstance(saved_target, dict):
+                continue
+            for attribute_id in saved_target:
+                if attribute_id not in (target.get("attributes") or {}):
+                    warnings.append(
+                        f"{ATTRIBUTE_STATE_KEY}.{board_id}.{target_id}.{attribute_id} "
+                        "no longer exists and was removed."
+                    )
+
+
+def _normalize_attribute_state(model, selected_state=None, warnings=None):
+    selected_state = selected_state if isinstance(selected_state, dict) else {}
+    warnings = warnings if isinstance(warnings, list) else []
+    saved_root = selected_state.get(ATTRIBUTE_STATE_KEY)
+    saved_root = saved_root if isinstance(saved_root, dict) else {}
+    next_root = {}
+
+    _warn_unknown_attribute_paths(model, saved_root, warnings)
+    for board_id, board in (model.get("attributeBoards") or {}).items():
+        next_board = {}
+        for target_id, target in (board.get("targets") or {}).items():
+            next_target = {}
+            saved_target = (
+                saved_root.get(board_id, {}).get(target_id, {})
+                if isinstance(saved_root.get(board_id), dict)
+                else {}
+            )
+            saved_target = saved_target if isinstance(saved_target, dict) else {}
+            for attribute_id, attribute in (target.get("attributes") or {}).items():
+                tag_set = (model.get("tagSets") or {}).get(attribute.get("source")) or {}
+                path = f"{ATTRIBUTE_STATE_KEY}.{board_id}.{target_id}.{attribute_id}"
+                has_saved_value = attribute_id in saved_target
+                next_target[attribute_id] = _normalize_attribute_values(
+                    tag_set.get("tags") or [],
+                    saved_target.get(attribute_id, []),
+                    attribute.get("mode", "single"),
+                    not has_saved_value,
+                    path,
+                    warnings,
+                )
+            next_board[target_id] = next_target
+        next_root[board_id] = next_board
+    return next_root
+
+
+def _attribute_selected_texts(state, board_id, target_id, attribute_id):
+    selected = (
+        state.get(ATTRIBUTE_STATE_KEY, {})
+        .get(board_id, {})
+        .get(target_id, {})
+        .get(attribute_id, [])
+    )
+    return selected if isinstance(selected, list) else []
+
+
+def _compose_attribute_targets(model, selected_state=None, warnings=None):
+    warnings = warnings if isinstance(warnings, list) else []
+    attribute_state = _normalize_attribute_state(model, selected_state, warnings)
+    state = {ATTRIBUTE_STATE_KEY: attribute_state}
+    targets = {}
+
+    for board_id, board in (model.get("attributeBoards") or {}).items():
+        for target_id, target in (board.get("targets") or {}).items():
+            values = []
+            for attribute_id in (target.get("attributes") or {}):
+                values.extend(_attribute_selected_texts(state, board_id, target_id, attribute_id))
+
+            separator = str((target.get("compose") or {}).get("separator", " "))
+            key = f"{board_id}.{target_id}"
+            targets[key] = {
+                "boardId": board_id,
+                "targetId": target_id,
+                "placeholder": target.get("placeholder", ""),
+                "selected": values,
+                "text": separator.join(values),
+            }
+    return targets
 
 
 def _build_selection_payload(config, selected_state):
