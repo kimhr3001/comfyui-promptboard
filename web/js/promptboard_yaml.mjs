@@ -3,6 +3,7 @@ import { CORE_SCHEMA, load } from "../vendor/js-yaml/js-yaml.esm.min.mjs";
 const IDENTIFIER_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const PLACEHOLDER_PATTERN = /^<[A-Za-z0-9_:-]+>$/;
 const RESERVED_CATEGORY_NAMES = new Set(["_promptboard", "$attributes"]);
+const RESERVED_IDENTIFIERS = new Set(["_promptboard", "$attributes"]);
 const ATTRIBUTE_ENTRY_PREFIX = "$attribute:";
 
 export class PromptBoardYamlError extends Error {
@@ -54,6 +55,9 @@ function assertKnownFields(value, fields, path) {
 
 function assertIdentifier(value, path) {
   const identifier = textValue(value);
+  if (RESERVED_IDENTIFIERS.has(identifier) || identifier.startsWith(ATTRIBUTE_ENTRY_PREFIX)) {
+    fail("reserved_identifier", path, `Reserved identifier: ${identifier}`);
+  }
   if (!IDENTIFIER_PATTERN.test(identifier)) {
     fail("invalid_identifier", path, `Invalid identifier: ${identifier || "<empty>"}`);
   }
@@ -123,9 +127,15 @@ function sourceVersion(root) {
 function normalizeTag(entry, path, strict) {
   if (typeof entry === "string") {
     const text = entry.trim();
+    if (strict && !text) {
+      fail("invalid_tag", path, `Tag text must not be empty: ${path}`);
+    }
     return text ? { text, label: text, description: "", default: false } : null;
   }
   if (!isMapping(entry)) {
+    if (strict) {
+      fail("invalid_tag", path, `Tag must be a string or mapping: ${path}`);
+    }
     return null;
   }
   if (strict) {
@@ -134,6 +144,9 @@ function normalizeTag(entry, path, strict) {
 
   const text = textValue(hasOwn(entry, "text") ? entry.text : entry.value);
   if (!text) {
+    if (strict) {
+      fail("invalid_tag", path, `Tag text must not be empty: ${path}`);
+    }
     return null;
   }
   const label = textValue(entry.label, text) || text;
@@ -172,9 +185,13 @@ function normalizeTagSets(settings, schemaVersion) {
     const path = `_promptboard.tagSets.${id}`;
     const value = assertMapping(rawValue, path);
     assertKnownFields(value, new Set(["label", "tags"]), path);
+    const tags = normalizeTags(value.tags, `${path}.tags`, true);
+    if (tags.length === 0) {
+      fail("empty_tag_set", `${path}.tags`, `Tag set must contain at least one tag: ${id}`);
+    }
     tagSets[id] = {
       label: textValue(value.label, id) || id,
-      tags: normalizeTags(value.tags, `${path}.tags`, true),
+      tags,
     };
   }
   return tagSets;

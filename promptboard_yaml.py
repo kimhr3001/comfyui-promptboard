@@ -7,6 +7,7 @@ from yaml.constructor import ConstructorError
 IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 PLACEHOLDER_PATTERN = re.compile(r"^<[A-Za-z0-9_:-]+>$")
 RESERVED_CATEGORY_NAMES = {"_promptboard", "$attributes"}
+RESERVED_IDENTIFIERS = {"_promptboard", "$attributes"}
 ATTRIBUTE_ENTRY_PREFIX = "$attribute:"
 
 
@@ -101,6 +102,8 @@ def _assert_known_fields(value, fields, path):
 
 def _assert_identifier(value, path):
     identifier = _text_value(value)
+    if identifier in RESERVED_IDENTIFIERS or identifier.startswith(ATTRIBUTE_ENTRY_PREFIX):
+        _fail("reserved_identifier", path, f"Reserved identifier: {identifier}")
     if not IDENTIFIER_PATTERN.fullmatch(identifier):
         _fail("invalid_identifier", path, f"Invalid identifier: {identifier or '<empty>'}")
     return identifier
@@ -157,8 +160,12 @@ def _source_version(root):
 def _normalize_tag(entry, path, strict):
     if isinstance(entry, str):
         text = entry.strip()
+        if strict and not text:
+            _fail("invalid_tag", path, f"Tag text must not be empty: {path}")
         return {"text": text, "label": text, "description": "", "default": False} if text else None
     if not _is_mapping(entry):
+        if strict:
+            _fail("invalid_tag", path, f"Tag must be a string or mapping: {path}")
         return None
     if strict:
         _assert_known_fields(entry, {"text", "value", "label", "description", "default"}, path)
@@ -166,6 +173,8 @@ def _normalize_tag(entry, path, strict):
     source = entry["text"] if "text" in entry else entry.get("value", "")
     text = _text_value(source)
     if not text:
+        if strict:
+            _fail("invalid_tag", path, f"Tag text must not be empty: {path}")
         return None
     label = _text_value(entry.get("label"), text) or text
     return {
@@ -201,9 +210,16 @@ def _normalize_tag_sets(settings, schema_version):
         path = f"_promptboard.tagSets.{tag_set_id}"
         value = _assert_mapping(raw_value, path)
         _assert_known_fields(value, {"label", "tags"}, path)
+        tags = _normalize_tags(value.get("tags"), f"{path}.tags", True)
+        if not tags:
+            _fail(
+                "empty_tag_set",
+                f"{path}.tags",
+                f"Tag set must contain at least one tag: {tag_set_id}",
+            )
         tag_sets[tag_set_id] = {
             "label": _text_value(value.get("label"), tag_set_id) or tag_set_id,
-            "tags": _normalize_tags(value.get("tags"), f"{path}.tags", True),
+            "tags": tags,
         }
     return tag_sets
 

@@ -24,6 +24,24 @@
     "message": "Reserved category name: $attributes"
   },
   {
+    "fixture": "reserved_tag_set_identifier.yaml",
+    "code": "reserved_identifier",
+    "path": "_promptboard.tagSets._promptboard",
+    "message": "Reserved identifier: _promptboard"
+  },
+  {
+    "fixture": "empty_tag_set.yaml",
+    "code": "empty_tag_set",
+    "path": "_promptboard.tagSets.colors.tags",
+    "message": "Tag set must contain at least one tag: colors"
+  },
+  {
+    "fixture": "invalid_tag.yaml",
+    "code": "invalid_tag",
+    "path": "_promptboard.tagSets.colors.tags[0]",
+    "message": "Tag text must not be empty: _promptboard.tagSets.colors.tags[0]"
+  },
+  {
     "fixture": "unknown_tag_set.yaml",
     "code": "unknown_tag_set",
     "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.color.source",
