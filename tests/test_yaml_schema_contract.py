@@ -5,6 +5,8 @@ from pathlib import Path
 
 import yaml
 
+from promptboard_yaml import normalize_yaml_document
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_ROOT = PROJECT_ROOT / "tests" / "fixtures" / "yaml_schema"
@@ -114,11 +116,15 @@ class YamlSchemaContractFixtureTests(unittest.TestCase):
     def test_v1_snapshots_match_existing_normalization(self):
         cases = (
             (VALID_ROOT / "legacy_v1.yaml", EXPECTED_ROOT / "legacy_v1.normalized.json"),
-            (PROJECT_ROOT / "tags" / "default.yaml", EXPECTED_ROOT / "default_v1.normalized.json"),
         )
         for source_path, expected_path in cases:
             with self.subTest(path=source_path.name):
                 self.assertEqual(normalize_v1_contract(load_yaml(source_path)), load_json(expected_path))
+
+    def test_default_snapshot_matches_current_normalization(self):
+        source = (PROJECT_ROOT / "tags" / "default.yaml").read_text(encoding="utf-8")
+        expected = load_json(EXPECTED_ROOT / "default_v1.normalized.json")
+        self.assertEqual(normalize_yaml_document(source), expected)
 
     def test_v2_snapshot_ids_follow_contract(self):
         identifier = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
