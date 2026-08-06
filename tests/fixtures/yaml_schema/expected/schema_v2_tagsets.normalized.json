@@ -38,14 +38,64 @@
       "uiGroup": "색상",
       "replaceInsideTags": true,
       "tagSet": "colors",
-      "tags": []
+      "tags": [
+        {
+          "text": "black",
+          "label": "검정",
+          "description": "검은색",
+          "default": false
+        },
+        {
+          "text": "white",
+          "label": "white",
+          "description": "",
+          "default": false
+        },
+        {
+          "text": "red",
+          "label": "빨강",
+          "description": "",
+          "default": true
+        },
+        {
+          "text": "affirmative",
+          "label": "yes",
+          "description": "2026-08-05",
+          "default": false
+        }
+      ]
     },
     "하의색상": {
       "placeholder": "<BCO>",
       "uiGroup": "색상",
       "replaceInsideTags": true,
       "tagSet": "colors",
-      "tags": []
+      "tags": [
+        {
+          "text": "black",
+          "label": "검정",
+          "description": "검은색",
+          "default": false
+        },
+        {
+          "text": "white",
+          "label": "white",
+          "description": "",
+          "default": false
+        },
+        {
+          "text": "red",
+          "label": "빨강",
+          "description": "",
+          "default": true
+        },
+        {
+          "text": "affirmative",
+          "label": "yes",
+          "description": "2026-08-05",
+          "default": false
+        }
+      ]
     }
   }
 }

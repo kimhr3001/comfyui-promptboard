@@ -109,15 +109,24 @@ Tag-set category reference:
   "uiGroup": "색상",
   "replaceInsideTags": true,
   "tagSet": "colors",
-  "tags": []
+  "tags": [
+    {
+      "text": "black",
+      "label": "검정",
+      "description": "검은색",
+      "default": false
+    }
+  ]
 }
 ```
 
 Rules:
 
 - A category may declare `tags` or `tagSet`, but not both.
-- `tagSet` references remain unresolved in the Phase 1 normalized model.
-- Tag-set expansion into effective category tags belongs to Phase 2.
+- A `tagSet` reference expands into an independent copy of the tag list for
+  each category while preserving the source `tagSet` identifier.
+- Category selection state remains keyed by category, so categories sharing a
+  tag set do not share selections.
 
 ## Normalized tag set
 
@@ -198,12 +207,15 @@ Semantic validation errors use this stable shape:
 | `schema_version_required` | `_promptboard.schemaVersion` | A v2 field exists without `schemaVersion: 2` |
 | `invalid_yaml_root` | `$` | Parsed YAML root is not a mapping |
 | `reserved_category_name` | category key | Category uses a reserved name or prefix |
+| `reserved_identifier` | offending ID path | Machine identifier uses a reserved name or prefix |
 | `invalid_identifier` | offending ID path | Machine identifier does not match the ID pattern |
 | `unknown_schema_field` | offending field path | Schema v2 configuration contains an unsupported field |
 | `invalid_schema_type` | offending field path | A mapping or sequence field has the wrong type |
 | `missing_required_field` | missing field path | A required schema v2 field is absent |
 | `unknown_tag_set` | `tagSet` or attribute `source` | Referenced tag set does not exist |
 | `ambiguous_category_source` | category path | Category declares both `tags` and `tagSet` |
+| `empty_tag_set` | tag-set `tags` path | Tag set does not contain a usable tag |
+| `invalid_tag` | tag entry path | Tag is malformed or has empty text |
 | `invalid_attribute_mode` | attribute `mode` | Mode is not `single` or `multiple` |
 | `invalid_placeholder` | placeholder path | Placeholder syntax is invalid |
 | `placeholder_collision` | target placeholder path | Target placeholder conflicts with another output slot |

@@ -237,7 +237,9 @@ function normalizeCategory(category, rawValue, schemaVersion, tagSets) {
     uiGroup: textValue(value.uiGroup),
     replaceInsideTags: normalizeBool(value.replaceInsideTags),
     tagSet,
-    tags: hasTags ? normalizeTags(value.tags, `${path}.tags`, strict) : [],
+    tags: hasTags
+      ? normalizeTags(value.tags, `${path}.tags`, strict)
+      : (tagSet ? tagSets[tagSet].tags.map((tag) => ({ ...tag })) : []),
   };
 }
 

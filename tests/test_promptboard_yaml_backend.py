@@ -32,6 +32,36 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
         expected = read_json(FIXTURE_ROOT / "expected" / "default_v1.normalized.json")
         self.assertEqual(normalize_yaml_document(source), expected)
 
+    def test_expands_a_shared_tag_set_into_independent_category_tag_objects(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_tagsets.yaml")
+        model = normalize_yaml_document(source)
+        top_tags = model["categories"]["상의색상"]["tags"]
+        bottom_tags = model["categories"]["하의색상"]["tags"]
+
+        self.assertEqual(top_tags, model["tagSets"]["colors"]["tags"])
+        self.assertEqual(bottom_tags, model["tagSets"]["colors"]["tags"])
+        self.assertIsNot(top_tags, bottom_tags)
+        self.assertIsNot(top_tags[0], bottom_tags[0])
+        self.assertIsNot(top_tags[0], model["tagSets"]["colors"]["tags"][0])
+
+        top_tags[0]["label"] = "변경됨"
+        self.assertEqual(bottom_tags[0]["label"], "검정")
+        self.assertEqual(model["tagSets"]["colors"]["tags"][0]["label"], "검정")
+
+    def test_keeps_selections_independent_for_categories_using_the_same_tag_set(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_tagsets.yaml")
+        state = json.dumps({"상의색상": ["black"], "하의색상": ["white"]}, ensure_ascii=False)
+        selection_json, preview, selected_text = _select_tags_outputs(
+            yaml_text=source,
+            selected_state=state,
+        )
+        payload = json.loads(selection_json)
+
+        self.assertEqual(payload["상의색상"]["selected"], ["black"])
+        self.assertEqual(payload["하의색상"]["selected"], ["white"])
+        self.assertEqual(preview, "<TCO>: black\n<BCO>: white")
+        self.assertEqual(selected_text, "black,white")
+
     def test_reports_shared_semantic_errors(self):
         manifest = read_json(FIXTURE_ROOT / "expected_errors.json")
         for expected in manifest:

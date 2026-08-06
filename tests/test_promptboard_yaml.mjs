@@ -40,6 +40,23 @@ test("keeps the current default YAML on the v1 normalization snapshot", async ()
   assert.deepEqual(normalizeYamlDocument(source), expected);
 });
 
+test("expands a shared tag set into independent category tag objects", async () => {
+  const source = await readText(join(fixtureRoot, "valid", "schema_v2_tagsets.yaml"));
+  const model = normalizeYamlDocument(source);
+  const topTags = model.categories["상의색상"].tags;
+  const bottomTags = model.categories["하의색상"].tags;
+
+  assert.deepEqual(topTags, model.tagSets.colors.tags);
+  assert.deepEqual(bottomTags, model.tagSets.colors.tags);
+  assert.notStrictEqual(topTags, bottomTags);
+  assert.notStrictEqual(topTags[0], bottomTags[0]);
+  assert.notStrictEqual(topTags[0], model.tagSets.colors.tags[0]);
+
+  topTags[0].label = "변경됨";
+  assert.equal(bottomTags[0].label, "검정");
+  assert.equal(model.tagSets.colors.tags[0].label, "검정");
+});
+
 test("reports every semantic error with the shared code, path, and message", async () => {
   const manifest = await readJson(join(fixtureRoot, "expected_errors.json"));
   for (const expected of manifest) {

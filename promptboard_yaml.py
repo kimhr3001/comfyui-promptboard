@@ -259,7 +259,11 @@ def _normalize_category(category, raw_value, schema_version, tag_sets):
         "uiGroup": _text_value(value.get("uiGroup")),
         "replaceInsideTags": _normalize_bool(value.get("replaceInsideTags", False)),
         "tagSet": tag_set,
-        "tags": _normalize_tags(value.get("tags"), f"{path}.tags", strict) if has_tags else [],
+        "tags": (
+            _normalize_tags(value.get("tags"), f"{path}.tags", strict)
+            if has_tags
+            else [dict(tag) for tag in tag_sets[tag_set]["tags"]] if tag_set else []
+        ),
     }
 
 
