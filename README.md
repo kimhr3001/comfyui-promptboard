@@ -174,6 +174,39 @@ Object tag fields:
 
 `value` is also accepted as an alias for `text`, but new YAML files should use `text`.
 
+### Reusable Tag Sets
+
+Use schema v2 `tagSets` when multiple categories need the same selectable tags.
+The tag metadata is written once, while selections remain independent for each category.
+
+```yaml
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      label: Colors
+      tags:
+      - text: black
+        label: Black
+        description: Black color.
+      - text: white
+        label: White
+        description: White color.
+
+TOP_COLOR:
+  placeholder: <TOP_COLOR>
+  uiGroup: Color
+  tagSet: colors
+
+BOTTOM_COLOR:
+  placeholder: <BOTTOM_COLOR>
+  uiGroup: Color
+  tagSet: colors
+```
+
+A category must use either `tags` or `tagSet`, not both. Unknown tag-set names,
+empty tag sets, and malformed tag entries are reported as YAML errors with their paths.
+
 ### Nested Replacement
 
 Use `replaceInsideTags: true` when a category is meant to replace placeholders inside another selected tag.

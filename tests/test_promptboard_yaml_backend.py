@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 from promptboard_yaml import PromptBoardYamlError, normalize_yaml_document
-from yaml_tag_nodes import _select_tags_outputs
+from yaml_tag_nodes import PromptBoardReplace, _select_tags_outputs
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -61,6 +61,22 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
         self.assertEqual(payload["하의색상"]["selected"], ["white"])
         self.assertEqual(preview, "<TCO>: black\n<BCO>: white")
         self.assertEqual(selected_text, "black,white")
+
+    def test_tag_set_and_direct_tags_produce_identical_outputs(self):
+        state = json.dumps({"상의색상": ["black"], "하의색상": ["white"]}, ensure_ascii=False)
+        shared_source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_tagsets.yaml")
+        direct_source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_tagsets_direct.yaml")
+
+        shared_outputs = _select_tags_outputs(yaml_text=shared_source, selected_state=state)
+        direct_outputs = _select_tags_outputs(yaml_text=direct_source, selected_state=state)
+        self.assertEqual(shared_outputs, direct_outputs)
+
+        replacer = PromptBoardReplace()
+        source_text = "top: <TCO>; bottom: <BCO>"
+        shared_replaced = replacer.replace_tags(source_text, shared_outputs[0])
+        direct_replaced = replacer.replace_tags(source_text, direct_outputs[0])
+        self.assertEqual(shared_replaced, direct_replaced)
+        self.assertEqual(shared_replaced[0], "top: black; bottom: white")
 
     def test_reports_shared_semantic_errors(self):
         manifest = read_json(FIXTURE_ROOT / "expected_errors.json")

@@ -57,6 +57,17 @@ test("expands a shared tag set into independent category tag objects", async () 
   assert.equal(model.tagSets.colors.tags[0].label, "검정");
 });
 
+test("expands tag-set categories to the same effective tags as direct categories", async () => {
+  const sharedSource = await readText(join(fixtureRoot, "valid", "schema_v2_tagsets.yaml"));
+  const directSource = await readText(join(fixtureRoot, "valid", "schema_v2_tagsets_direct.yaml"));
+  const sharedCategories = normalizeYamlDocument(sharedSource).categories;
+  const directCategories = normalizeYamlDocument(directSource).categories;
+
+  for (const category of Object.keys(directCategories)) {
+    assert.deepEqual(sharedCategories[category].tags, directCategories[category].tags);
+  }
+});
+
 test("reports every semantic error with the shared code, path, and message", async () => {
   const manifest = await readJson(join(fixtureRoot, "expected_errors.json"));
   for (const expected of manifest) {
