@@ -133,9 +133,11 @@ def _read_board_templates():
         return []
     try:
         data = json.loads(TEMPLATE_FILE.read_text(encoding="utf-8") or "[]")
-    except Exception:
-        return []
-    return data if isinstance(data, list) else []
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Template file is invalid JSON: {TEMPLATE_FILE}") from exc
+    if not isinstance(data, list):
+        raise ValueError(f"Template file must contain a JSON array: {TEMPLATE_FILE}")
+    return data
 
 
 def _write_board_templates(templates):
@@ -282,6 +284,10 @@ def _config_from_model(model):
             "replaceInsideTags": item["replaceInsideTags"],
             "tags": item["tags"],
         }
+        if item.get("tagItems"):
+            config[category]["tagItems"] = item["tagItems"]
+        if item.get("label"):
+            config[category]["label"] = item["label"]
     return config
 
 

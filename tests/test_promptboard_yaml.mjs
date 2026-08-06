@@ -57,6 +57,55 @@ test("expands a shared tag set into independent category tag objects", async () 
   assert.equal(model.tagSets.colors.tags[0].label, "검정");
 });
 
+test("keeps category keys stable while accepting display labels", () => {
+  const model = normalizeYamlDocument(`
+_promptboard:
+  schemaVersion: 2
+세트의상_오피스:
+  label: 오피스
+  placeholder: <CLOTHES>
+  uiGroup: 의상
+  tags:
+  - office lady
+`);
+  assert.equal(model.categories["세트의상_오피스"].label, "오피스");
+  assert.equal(model.categories["세트의상_오피스"].placeholder, "<CLOTHES>");
+  assert.deepEqual(Object.keys(model.categories), ["세트의상_오피스"]);
+});
+
+test("keeps section markers as layout items while flattening selectable tags", () => {
+  const model = normalizeYamlDocument(`
+_promptboard:
+  schemaVersion: 2
+POSE:
+  placeholder: <POSE>
+  tags:
+  - section: Basic
+  - text: standing
+    label: Stand
+  - section: Legs
+  - text: legs_up
+    label: Legs Up
+`);
+
+  assert.deepEqual(
+    model.categories.POSE.tags.map((tag) => tag.text),
+    ["standing", "legs_up"],
+  );
+  assert.deepEqual(model.categories.POSE.tagItems, [
+    { kind: "section", label: "Basic" },
+    {
+      kind: "tag",
+      tag: { text: "standing", label: "Stand", description: "", default: false },
+    },
+    { kind: "section", label: "Legs" },
+    {
+      kind: "tag",
+      tag: { text: "legs_up", label: "Legs Up", description: "", default: false },
+    },
+  ]);
+});
+
 test("expands tag-set categories to the same effective tags as direct categories", async () => {
   const sharedSource = await readText(join(fixtureRoot, "valid", "schema_v2_tagsets.yaml"));
   const directSource = await readText(join(fixtureRoot, "valid", "schema_v2_tagsets_direct.yaml"));

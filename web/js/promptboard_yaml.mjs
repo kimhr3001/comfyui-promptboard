@@ -158,19 +158,57 @@ function normalizeTag(entry, path, strict) {
   };
 }
 
-function normalizeTags(value, path, strict) {
+function normalizeTagItems(value, path, strict) {
   if (value == null) {
-    return [];
+    return { tags: [], tagItems: null };
   }
   if (!Array.isArray(value)) {
     if (strict) {
       fail("invalid_schema_type", path, `Expected a sequence at ${path}`);
     }
-    return [];
+    return { tags: [], tagItems: null };
   }
-  return value
-    .map((entry, index) => normalizeTag(entry, `${path}[${index}]`, strict))
-    .filter(Boolean);
+  const tags = [];
+  const tagItems = [];
+  let hasSection = false;
+  for (const [index, entry] of value.entries()) {
+    const entryPath = `${path}[${index}]`;
+    if (isMapping(entry) && hasOwn(entry, "section")) {
+      if (strict) {
+        assertKnownFields(entry, new Set(["section"]), entryPath);
+      }
+      const label = textValue(entry.section);
+      if (!label) {
+        if (strict) {
+          fail("invalid_tag", entryPath, `Section label must not be empty: ${entryPath}`);
+        }
+        continue;
+      }
+      tagItems.push({ kind: "section", label });
+      hasSection = true;
+      continue;
+    }
+
+    const tag = normalizeTag(entry, entryPath, strict);
+    if (tag) {
+      tags.push(tag);
+      tagItems.push({ kind: "tag", tag: { ...tag } });
+    }
+  }
+  return { tags, tagItems: hasSection ? tagItems : null };
+}
+
+function normalizeTags(value, path, strict) {
+  return normalizeTagItems(value, path, strict).tags;
+}
+
+function cloneTagItems(tagItems) {
+  if (!tagItems) {
+    return null;
+  }
+  return tagItems.map((item) => item.kind === "tag"
+    ? { kind: "tag", tag: { ...item.tag } }
+    : { ...item });
 }
 
 function normalizeTagSets(settings, schemaVersion) {
@@ -185,14 +223,19 @@ function normalizeTagSets(settings, schemaVersion) {
     const path = `_promptboard.tagSets.${id}`;
     const value = assertMapping(rawValue, path);
     assertKnownFields(value, new Set(["label", "tags"]), path);
-    const tags = normalizeTags(value.tags, `${path}.tags`, true);
+    const normalizedTags = normalizeTagItems(value.tags, `${path}.tags`, true);
+    const tags = normalizedTags.tags;
     if (tags.length === 0) {
       fail("empty_tag_set", `${path}.tags`, `Tag set must contain at least one tag: ${id}`);
     }
-    tagSets[id] = {
+    const tagSet = {
       label: textValue(value.label, id) || id,
       tags,
     };
+    if (normalizedTags.tagItems) {
+      tagSet.tagItems = normalizedTags.tagItems;
+    }
+    tagSets[id] = tagSet;
   }
   return tagSets;
 }
@@ -204,7 +247,7 @@ function normalizeCategory(category, rawValue, schemaVersion, tagSets) {
   if (strict) {
     assertKnownFields(
       value,
-      new Set(["placeholder", "uiGroup", "replaceInsideTags", "tags", "tagSet"]),
+      new Set(["label", "placeholder", "uiGroup", "replaceInsideTags", "tags", "tagSet"]),
       path,
     );
   }
@@ -232,15 +275,26 @@ function normalizeCategory(category, rawValue, schemaVersion, tagSets) {
   if (strict) {
     assertPlaceholder(placeholder, `${path}.placeholder`);
   }
-  return {
+  const directTags = hasTags ? normalizeTagItems(value.tags, `${path}.tags`, strict) : null;
+  const tagSetItems = tagSet ? cloneTagItems(tagSets[tagSet].tagItems) : null;
+  const normalized = {
     placeholder,
     uiGroup: textValue(value.uiGroup),
     replaceInsideTags: normalizeBool(value.replaceInsideTags),
     tagSet,
     tags: hasTags
-      ? normalizeTags(value.tags, `${path}.tags`, strict)
+      ? directTags.tags
       : (tagSet ? tagSets[tagSet].tags.map((tag) => ({ ...tag })) : []),
   };
+  const tagItems = hasTags ? directTags.tagItems : tagSetItems;
+  if (tagItems) {
+    normalized.tagItems = tagItems;
+  }
+  const label = textValue(value.label);
+  if (label) {
+    normalized.label = label;
+  }
+  return normalized;
 }
 
 function normalizeCategories(root, schemaVersion, tagSets) {

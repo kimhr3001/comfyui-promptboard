@@ -185,19 +185,48 @@ def _normalize_tag(entry, path, strict):
     }
 
 
-def _normalize_tags(value, path, strict):
+def _normalize_tag_items(value, path, strict):
     if value is None:
-        return []
+        return {"tags": [], "tagItems": None}
     if not isinstance(value, list):
         if strict:
             _fail("invalid_schema_type", path, f"Expected a sequence at {path}")
-        return []
+        return {"tags": [], "tagItems": None}
     tags = []
+    tag_items = []
+    has_section = False
     for index, entry in enumerate(value):
-        tag = _normalize_tag(entry, f"{path}[{index}]", strict)
+        entry_path = f"{path}[{index}]"
+        if _is_mapping(entry) and "section" in entry:
+            if strict:
+                _assert_known_fields(entry, {"section"}, entry_path)
+            label = _text_value(entry.get("section"))
+            if not label:
+                if strict:
+                    _fail("invalid_tag", entry_path, f"Section label must not be empty: {entry_path}")
+                continue
+            tag_items.append({"kind": "section", "label": label})
+            has_section = True
+            continue
+
+        tag = _normalize_tag(entry, entry_path, strict)
         if tag is not None:
             tags.append(tag)
-    return tags
+            tag_items.append({"kind": "tag", "tag": dict(tag)})
+    return {"tags": tags, "tagItems": tag_items if has_section else None}
+
+
+def _normalize_tags(value, path, strict):
+    return _normalize_tag_items(value, path, strict)["tags"]
+
+
+def _clone_tag_items(tag_items):
+    if not tag_items:
+        return None
+    return [
+        {"kind": "tag", "tag": dict(item["tag"])} if item.get("kind") == "tag" else dict(item)
+        for item in tag_items
+    ]
 
 
 def _normalize_tag_sets(settings, schema_version):
@@ -210,17 +239,21 @@ def _normalize_tag_sets(settings, schema_version):
         path = f"_promptboard.tagSets.{tag_set_id}"
         value = _assert_mapping(raw_value, path)
         _assert_known_fields(value, {"label", "tags"}, path)
-        tags = _normalize_tags(value.get("tags"), f"{path}.tags", True)
+        normalized_tags = _normalize_tag_items(value.get("tags"), f"{path}.tags", True)
+        tags = normalized_tags["tags"]
         if not tags:
             _fail(
                 "empty_tag_set",
                 f"{path}.tags",
                 f"Tag set must contain at least one tag: {tag_set_id}",
             )
-        tag_sets[tag_set_id] = {
+        tag_set = {
             "label": _text_value(value.get("label"), tag_set_id) or tag_set_id,
             "tags": tags,
         }
+        if normalized_tags["tagItems"]:
+            tag_set["tagItems"] = normalized_tags["tagItems"]
+        tag_sets[tag_set_id] = tag_set
     return tag_sets
 
 
@@ -231,7 +264,7 @@ def _normalize_category(category, raw_value, schema_version, tag_sets):
     if strict:
         _assert_known_fields(
             value,
-            {"placeholder", "uiGroup", "replaceInsideTags", "tags", "tagSet"},
+            {"label", "placeholder", "uiGroup", "replaceInsideTags", "tags", "tagSet"},
             path,
         )
 
@@ -254,17 +287,26 @@ def _normalize_category(category, raw_value, schema_version, tag_sets):
     placeholder = _text_value(value.get("placeholder"), fallback_placeholder)
     if strict:
         _assert_placeholder(placeholder, f"{path}.placeholder")
-    return {
+    direct_tags = _normalize_tag_items(value.get("tags"), f"{path}.tags", strict) if has_tags else None
+    tag_set_items = _clone_tag_items(tag_sets[tag_set].get("tagItems")) if tag_set else None
+    normalized = {
         "placeholder": placeholder,
         "uiGroup": _text_value(value.get("uiGroup")),
         "replaceInsideTags": _normalize_bool(value.get("replaceInsideTags", False)),
         "tagSet": tag_set,
         "tags": (
-            _normalize_tags(value.get("tags"), f"{path}.tags", strict)
+            direct_tags["tags"]
             if has_tags
             else [dict(tag) for tag in tag_sets[tag_set]["tags"]] if tag_set else []
         ),
     }
+    tag_items = direct_tags["tagItems"] if has_tags else tag_set_items
+    if tag_items:
+        normalized["tagItems"] = tag_items
+    label = _text_value(value.get("label"))
+    if label:
+        normalized["label"] = label
+    return normalized
 
 
 def _normalize_categories(root, schema_version, tag_sets):

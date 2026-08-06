@@ -56,6 +56,61 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
         self.assertEqual(bottom_tags[0]["label"], "검정")
         self.assertEqual(model["tagSets"]["colors"]["tags"][0]["label"], "검정")
 
+    def test_keeps_category_keys_stable_while_accepting_display_labels(self):
+        model = normalize_yaml_document(
+            """
+_promptboard:
+  schemaVersion: 2
+세트의상_오피스:
+  label: 오피스
+  placeholder: <CLOTHES>
+  uiGroup: 의상
+  tags:
+  - office lady
+"""
+        )
+
+        self.assertEqual(model["categories"]["세트의상_오피스"]["label"], "오피스")
+        self.assertEqual(model["categories"]["세트의상_오피스"]["placeholder"], "<CLOTHES>")
+        self.assertEqual(list(model["categories"].keys()), ["세트의상_오피스"])
+
+    def test_keeps_section_markers_as_layout_items_while_flattening_selectable_tags(self):
+        model = normalize_yaml_document(
+            """
+_promptboard:
+  schemaVersion: 2
+POSE:
+  placeholder: <POSE>
+  tags:
+  - section: Basic
+  - text: standing
+    label: Stand
+  - section: Legs
+  - text: legs_up
+    label: Legs Up
+"""
+        )
+
+        self.assertEqual(
+            [tag["text"] for tag in model["categories"]["POSE"]["tags"]],
+            ["standing", "legs_up"],
+        )
+        self.assertEqual(
+            model["categories"]["POSE"]["tagItems"],
+            [
+                {"kind": "section", "label": "Basic"},
+                {
+                    "kind": "tag",
+                    "tag": {"text": "standing", "label": "Stand", "description": "", "default": False},
+                },
+                {"kind": "section", "label": "Legs"},
+                {
+                    "kind": "tag",
+                    "tag": {"text": "legs_up", "label": "Legs Up", "description": "", "default": False},
+                },
+            ],
+        )
+
     def test_keeps_selections_independent_for_categories_using_the_same_tag_set(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_tagsets.yaml")
         state = json.dumps({"상의색상": ["black"], "하의색상": ["white"]}, ensure_ascii=False)
@@ -132,6 +187,17 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
                 "selected": ["white"],
             },
         )
+
+    def test_refuses_to_overwrite_corrupt_template_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            template_file = Path(directory) / "tag_board_templates.json"
+            template_file.write_text("{broken", encoding="utf-8")
+
+            with patch("yaml_tag_nodes.TEMPLATE_FILE", template_file):
+                with self.assertRaisesRegex(ValueError, "invalid JSON"):
+                    _save_board_template("new-template", "default.yaml", {"STYLE": ["cinematic"]})
+
+            self.assertEqual(template_file.read_text(encoding="utf-8"), "{broken")
 
     def test_attribute_payload_uses_existing_replace_path(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
