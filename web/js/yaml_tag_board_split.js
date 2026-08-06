@@ -2,6 +2,11 @@
  * Prompt Board node UI.
  */
 import { app } from "../../../scripts/app.js";
+import {
+  ATTRIBUTE_STATE_KEY,
+  emptyAttributeState,
+  normalizeAttributeState,
+} from "./promptboard_attribute_state.mjs";
 import { normalizeYamlDocument } from "./promptboard_yaml.mjs";
 
 const NODE_NAME = "PromptBoard";
@@ -793,13 +798,17 @@ function selectedTextsForCategory(category, tags, selectedState) {
   return tags.filter((tag) => tag.default).map((tag) => tag.text);
 }
 
-function pruneSelectedState(config, selectedState) {
+function pruneSelectedState(model, selectedState, warnings = []) {
+  const config = model.categories ?? {};
   const nextState = {};
   for (const [category, item] of Object.entries(config)) {
     const tagTexts = new Set(item.tags.map((tag) => tag.text));
     nextState[category] = selectedTextsForCategory(category, item.tags, selectedState).filter((text) =>
       tagTexts.has(text),
     );
+  }
+  if (Object.keys(model.attributeBoards ?? {}).length) {
+    nextState[ATTRIBUTE_STATE_KEY] = normalizeAttributeState(model, selectedState, warnings);
   }
   return nextState;
 }
@@ -882,6 +891,9 @@ function resetSelectionAndCollapse(node) {
   for (const category of Object.keys(config)) {
     state[category] = [];
     collapsedSet.add(category);
+  }
+  if (Object.keys(node.promptboardYamlModel?.attributeBoards ?? {}).length) {
+    Object.assign(state, emptyAttributeState(node.promptboardYamlModel));
   }
 
   syncState(node, state);
@@ -2237,13 +2249,20 @@ function renderFromYaml(node, resetState = false) {
   }
 
   const config = model.categories;
-  const state = pruneSelectedState(config, resetState ? {} : parseSelectedState(node));
+  const warnings = [];
+  const sourceState = resetState ? emptyAttributeState(model) : parseSelectedState(node);
+  const state = pruneSelectedState(model, sourceState, warnings);
   node.promptboardYamlModel = model;
   node.promptboardConfig = config;
   ensureInitialCollapsedCategories(node, config);
   syncState(node, state);
   renderCards(node);
   scheduleLayoutSizeSync(node);
+  if (warnings.length) {
+    setStatus(node, `State warning: ${warnings[0]}${warnings.length > 1 ? ` (+${warnings.length - 1})` : ""}`);
+  } else if (String(node.promptboardStatus ?? "").startsWith("State warning:")) {
+    setStatus(node, "");
+  }
 }
 
 async function refreshYamlFileOptions(node) {

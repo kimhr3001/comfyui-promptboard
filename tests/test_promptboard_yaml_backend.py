@@ -1,9 +1,16 @@
 import json
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from promptboard_yaml import PromptBoardYamlError, normalize_yaml_document
-from yaml_tag_nodes import PromptBoardReplace, _select_tags_outputs
+from yaml_tag_nodes import (
+    PromptBoardReplace,
+    _get_board_template,
+    _save_board_template,
+    _select_tags_outputs,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -77,6 +84,32 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
         direct_replaced = replacer.replace_tags(source_text, direct_outputs[0])
         self.assertEqual(shared_replaced, direct_replaced)
         self.assertEqual(shared_replaced[0], "top: black; bottom: white")
+
+    def test_template_round_trips_attribute_state_without_affecting_selection_output(self):
+        selected_state = {
+            "상의": ["<TOP_ATTRS> sports bra"],
+            "$attributes": {
+                "clothing": {
+                    "top": {"color": ["black"], "material": ["leather", "denim"]},
+                    "bottom": {"color": ["white"]},
+                }
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            template_file = Path(directory) / "tag_board_templates.json"
+            with patch("yaml_tag_nodes.TEMPLATE_FILE", template_file):
+                saved = _save_board_template("attribute-state", "default.yaml", selected_state)
+                loaded = _get_board_template("attribute-state")
+
+        self.assertEqual(saved["selected_state"], selected_state)
+        self.assertEqual(loaded["selected_state"], selected_state)
+
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
+        selection_json, _preview, _selected_text = _select_tags_outputs(
+            yaml_text=source,
+            selected_state=json.dumps(selected_state, ensure_ascii=False),
+        )
+        self.assertNotIn("$attributes", json.loads(selection_json))
 
     def test_reports_shared_semantic_errors(self):
         manifest = read_json(FIXTURE_ROOT / "expected_errors.json")
