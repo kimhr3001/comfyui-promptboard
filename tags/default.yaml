@@ -70,6 +70,24 @@ _promptboard:
         - text: plaid
           label: 체크
           description: 기존 상의/하의/외투 색상 카테고리의 체크 선택값을 보존합니다.
+        - text: striped
+          label: 스트라이프
+          description: 줄무늬 패턴입니다.
+        - text: polka_dot
+          label: 도트
+          description: 점무늬 패턴입니다.
+        - text: argyle
+          label: 아가일
+          description: 마름모 격자 형태의 아가일 패턴입니다.
+        - text: checkered
+          label: 체커
+          description: 바둑판처럼 반복되는 체크 패턴입니다.
+        - text: ribbed
+          label: 골지
+          description: 세로 골이 있는 니트/골지 질감입니다.
+        - text: floral_print
+          label: 플로럴
+          description: 꽃무늬 패턴입니다.
   attributeBoards:
     clothingColors:
       label: 의상 색상
@@ -956,54 +974,54 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 기본 상의
-    - text: <TCO> t-shirt
+    - text: <TCO> <CDE> t-shirt
       label: <TCO> 티셔츠
       description: <TCO> 색상의 티셔츠를 착용한 상태
-    - text: <TCO> tank_top
+    - text: <TCO> <CDE> tank_top
       label: 탱크톱
       description: 민소매 형태의 상의입니다.
-    - text: <TCO> sweater
+    - text: <TCO> <CDE> sweater
       label: 스웨터
       description: 니트 소재의 상의입니다.
-    - text: <TCO> hoodie
+    - text: <TCO> <CDE> hoodie
       label: 후드티
       description: 색상이 적용된 후드 티셔츠입니다.
-    - text: <TCO> cardigan
+    - text: <TCO> <CDE> cardigan
       label: 가디건
       description: 색상이 적용된 가디건입니다.
-    - text: <TCO> shirt
+    - text: <TCO> <CDE> shirt
       label: 셔츠
       description: 색상이 적용된 셔츠입니다.
-    - text: <TCO> collared_shirt
+    - text: <TCO> <CDE> collared_shirt
       label: 셔츠
       description: 깃이 있는 셔츠 스타일입니다.
-    - text: <TCO> polo_shirt
+    - text: <TCO> <CDE> polo_shirt
       label: 폴로 셔츠
       description: 칼라가 달린 반소매 셔츠
     - section: 여성 상의
-    - text: <TCO> crop_top
+    - text: <TCO> <CDE> crop_top
       label: 크롭톱
       description: 길이가 짧은 상의입니다.
-    - text: <TCO> sleeveless_shirt
+    - text: <TCO> <CDE> sleeveless_shirt
       label: 민소매 셔츠
       description: 색상이 적용된 민소매 셔츠입니다.
-    - text: <TCO> blouse
+    - text: <TCO> <CDE> blouse
       label: 블라우스
       description: 색상이 적용된 블라우스 스타일입니다.
-    - text: <TCO> lace_camisole
+    - text: <TCO> <CDE> lace_camisole
       label: 레이스 캐미솔
       description: 레이스 장식이 된 캐미솔입니다.
-    - text: <TCO> tube_top
+    - text: <TCO> <CDE> tube_top
       label: 튜브 탑
       description: 어깨끈이 없는 소매 없는 상의
     - section: 원피스/특수
-    - text: <TCO> bodysuit
+    - text: <TCO> <CDE> bodysuit
       label: 바디수트
       description: 몸에 밀착되는 바디수트 스타일입니다.
-    - text: <TCO> corset_top
+    - text: <TCO> <CDE> corset_top
       label: 코르셋 탑
       description: 몸매를 강조하는 코르셋 스타일 상의
-    - text: <TCO> dress
+    - text: <TCO> <CDE> dress
       label: 드레스
       description: 원피스 형태의 의상
 상의상세:
@@ -1075,91 +1093,91 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 길이
-    - text: <BCO> skirt
+    - text: <BCO> <CDE> skirt
       label: 컬러 스커트
       description: 특정 색상의 스커트
-    - text: micro_skirt
+    - text: <CDE> micro_skirt
       label: 마이크로 스커트
       description: 매우 짧고 아슬아슬한 스커트
-    - text: miniskirt
+    - text: <CDE> miniskirt
       label: 미니스커트
       description: 짧은 길이의 스커트
-    - text: short_skirt
+    - text: <CDE> short_skirt
       label: 미니스커트
       description: 짧은 길이의 스커트입니다.
-    - text: knee-length_skirt
+    - text: <CDE> knee-length_skirt
       label: 무릎 길이 스커트
       description: 무릎까지 오는 길이의 스커트입니다.
-    - text: midi_skirt
+    - text: <CDE> midi_skirt
       label: 미디 스커트
       description: 종아리까지 오는 중간 길이의 스커트입니다.
-    - text: long_skirt
+    - text: <CDE> long_skirt
       label: 롱 스커트
       description: 발목까지 내려오는 긴 스커트입니다.
-    - text: maxi_skirt
+    - text: <CDE> maxi_skirt
       label: 맥시 스커트
       description: 발목까지 오는 긴 스커트입니다.
     - section: 실루엣
-    - text: pleated_skirt
+    - text: <CDE> pleated_skirt
       label: 주름 스커트
       description: 세로 주름이 잡힌 스커트입니다.
-    - text: tennis_skirt
+    - text: <CDE> tennis_skirt
       label: 테니스 스커트
       description: 짧고 넓게 퍼지는 주름 스커트입니다.
-    - text: pencil_skirt
+    - text: <CDE> pencil_skirt
       label: 펜슬 스커트
       description: 몸에 딱 붙는 슬림한 스커트입니다.
-    - text: tight_skirt
+    - text: <CDE> tight_skirt
       label: 타이트 스커트
       description: 몸에 밀착되는 스커트
-    - text: flare_skirt
+    - text: <CDE> flare_skirt
       label: 플레어 스커트
       description: 밑단이 넓게 퍼지는 스커트
-    - text: a-line_skirt
+    - text: <CDE> a-line_skirt
       label: A라인 스커트
       description: A자 실루엣의 스커트
-    - text: tiered_skirt
+    - text: <CDE> tiered_skirt
       label: 티어드 스커트
       description: 층층이 겹쳐진 디자인의 스커트
-    - text: bubble_skirt
+    - text: <CDE> bubble_skirt
       label: 벌룬 스커트
       description: 풍성하게 부풀어 오른 형태의 스커트입니다.
-    - text: suspender_skirt
+    - text: <CDE> suspender_skirt
       label: 서스펜더 스커트
       description: 어깨끈이 달린 형태의 스커트입니다.
-    - text: high-waist_skirt
+    - text: <CDE> high-waist_skirt
       label: 하이웨이스트 스커트
       description: 허리선이 높은 위치에 있는 스커트입니다.
-    - text: wrap_skirt
+    - text: <CDE> wrap_skirt
       label: 랩 스커트
       description: 허리에 감아서 입는 형태의 스커트입니다.
     - section: 소재/패턴
-    - text: plaid_skirt
+    - text: <CDE> plaid_skirt
       label: 체크 스커트
       description: 격자무늬 패턴의 스커트입니다.
-    - text: tartan_skirt
+    - text: <CDE> tartan_skirt
       label: 타탄 스커트
       description: 전통적인 타탄 체크 패턴의 스커트입니다.
-    - text: denim_skirt
+    - text: <CDE> denim_skirt
       label: 데님 스커트
       description: 청 데님 소재의 스커트입니다.
-    - text: leather_skirt
+    - text: <CDE> leather_skirt
       label: 레더 스커트
       description: 가죽 소재의 스커트입니다.
     - section: 디테일
-    - text: frilled_skirt
+    - text: <CDE> frilled_skirt
       label: 프릴 스커트
       description: 끝단에 주름 장식이 달린 스커트입니다.
-    - text: ruffled_skirt
+    - text: <CDE> ruffled_skirt
       label: 러플 스커트
       description: 물결 모양의 장식이 있는 스커트입니다.
-    - text: slit_skirt, side_slit
+    - text: <CDE> slit_skirt, side_slit
       label: 슬릿 스커트
       description: 옆면이 트여 있는 스커트입니다.
-    - text: transparent_skirt, see-through
+    - text: <CDE> transparent_skirt, see-through
       label: 시스루 스커트
       description: 안이 비치는 투명한 스커트입니다.
-    - text: micro tight skirt
+    - text: <CDE> micro tight skirt
       label: 마이크로 스커트
       description: 몸에 딱 붙는 아주 짧은 치마
 아우터:
@@ -1218,74 +1236,74 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 반바지
-    - text: <BCO> pants
+    - text: <BCO> <CDE> pants
       label: <BCO> 바지
       description: <BCO> 색상의 바지
-    - text: denim_shorts
+    - text: <CDE> denim_shorts
       label: 데님 쇼츠
       description: 데님 소재의 반바지입니다.
-    - text: denim_hot_pants
+    - text: <CDE> denim_hot_pants
       label: 데님 핫팬츠
       description: 매우 짧은 길이의 데님 팬츠입니다.
-    - text: dolphin_shorts
+    - text: <CDE> dolphin_shorts
       label: 돌핀 팬츠
       description: 옆트임이 있는 짧은 운동용 반바지입니다.
-    - text: short_shorts
+    - text: <CDE> short_shorts
       label: 숏 팬츠
       description: 길이가 아주 짧은 반바지입니다.
-    - text: cargo_shorts
+    - text: <CDE> cargo_shorts
       label: 카고 반바지
       description: 옆면에 큰 주머니가 달린 반바지
-    - text: biker_shorts
+    - text: <CDE> biker_shorts
       label: 바이커 쇼츠
       description: 몸에 딱 붙는 짧은 타이즈형 반바지
-    - text: sweat_shorts
+    - text: <CDE> sweat_shorts
       label: 스웨트 쇼츠
       description: 면 트레이닝 소재의 반바지
-    - text: linen_shorts
+    - text: <CDE> linen_shorts
       label: 리넨 반바지
       description: 얇고 시원한 리넨 소재의 반바지
-    - text: leather_shorts
+    - text: <CDE> leather_shorts
       label: 가죽 쇼츠
       description: 가죽 재질의 짧은 바지입니다.
     - section: 긴바지/진
-    - text: tight_leggings
+    - text: <CDE> tight_leggings
       label: 타이트 레깅스
       description: 몸에 딱 붙는 레깅스입니다.
-    - text: skinny_jeans
+    - text: <CDE> skinny_jeans
       label: 스키니진
       description: 다리 라인이 강조되는 붙는 청바지입니다.
-    - text: wide_leg_trousers
+    - text: <CDE> wide_leg_trousers
       label: 와이드 팬츠
       description: 통이 넓은 바지입니다.
-    - text: baggy_jeans
+    - text: <CDE> baggy_jeans
       label: 배기 진
       description: 골반부터 밑단까지 통이 넓고 넉넉한 바지
-    - text: flare_jeans
+    - text: <CDE> flare_jeans
       label: 부츠컷 진
       description: 무릎 아래로 갈수록 넓어지는 형태의 청바지
-    - text: palazzo_pants
+    - text: <CDE> palazzo_pants
       label: 팔라초 팬츠
       description: 통이 매우 넓어 치마처럼 보이는 와이드 팬츠
-    - text: culottes
+    - text: <CDE> culottes
       label: 큐로트
       description: 짧은 길이의 넓은 통을 가진 반바지 스타일
-    - text: jogger_pants
+    - text: <CDE> jogger_pants
       label: 조거 팬츠
       description: 발목에 시보리가 있는 조거 스타일의 바지
-    - text: corduroy_pants
+    - text: <CDE> corduroy_pants
       label: 코듀로이 팬츠
       description: 골이 있는 골덴 소재의 바지
-    - text: tailored_trousers
+    - text: <CDE> tailored_trousers
       label: 슬랙스
       description: 핏이 잡힌 정장 스타일의 바지
-    - text: ripped_jeans
+    - text: <CDE> ripped_jeans
       label: 찢어진 청바지
       description: 데미지가 들어간 데님 팬츠
-    - text: denim_jeans
+    - text: <CDE> denim_jeans
       label: 청바지
       description: 데님 소재의 청바지
-    - text: slim_fit_pants
+    - text: <CDE> slim_fit_pants
       label: 슬림 팬츠
       description: 몸에 붙는 슬림한 바지
 레그웨어:
@@ -1306,16 +1324,16 @@ _promptboard:
     - text: fishnet_stockings
       label: 망사 스타킹
       description: 그물 형태의 스타킹
-    - text: kneehighs
+    - text: <ECO2> kneehighs
       label: 니하이삭스
       description: 무릎까지 오는 길이의 양말
-    - text: loose_socks
+    - text: <ECO2> loose_socks
       label: 루즈 삭스
       description: 발목 부분이 늘어진 스타일의 양말
-    - text: ankle_socks
+    - text: <ECO2> ankle_socks
       label: 발목 양말
       description: 발목까지만 오는 짧은 양말
-    - text: calf-high_socks
+    - text: <ECO2> calf-high_socks
       label: 카프 삭스
       description: 종아리 중간까지 오는 길이의 양말
 신발:
@@ -1323,76 +1341,76 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 힐
-    - text: high_heels
+    - text: <CDE> high_heels
       label: 하이힐
       description: 굽이 높은 신발입니다.
-    - text: stiletto_heels
+    - text: <CDE> stiletto_heels
       label: 스틸레토 힐
       description: 끝이 뾰족하고 가는 굽의 신발입니다.
-    - text: pumps
+    - text: <CDE> pumps
       label: 펌프스
       description: 장식이 없는 깔끔한 형태의 구두입니다.
-    - text: wedge_heels
+    - text: <CDE> wedge_heels
       label: 웨지힐
       description: 굽이 두꺼운 통굽 형태의 힐
-    - text: platform_heels
+    - text: <CDE> platform_heels
       label: 통굽 힐
       description: 높은 굽이 있는 플랫폼 스타일의 신발
-    - text: kitten_heels
+    - text: <CDE> kitten_heels
       label: 키튼 힐
       description: 낮고 가느다란 굽의 힐
-    - text: pointed_toe_heels
+    - text: <CDE> pointed_toe_heels
       label: 뾰족 코 힐
       description: 앞코가 뾰족하게 디자인된 힐
-    - text: block_heels
+    - text: <CDE> block_heels
       label: 블록 힐
       description: 두툼하고 넓은 형태의 굽이 있는 하이힐입니다.
     - section: 부츠
-    - text: ankle_boots
+    - text: <CDE> ankle_boots
       label: 앵클 부츠
       description: 발목까지 오는 길이의 부츠입니다.
-    - text: combat_boots
+    - text: <CDE> combat_boots
       label: 컴뱃 부츠
       description: 튼튼한 전투용 부츠
     - text: lace-up_boots
       label: 레이스업 부츠
       description: 끈으로 발등을 조이는 형태의 부츠입니다.
-    - text: platform_boots
+    - text: <CDE> platform_boots
       label: 통굽 부츠
       description: 굽이 높은 플랫폼 형태의 부츠
     - section: 플랫/로퍼
-    - text: loafers
+    - text: <CDE> loafers
       label: 로퍼
       description: 단정한 슬립온 형태의 신발
-    - text: ballet_flats
+    - text: <CDE> ballet_flats
       label: 플랫 슈즈
       description: 굽이 거의 없는 발레풍 신발
-    - text: flat_shoes
+    - text: <CDE> flat_shoes
       label: 플랫 슈즈
       description: 굽이 없는 평평한 신발입니다.
-    - text: mules
+    - text: <CDE> mules
       label: 뮬
       description: 뒷축이 없는 슬리퍼 형태의 신발
     - section: 샌들/스니커즈
-    - text: strappy_sandals
+    - text: <CDE> strappy_sandals
       label: 스트랩 샌들
       description: 끈으로 발등을 감싸는 형태의 샌들
-    - text: heeled_sandals
+    - text: <CDE> heeled_sandals
       label: 힐 샌들
       description: 높은 굽이 있는 샌들
-    - text: fashion_sneakers
+    - text: <CDE> fashion_sneakers
       label: 패션 스니커즈
       description: 스타일리시한 디자인의 운동화입니다.
-    - text: sneakers
+    - text: <CDE> sneakers
       label: 스니커즈
       description: 캐주얼한 운동화
-    - text: sandals
+    - text: <CDE> sandals
       label: 샌들
       description: 발등이 노출된 형태의 신발입니다.
-    - text: sports_shoes
+    - text: <CDE> sports_shoes
       label: 운동화
       description: 스포츠용 운동화입니다.
-    - text: high-top_sneakers
+    - text: <CDE> high-top_sneakers
       label: 하이탑 스니커즈
       description: 발목까지 올라오는 스니커즈입니다.
 수영복:
@@ -1403,6 +1421,12 @@ _promptboard:
     - text: <TCO> bikini
       label: 비키니
       description: 상하로 분리된 수영복입니다.
+    - text: <TCO> bikini_top
+      label: 비키니 상의
+      description: 비키니의 상의만 착용한 상태입니다.
+    - text: <BCO> bikini_bottom
+      label: 비키니 하의
+      description: 비키니의 하의만 착용한 상태입니다.
     - text: string_bikini
       label: 스트링 비키니
       description: 끈으로 연결된 섹시한 비키니
@@ -1452,11 +1476,11 @@ _promptboard:
     - text: ruffled_one-piece
       label: 러플 원피스 수영복
       description: 프릴 장식이 달린 원피스 수영복입니다.
-세트의상_오피스:
+세트의상_클래식_역할:
   placeholder: <CLOTHES>
   uiGroup: 세트의상
   tags:
-    - section: 오피스룩
+    - section: 오피스
     - text: office_siren, slim_blazer, tight_pencil_skirt, narrow_sunglasses, sheer_pantyhose, pointed_toe_heels, silk_blouse
       label: 오피스 사이렌
       description: 슬림한 블레이저와 좁은 선글라스, 뾰족한 힐로 연출하는 트렌디한 오피스 사이렌 스타일입니다.
@@ -1466,18 +1490,13 @@ _promptboard:
     - text: cyber_office, structured_blazer, metallic_skirt, sheer_turtleneck, visor_glasses, ankle_boots, silver_accessories
       label: 사이버 오피스
       description: 구조적인 블레이저와 메탈릭 스커트, 바이저 안경이 결합된 미래형 오피스룩입니다.
-세트의상_스쿨_아카데미아:
-  placeholder: <CLOTHES>
-  uiGroup: 세트의상
-  tags:
-    - section: 교복
+    - section: 스쿨/아카데미아
     - text: korean_school_uniform, school_uniform, pleated_skirt, blazer, ribbon_tie, white_shirt, knee_socks, loafers
       label: 한국 교복풍
       description: 블레이저와 리본 타이, 플리츠 스커트, 니삭스로 구성한 한국식 교복풍 패션입니다.
     - text: sailor_uniform, sailor_collar, pleated_skirt, neckerchief, cardigan, knee_socks, loafers
       label: 세일러 교복풍
       description: 세일러 칼라와 네커치프, 플리츠 스커트, 카디건으로 구성한 클래식 교복풍 세트입니다.
-    - section: 아카데미아
     - text: university_prep, sweater_vest, button_down_shirt, plaid_skirt, necktie, loafers, tote_bag
       label: 캠퍼스 프레피
       description: 스웨터 베스트와 셔츠, 체크 스커트, 넥타이로 구성된 대학 캠퍼스 프레피 스타일입니다.
@@ -1487,11 +1506,7 @@ _promptboard:
     - text: light_academia, cropped_cardigan, pleated_miniskirt, sheer_blouse, ribbon_tie, thighhighs, mary_janes
       label: 라이트 아카데미아
       description: 크림색 카디건과 블라우스, 플리츠 스커트, 리본 타이로 구성한 밝은 아카데미아 스타일입니다.
-세트의상_유니폼:
-  placeholder: <CLOTHES>
-  uiGroup: 세트의상
-  tags:
-    - section: 직업 유니폼
+    - section: 유니폼
     - text: flight_attendant, travel_attendant, fitted_jacket, pencil_skirt, neck_scarf, hat, pumps
       label: 승무원
       description: 핏되는 재킷과 펜슬 스커트, 넥 스카프, 모자가 포함된 승무원 제복 스타일입니다.
@@ -1504,18 +1519,17 @@ _promptboard:
     - text: barista_uniform, white_shirt, apron, rolled_up_sleeves, straight_pants, loafers, name_tag
       label: 바리스타 유니폼
       description: 화이트 셔츠와 앞치마, 롤업 소매, 로퍼로 구성된 카페 바리스타 스타일입니다.
-    - section: 코스튬 유니폼
     - text: maid, maid_headdress, frilled_apron, black_dress, white_apron, thighhighs, mary_janes
       label: 클래식 메이드
       description: 메이드 헤드드레스와 프릴 앞치마, 블랙 드레스, 메리제인 슈즈로 구성된 메이드복입니다.
     - text: racing_girl, racing_jacket, fitted_shorts, knee_high_boots, gloves, checkered_flag_pattern, visor
       label: 레이싱 걸
       description: 레이싱 재킷과 핏되는 쇼츠, 니하이 부츠, 체크 플래그 포인트가 있는 레이싱 콘셉트입니다.
-세트의상_홈웨어:
+세트의상_데일리_라이프:
   placeholder: <CLOTHES>
   uiGroup: 세트의상
   tags:
-    - section: 라운지/룸웨어
+    - section: 홈웨어
     - text: satin_loungewear, satin_camisole, satin_shorts, lace_trim, loose_robe, slippers
       label: 새틴 라운지웨어
       description: 새틴 캐미솔과 쇼츠, 느슨한 로브, 슬리퍼로 구성된 실내 라운지웨어입니다.
@@ -1540,7 +1554,6 @@ _promptboard:
     - text: winter_roomwear, oversized_knit_sweater, knit_short_shorts, thighhigh_socks, slippers, blanket
       label: 윈터 룸웨어
       description: 오버사이즈 니트와 니트 쇼츠, 사이하이 삭스로 구성된 겨울 실내복입니다.
-    - section: 돌핀/쇼츠 세트
     - text: korean_dolphin_shorts_homewear, sleeveless_top, short_dolphin_shorts, ankle_socks, house_slippers
       label: 돌핀팬츠 홈웨어
       description: 민소매 톱과 짧은 돌핀팬츠, 발목 양말, 실내 슬리퍼로 구성된 한국식 홈웨어입니다.
@@ -1565,7 +1578,6 @@ _promptboard:
     - text: ribbed_sleeveless_shorts_set, ribbed_sleeveless_top, ribbed_short_shorts, cardigan, bare_legs, slippers
       label: 골지 나시 쇼츠 세트
       description: 골지 민소매 톱과 짧은 쇼츠, 카디건으로 구성된 몸에 맞는 홈웨어 세트입니다.
-    - section: 원마일/파자마
     - text: padded_camisole_homewear, padded_camisole, lounge_shorts, sheer_cardigan, slippers
       label: 캡내장 나시 홈웨어
       description: 캡내장 캐미솔과 라운지 쇼츠, 얇은 카디건으로 구성된 간편한 홈웨어입니다.
@@ -1575,18 +1587,55 @@ _promptboard:
     - text: pajama_core_one_mile, striped_pajama_shirt, lounge_shorts, cardigan, loafers, tote_bag
       label: 파자마코어 원마일
       description: 스트라이프 파자마 셔츠와 라운지 쇼츠, 카디건, 로퍼로 구성된 원마일웨어 스타일입니다.
-세트의상_트렌드:
+    - section: 리조트/시즌
+    - text: crochet_summer, crochet_top, linen_skirt, sandals, straw_bag, gold_jewelry
+      label: 크로셰 서머
+      description: 크로셰 톱과 린넨 스커트, 샌들, 스트로 백으로 구성된 여름 리조트룩입니다.
+    - text: resort_linen, unbuttoned_linen_shirt, linen_shorts, bikini_top, rope_sandals, straw_hat, woven_bag
+      label: 리조트 린넨
+      description: 린넨 셔츠와 쇼츠, 로프 샌들, 밀짚모자로 구성한 휴양지 스타일입니다.
+    - text: festival_outfit, crochet_top, denim_shorts, fringe_jacket, cowboy_boots, layered_necklaces
+      label: 페스티벌 룩
+      description: 크로셰 톱과 데님 쇼츠, 프린지 재킷, 카우보이 부츠가 어우러진 페스티벌 스타일입니다.
+    - text: rainy_city_style, trench_coat, transparent_umbrella, ankle_boots, knit_dress, wet_pavement, leather_bag
+      label: 레인시티 룩
+      description: 트렌치코트와 투명 우산, 앵클부츠, 니트 드레스로 구성된 비 오는 도시 분위기의 의상입니다.
+    - text: airport_fashion, oversized_sweatshirt, tight_leggings, baseball_cap, sneakers, carry_on_luggage, crossbody_bag
+      label: 공항 패션
+      description: 오버사이즈 스웨트셔츠와 레깅스, 볼캡, 캐리어가 어우러진 편안한 이동 스타일입니다.
+    - text: apres_ski, cropped_puffer_jacket, tight_turtleneck_sweater, fitted_ski_pants, snow_boots, beanie, goggles_on_head
+      label: 아프레스키
+      description: 패딩 재킷과 터틀넥, 스노우 부츠, 비니로 구성된 겨울 스키 리조트 스타일입니다.
+    - section: 시네마틱 라이프스타일
+    - text: french_chic, off_shoulder_striped_top, straight_leg_jeans, ballet_flats, silk_scarf, wicker_bag
+      label: 프렌치 시크
+      description: 스트라이프 톱과 스트레이트 진, 발레 플랫, 실크 스카프로 완성하는 프렌치 스타일입니다.
+    - text: trench_coat_style, beige_trench_coat, turtleneck, straight_leg_pants, loafers, leather_bag
+      label: 트렌치 코트
+      description: 베이지 트렌치코트와 터틀넥, 스트레이트 팬츠, 로퍼로 구성된 클래식 외출복입니다.
+    - text: art_student, oversized_cardigan, paint_stained_apron, wide_leg_pants, canvas_tote, sneakers, beret
+      label: 미대생 룩
+      description: 오버사이즈 카디건과 물감 묻은 앞치마, 와이드 팬츠, 캔버스 토트백이 있는 아트 스쿨 스타일입니다.
+    - text: noir_detective, long_coat, unbuttoned_shirt, loosened_tie, pencil_skirt, sheer_pantyhose, fedora, leather_gloves
+      label: 누아르 탐정
+      description: 롱 코트와 셔츠, 타이, 페도라, 가죽 장갑으로 구성된 필름 누아르 탐정 콘셉트입니다.
+    - text: denim_on_denim, cropped_denim_jacket, denim_miniskirt, crop_top, navel, cowboy_boots, belt, hoop_earrings
+      label: 데님 온 데님
+      description: 데님 재킷과 데님 스커트, 크롭 톱, 웨스턴 부츠를 조합한 청청 패션입니다.
+    - text: utility_cargo, cropped_utility_jacket, cargo_miniskirt, fitted_tank_top, combat_boots, thigh_strap, belt_bag, metal_buckles
+      label: 유틸리티 카고
+      description: 유틸리티 재킷과 카고 스커트, 벨트백, 컴뱃 부츠로 구성된 실용적인 스트릿 스타일입니다.
+세트의상_트렌드_스트릿:
   placeholder: <CLOTHES>
   uiGroup: 세트의상
   tags:
-    - section: 클린/럭셔리
+    - section: 트렌드
     - text: quiet_luxury, off_shoulder_sweater, silk_slip_skirt, slit_skirt, loafers, leather_handbag, minimal_jewelry
       label: 콰이어트 럭셔리
       description: 오프숄더 니트와 슬릿 실크 스커트, 미니멀 주얼리로 구성된 절제된 섹시함의 고급 스타일입니다.
     - text: minimalist_capsule, fitted_white_tshirt, straight_leg_pants, simple_cardigan, loafers, leather_tote, clean_silhouette
       label: 미니멀 캡슐
       description: 핏되는 화이트 티셔츠와 스트레이트 팬츠, 심플 카디건으로 구성된 절제된 섹시함의 미니멀 캡슐룩입니다.
-    - section: 로맨틱/코어
     - text: balletcore, off_shoulder_wrap_cardigan, leotard, sheer_tulle_skirt, leg_warmers, ballet_flats, ribbon_choker, bare_shoulders
       label: 발레코어
       description: 랩 카디건과 레오타드, 튤 스커트, 레그워머, 발레 플랫으로 구성된 발레코어 세트입니다.
@@ -1599,7 +1648,6 @@ _promptboard:
     - text: soft_femininity, babydoll_dress, lace_trim, puff_sleeves, bow, pastel_colors, sheer_fabric, bare_shoulders, ballet_flats
       label: 소프트 페미닌
       description: 베이비돌 드레스와 레이스, 퍼프 소매, 리본으로 구성된 부드러운 페미닌 룩입니다.
-    - section: 내추럴/판타지
     - text: romantic_boho, embroidered_mini_dress, frills, lace_trim, thigh_strap, raffia_bag, headscarf, sandals, bare_legs
       label: 로맨틱 보헤미안
       description: 자수 미니드레스와 프릴, 라피아 백, 헤드스카프로 구성한 현대적인 보헤미안 스타일입니다.
@@ -1609,11 +1657,7 @@ _promptboard:
     - text: fairycore, sheer_dress, floral_embroidery, butterfly_brooch, lace_up_sandals, pastel_green, delicate_jewelry
       label: 페어리코어
       description: 시어 드레스와 플라워 자수, 나비 헤어핀, 파스텔 그린 톤의 몽환적인 스타일입니다.
-세트의상_파티_나이트아웃:
-  placeholder: <CLOTHES>
-  uiGroup: 세트의상
-  tags:
-    - section: 포멀/문화공간
+    - section: 파티/나이트아웃
     - text: gallery_opening, slip_dress, oversized_blazer, ankle_boots, clutch_bag, minimalist_jewelry
       label: 갤러리 오프닝
       description: 슬립 드레스와 오버사이즈 블레이저, 앵클부츠, 클러치백으로 구성된 세련된 전시회 룩입니다.
@@ -1623,7 +1667,6 @@ _promptboard:
     - text: tuxedo, fitted_jacket, bowtie, white_shirt, black_slacks, formalwear
       label: 턱시도
       description: 격식을 갖춘 정장 스타일의 파티 의상입니다.
-    - section: 파티 드레스
     - text: cocktail_party, bodycon_cocktail_dress, strappy_heels, clutch_bag, statement_earrings, bare_shoulders
       label: 칵테일 파티
       description: 바디콘 칵테일 드레스와 스트랩 힐, 클러치백으로 구성된 세련된 파티룩입니다.
@@ -1645,18 +1688,13 @@ _promptboard:
     - text: sheer_panel_evening_dress, sheer_panels, bodycon_dress, high_slit, pointed_heels, minimal_jewelry
       label: 시어 패널 이브닝 드레스
       description: 비치는 패널과 하이 슬릿이 들어간 바디콘 이브닝 드레스로 구성된 세련된 파티룩입니다.
-    - section: 강한 패턴/컷아웃
     - text: maximalist_prints, low_cut_patterned_blouse, printed_miniskirt, colorful_tights, statement_earrings, bright_handbag
       label: 맥시멀 프린트
       description: 패턴 블라우스와 프린트 스커트, 컬러 타이츠, 큰 귀걸이로 구성된 화려한 맥시멀리즘 스타일입니다.
     - text: extreme_cutout_dress, cutout_bodycon_dress, bare_midriff, side_cutouts, strappy_heels, choker
       label: 익스트림 컷아웃 드레스
       description: 허리와 옆선 컷아웃이 강조된 바디콘 드레스와 스트랩 힐로 구성된 과감한 나이트아웃 룩입니다.
-세트의상_스트릿_서브컬처:
-  placeholder: <CLOTHES>
-  uiGroup: 세트의상
-  tags:
-    - section: 일본/아시아 서브컬처
+    - section: 스트릿/서브컬처
     - text: y2k_fashion, crop_top, lowrise_jeans, platform_sneakers, mini_bag, tinted_sunglasses, butterfly_choker
       label: Y2K 스트릿
       description: 크롭 톱과 로우라이즈 진, 플랫폼 스니커즈, 미니백으로 구성한 Y2K 스트릿룩입니다.
@@ -1675,7 +1713,6 @@ _promptboard:
     - text: jirai_kei, black_pink_outfit, lace_blouse, suspender_skirt, ribbon_choker, mary_janes, frills
       label: 지뢰계
       description: 블랙과 핑크 배색, 레이스 블라우스, 서스펜더 스커트, 리본이 특징인 지뢰계 패션입니다.
-    - section: 무대/아이돌
     - text: kpop_stage_outfit, crop_jacket, pleated_miniskirt, thighhighs, platform_boots, headset_microphone, metallic_accents
       label: K팝 스테이지
       description: 크롭 재킷과 플리츠 미니스커트, 플랫폼 부츠, 메탈릭 포인트가 들어간 무대 의상입니다.
@@ -1691,14 +1728,12 @@ _promptboard:
     - text: virtual_idol_cosplay, aqua_twin_tails, sleeveless_top, detached_sleeves, pleated_skirt, thighhighs, necktie
       label: 버추얼 아이돌 코스프레
       description: 트윈테일과 민소매 톱, 분리 소매, 플리츠 스커트가 특징인 버추얼 아이돌풍 코스프레입니다.
-    - section: 스트릿/아웃도어
     - text: korean_streetwear, oversized_blazer, crop_top, lowrise_cargo_pants, chunky_sneakers, crossbody_bag, silver_jewelry
       label: 한국 스트릿웨어
       description: 오버사이즈 블레이저와 크롭 톱, 카고 팬츠, 청키 스니커즈가 어우러진 한국식 스트릿룩입니다.
     - text: gorpcore, cropped_windbreaker, fitted_hiking_shorts, trail_shoes, utility_vest, bucket_hat, thigh_strap, outdoor_backpack
       label: 고프코어
       description: 윈드브레이커와 유틸리티 베스트, 트레일 슈즈, 아웃도어 백팩으로 구성한 고프코어 스타일입니다.
-    - section: 펑크/사이버
     - text: cyberpunk_street, vinyl_jacket, asymmetrical_skirt, neon_trim, platform_boots, visor_glasses, black_gloves
       label: 사이버펑크 스트릿
       description: 비닐 재킷과 비대칭 스커트, 네온 트림, 바이저 안경으로 구성된 미래적 스트릿룩입니다.
@@ -1711,11 +1746,11 @@ _promptboard:
     - text: visual_kei, dramatic_jacket, layered_skirt, lace_shirt, platform_boots, chain_accessories
       label: 비주얼계
       description: 드라마틱한 재킷과 레이어드 스커트, 레이스 셔츠, 플랫폼 부츠로 구성된 비주얼계 스타일입니다.
-세트의상_스포츠_액티브:
+세트의상_액티브_비치:
   placeholder: <CLOTHES>
   uiGroup: 세트의상
   tags:
-    - section: 데일리 스포츠
+    - section: 스포츠/액티브
     - text: athleisure, cropped_hoodie, tight_leggings, running_shoes, baseball_cap, gym_bag, sporty_watch
       label: 애슬레저
       description: 크롭 후디와 레깅스, 러닝화, 짐백으로 구성된 스포티한 데일리 의상입니다.
@@ -1725,7 +1760,6 @@ _promptboard:
     - text: golfcore, fitted_polo_shirt, pleated_miniskirt, argyle_sweater_vest, visor_cap, knee_socks, golf_gloves, bare_legs
       label: 골프코어
       description: 폴로 셔츠와 아가일 베스트, 플리츠 스커트, 바이저 캡으로 구성한 골프웨어 스타일입니다.
-    - section: 종목 콘셉트
     - text: boxing_club, cropped_tank_top, satin_shorts, boxing_gloves, high_socks, training_shoes, athletic_tape
       label: 복싱 클럽
       description: 크롭 탱크톱과 새틴 쇼츠, 복싱 글러브, 하이삭스로 구성한 스포츠 화보 스타일입니다.
@@ -1741,11 +1775,7 @@ _promptboard:
     - text: cheerleader_uniform, crop_top, pleated_skirt, pom_poms, knee_socks, sneakers, team_colors
       label: 치어리더
       description: 크롭 톱과 플리츠 스커트, 응원 수술, 니삭스로 구성된 치어리더 의상입니다.
-세트의상_비치_스윔웨어:
-  placeholder: <CLOTHES>
-  uiGroup: 세트의상
-  tags:
-    - section: 비치/풀
+    - section: 비치/스윔웨어
     - text: beach_coverup_set, bikini_top, sarong, oversized_shirt, sandals, sunglasses, shell_jewelry
       label: 비치 커버업
       description: 비키니 톱과 사롱, 오버사이즈 셔츠, 조개 장식으로 구성된 비치웨어 세트입니다.
@@ -1758,7 +1788,6 @@ _promptboard:
     - text: wetlook_swimwear_set, glossy_swimwear, cutout_swimsuit, mesh_coverup, gold_body_chain, wedge_sandals
       label: 웨트룩 스윔웨어 세트
       description: 광택 스윔웨어와 컷아웃 수영복, 메시 커버업, 바디 체인으로 구성된 비치 스타일입니다.
-    - section: 리조트/요트
     - text: resort_sarong_set, cutout_swimwear, sarong, wedge_sandals, sun_hat, gold_jewelry
       label: 리조트 사롱 세트
       description: 컷아웃 스윔웨어와 사롱, 웨지 샌들, 선햇으로 구성된 리조트 비치 세트입니다.
@@ -1768,7 +1797,6 @@ _promptboard:
     - text: yacht_resort_set, white_swimwear, linen_coverup, oversized_sunglasses, gold_bangles, deck_sandals
       label: 요트 리조트 세트
       description: 화이트 스윔웨어와 리넨 커버업, 오버사이즈 선글라스로 구성된 요트 리조트 세트입니다.
-    - section: 스타일 테마
     - text: surf_active_set, rash_guard_crop_top, swim_bottom, board_shorts, surfboard, beach_sandals
       label: 서프 액티브 세트
       description: 크롭 래시가드와 보드 쇼츠, 서프보드, 비치 샌들로 구성된 활동적인 서핑 세트입니다.
@@ -1778,35 +1806,11 @@ _promptboard:
     - text: retro_pinup_beach_set, vintage_swimwear, polka_dot_pattern, headscarf, cat_eye_sunglasses, wedges
       label: 레트로 핀업 비치 세트
       description: 빈티지 스윔웨어와 도트 패턴, 헤드스카프, 캣아이 선글라스로 구성된 레트로 비치 세트입니다.
-세트의상_리조트_시즌:
+세트의상_문화_판타지:
   placeholder: <CLOTHES>
   uiGroup: 세트의상
   tags:
-    - section: 여름/페스티벌
-    - text: crochet_summer, crochet_top, linen_skirt, sandals, straw_bag, gold_jewelry
-      label: 크로셰 서머
-      description: 크로셰 톱과 린넨 스커트, 샌들, 스트로 백으로 구성된 여름 리조트룩입니다.
-    - text: resort_linen, unbuttoned_linen_shirt, linen_shorts, bikini_top, rope_sandals, straw_hat, woven_bag
-      label: 리조트 린넨
-      description: 린넨 셔츠와 쇼츠, 로프 샌들, 밀짚모자로 구성한 휴양지 스타일입니다.
-    - text: festival_outfit, crochet_top, denim_shorts, fringe_jacket, cowboy_boots, layered_necklaces
-      label: 페스티벌 룩
-      description: 크로셰 톱과 데님 쇼츠, 프린지 재킷, 카우보이 부츠가 어우러진 페스티벌 스타일입니다.
-    - section: 이동/계절
-    - text: rainy_city_style, trench_coat, transparent_umbrella, ankle_boots, knit_dress, wet_pavement, leather_bag
-      label: 레인시티 룩
-      description: 트렌치코트와 투명 우산, 앵클부츠, 니트 드레스로 구성된 비 오는 도시 분위기의 의상입니다.
-    - text: airport_fashion, oversized_sweatshirt, tight_leggings, baseball_cap, sneakers, carry_on_luggage, crossbody_bag
-      label: 공항 패션
-      description: 오버사이즈 스웨트셔츠와 레깅스, 볼캡, 캐리어가 어우러진 편안한 이동 스타일입니다.
-    - text: apres_ski, cropped_puffer_jacket, tight_turtleneck_sweater, fitted_ski_pants, snow_boots, beanie, goggles_on_head
-      label: 아프레스키
-      description: 패딩 재킷과 터틀넥, 스노우 부츠, 비니로 구성된 겨울 스키 리조트 스타일입니다.
-세트의상_전통_문화:
-  placeholder: <CLOTHES>
-  uiGroup: 세트의상
-  tags:
-    - section: 동아시아
+    - section: 전통/문화
     - text: modern_qipao, qipao, side_slit, mandarin_collar, silk_fabric, embroidered_pattern, high_heels
       label: 모던 치파오
       description: 차이나 칼라와 사이드 슬릿, 실크 소재, 자수 패턴이 있는 현대적인 치파오입니다.
@@ -1822,7 +1826,6 @@ _promptboard:
     - text: summer_yukata, yukata, obi_sash, floral_print, geta, small_drawstring_bag
       label: 여름 유카타
       description: 가벼운 유카타와 오비 사시, 게타, 작은 주머니 가방으로 구성된 여름 축제 스타일입니다.
-    - section: 남아시아/동남아
     - text: vietnamese_ao_dai, ao_dai, silk_tunic, side_slit, wide_leg_pants, embroidered_pattern, high_heels
       label: 아오자이
       description: 실크 튜닉과 와이드 팬츠, 사이드 슬릿이 특징인 베트남 아오자이 스타일입니다.
@@ -1835,15 +1838,10 @@ _promptboard:
     - text: thai_silk_dress, thai_silk_top, wrap_skirt, gold_belt, embroidered_pattern, delicate_sandals
       label: 타이 실크 드레스
       description: 타이 실크 톱과 랩 스커트, 골드 벨트로 구성된 태국 전통풍 의상입니다.
-    - section: 유럽/무대
     - text: flamenco_dress, ruffled_dress, off_shoulder_neckline, flower_accessory, heeled_shoes, fitted_waist
       label: 플라멩코 드레스
       description: 러플 드레스와 오프숄더 네크라인, 힐 슈즈로 구성된 플라멩코 무드의 의상입니다.
-세트의상_판타지_코스튬:
-  placeholder: <CLOTHES>
-  uiGroup: 세트의상
-  tags:
-    - section: 마법/천사악마
+    - section: 판타지/코스튬
     - text: magical_girl_costume, frilled_dress, ribbon, thighhighs, heart_accessory, wand, pastel_colors
       label: 마법소녀풍
       description: 프릴 드레스와 리본, 하트 장식, 완드로 구성된 마법소녀풍 코스튬입니다.
@@ -1856,7 +1854,6 @@ _promptboard:
     - text: modern_witch, black_velvet_dress, wide_brim_hat, lace_gloves, ankle_boots, moon_necklace
       label: 모던 위치
       description: 블랙 벨벳 드레스와 와이드 브림 햇, 레이스 장갑, 달 목걸이로 구성된 현대적인 마녀 콘셉트입니다.
-    - section: 전투/SF
     - text: bikini_armor, fantasy_armor, metal_bikini, gauntlets, thigh_boots, cape, armored_accessories
       label: 비키니 아머
       description: 금속 비키니 아머와 건틀릿, 사이하이 부츠, 망토로 구성된 판타지 여전사 의상입니다.
@@ -1866,7 +1863,6 @@ _promptboard:
     - text: retro_futurism, space_age_dress, vinyl_boots, geometric_jewelry, white_gloves, metallic_belt
       label: 레트로 퓨처
       description: 스페이스 에이지 드레스와 비닐 부츠, 기하학적 장신구로 구성된 복고 미래 스타일입니다.
-    - section: 동물/해양/모험
     - text: catgirl_costume, cat_ears, tail, bell_choker, paw_gloves, short_dress, thighhighs
       label: 캣걸 코스튬
       description: 고양이 귀와 꼬리, 방울 초커, 발바닥 장갑으로 구성된 캣걸 코스튬입니다.
@@ -1876,30 +1872,98 @@ _promptboard:
     - text: mermaidcore, iridescent_dress, shell_jewelry, pearl_accessories, strappy_sandals
       label: 머메이드코어
       description: 오팔빛 드레스와 조개 장식, 진주 액세서리, 젖은 듯한 헤어로 구성된 머메이드 스타일입니다.
-세트의상_시네마틱_라이프스타일:
+세트의상_페티시:
   placeholder: <CLOTHES>
   uiGroup: 세트의상
   tags:
-    - section: 클래식 라이프스타일
-    - text: french_chic, off_shoulder_striped_top, straight_leg_jeans, ballet_flats, silk_scarf, wicker_bag
-      label: 프렌치 시크
-      description: 스트라이프 톱과 스트레이트 진, 발레 플랫, 실크 스카프로 완성하는 프렌치 스타일입니다.
-    - text: trench_coat_style, beige_trench_coat, turtleneck, straight_leg_pants, loafers, leather_bag
-      label: 트렌치 코트
-      description: 베이지 트렌치코트와 터틀넥, 스트레이트 팬츠, 로퍼로 구성된 클래식 외출복입니다.
-    - text: art_student, oversized_cardigan, paint_stained_apron, wide_leg_pants, canvas_tote, sneakers, beret
-      label: 미대생 룩
-      description: 오버사이즈 카디건과 물감 묻은 앞치마, 와이드 팬츠, 캔버스 토트백이 있는 아트 스쿨 스타일입니다.
-    - section: 시네마틱 콘셉트
-    - text: noir_detective, long_coat, unbuttoned_shirt, loosened_tie, pencil_skirt, sheer_pantyhose, fedora, leather_gloves
-      label: 누아르 탐정
-      description: 롱 코트와 셔츠, 타이, 페도라, 가죽 장갑으로 구성된 필름 누아르 탐정 콘셉트입니다.
-    - text: denim_on_denim, cropped_denim_jacket, denim_miniskirt, crop_top, navel, cowboy_boots, belt, hoop_earrings
-      label: 데님 온 데님
-      description: 데님 재킷과 데님 스커트, 크롭 톱, 웨스턴 부츠를 조합한 청청 패션입니다.
-    - text: utility_cargo, cropped_utility_jacket, cargo_miniskirt, fitted_tank_top, combat_boots, thigh_strap, belt_bag, metal_buckles
-      label: 유틸리티 카고
-      description: 유틸리티 재킷과 카고 스커트, 벨트백, 컴뱃 부츠로 구성된 실용적인 스트릿 스타일입니다.
+    - section: 하드코어
+    - text: bondage, rope_bondage, leotard, sheer_pantyhose, collar, wrist_cuffs
+      label: 본디지 레오타드
+      description: 레오타드와 밧줄, 칼라, 커프스로 구성된 본디지 의상입니다.
+    - text: latex_suit, shiny_latex, tight_bodysuit, high_heels, mask, bodysuit
+      label: 라텍스 슈트
+      description: 몸에 밀착되는 광택 있는 라텍스 전신 슈트입니다.
+    - text: harness, leather_straps, lacy_lingerie, thighhighs, garter_belt
+      label: 가죽 하네스
+      description: 가죽 스트랩과 레이스 란제리, 가터벨트로 구성된 하네스 의상입니다.
+    - text: bondage_gear, heavy_straps, leather_harness, metal_rings, tight_fit
+      label: 하드 본디지
+      description: 두꺼운 스트랩과 금속 링, 가죽 하네스를 강조한 본디지 의상입니다.
+    - text: bondage_rope, intricate_knots, complex_patterns, tight
+      label: 매듭 본디지
+      description: 정교한 밧줄 매듭이 중심이 되는 본디지 의상입니다.
+    - text: bondage_mask, full_body_suit, tight_wrap, latex
+      label: 전신 본디지 슈트
+      description: 마스크와 전신 슈트, 타이트한 랩 형태가 결합된 의상입니다.
+    - text: chains, heavy_metal, industrial_fetish, leather_harness, dark_aesthetic
+      label: 인더스트리얼 하네스
+      description: 체인과 금속 장식, 가죽 하네스를 조합한 산업적인 페티시 의상입니다.
+    - text: maid_outfit, frilly_apron, collar, leash, lace, thighhighs
+      label: 본디지 메이드
+      description: 메이드복에 칼라와 리드줄, 레이스 장식을 더한 페티시 의상입니다.
+    - text: secretary, glasses, tight_skirt, undone_buttons, sheer_pantyhose, pumps
+      label: 페티시 비서
+      description: 타이트한 스커트와 시어 팬티스타킹을 조합한 비서풍 의상입니다.
+    - text: nurse_outfit, medical_fetish, bandage, sheer_nurse_uniform, stethoscope
+      label: 메디컬 페티시
+      description: 시어 간호사 유니폼과 붕대, 청진기가 포함된 메디컬 페티시 의상입니다.
+    - text: waitress, apron, micro_mini_skirt, bare_legs, sheer_clothing
+      label: 웨이트리스
+      description: 앞치마와 마이크로 미니스커트가 중심인 웨이트리스풍 의상입니다.
+    - text: bunny_girl, bunny_suit, fishnets, bowtie, cuffs, leotard
+      label: 바니걸
+      description: 바니 슈트와 망사 스타킹, 보타이, 커프스로 구성된 코스튬입니다.
+    - text: nun_habit, sheer_veil, cross_necklace, torn_habit, religious_fetish
+      label: 타락한 수녀
+      description: 시어 베일과 십자가 목걸이, 다크한 수녀복 요소를 조합한 의상입니다.
+    - text: gothic_lolita, dark_dress, heavy_lace, black_ribbons, corset, dark_makeup
+      label: 다크 고딕
+      description: 검은 드레스와 코르셋, 리본, 레이스를 강조한 고딕 의상입니다.
+    - text: vampire_queen, red_eyes, fangs, elegant_dress, blood_stains, corsetry
+      label: 뱀파이어 퀸
+      description: 우아한 드레스와 코르셋 실루엣을 가진 뱀파이어풍 의상입니다.
+    - text: witch_outfit, pointed_hat, sheer_robe, occult_symbols, dark_magic
+      label: 흑마법사
+      description: 뾰족모자와 시어 로브, 오컬트 장식이 있는 다크 위치 의상입니다.
+    - text: fallen_angel, black_wings, tattered_white_dress, halo, dark_aura
+      label: 타락천사
+      description: 검은 날개와 헤일로, 해진 흰 드레스를 조합한 타락천사 의상입니다.
+    - text: elven_beauty, sheer_tunic, forest_elements, vine_bondage, nature_fetish
+      label: 엘프 본디지
+      description: 시어 튜닉과 덩굴 장식을 조합한 판타지 본디지 의상입니다.
+    - text: dark_gothic, veil, lace_mask, black_corset, sheer_fabrics
+      label: 베일의 미녀
+      description: 검은 베일과 레이스 마스크, 블랙 코르셋으로 구성된 고딕 의상입니다.
+    - text: necromancer, bone_accessories, dark_robes, skeletal_patterns
+      label: 네크로맨서
+      description: 검은 로브와 뼈 장식, 해골 패턴이 중심인 네크로맨서 의상입니다.
+    - text: leotard, high_cut, much_skin, tight_fit, bondage_straps
+      label: 하이컷 레오타드
+      description: 하이컷 레오타드와 본디지 스트랩이 결합된 타이트한 의상입니다.
+    - text: sheer_clothing, transparent, see_through, skin_tight, revealing
+      label: 시스루
+      description: 투명하고 몸에 붙는 소재를 강조한 시스루 의상입니다.
+    - text: tight_corset, waist_cincher, hourglass_figure, extreme_curves
+      label: 코르셋 강조
+      description: 허리를 조이는 코르셋과 웨이스트 신처를 강조한 실루엣입니다.
+    - text: sheer_lace, delicate_tearing, fragile, beautiful_destruction
+      label: 찢어진 레이스
+      description: 섬세한 시어 레이스와 찢어진 장식을 조합한 의상입니다.
+    - text: cyborg, mechanical_parts, wires, glowing_lines, tech_bondage
+      label: 사이보그
+      description: 기계 부품과 와이어, 발광 라인이 포함된 사이버 페티시 의상입니다.
+    - text: space_suit, tight_latex, futuristic_design, visor, metallic_accents
+      label: 히로인 우주복
+      description: 라텍스 질감과 바이저, 금속 포인트가 있는 미래형 우주복입니다.
+    - text: dark_fantasy, demon_horns, tail, leather_armor, seductive_look
+      label: 서큐버스
+      description: 뿔과 꼬리, 가죽 아머를 조합한 서큐버스 의상입니다.
+    - text: doll_like, porcelain_skin, joints, frilly_dress, artificial_beauty
+      label: 인형(돌)
+      description: 프릴 드레스와 인형 관절 표현이 결합된 돌풍 의상입니다.
+    - text: dark_gothic, victorian_style, corset, heavy_layers, mourning_veil
+      label: 빅토리아 고딕
+      description: 빅토리아풍 레이어드 드레스와 코르셋, 상복 베일이 있는 고딕 의상입니다.
 악세사리:
   placeholder: <CLOTHES>
   uiGroup: 의상
@@ -2081,6 +2145,144 @@ _promptboard:
     - text: plaid
       label: 격자무늬
       description: 체크 패턴의 의상이나 배경 디자인
+    - text: striped
+      label: 스트라이프
+      description: 줄무늬 패턴입니다.
+    - text: polka_dot
+      label: 도트
+      description: 점무늬 패턴입니다.
+    - text: argyle
+      label: 아가일
+      description: 마름모 격자 형태의 아가일 패턴입니다.
+    - text: checkered
+      label: 체커
+      description: 바둑판처럼 반복되는 체크 패턴입니다.
+    - text: ribbed
+      label: 골지
+      description: 세로 골이 있는 니트/골지 질감입니다.
+    - text: floral_print
+      label: 플로럴
+      description: 꽃무늬 패턴입니다.
+추가색상2:
+  placeholder: <ECO2>
+  uiGroup: 색상
+  replaceInsideTags: true
+  tags:
+    - section: 기본색
+    - text: white
+      label: 흰색
+      description: 흰색 양말/레그웨어 색상입니다.
+    - text: black
+      label: 검정
+      description: 검은색 양말/레그웨어 색상입니다.
+    - text: gray
+      label: 회색
+      description: 회색 양말/레그웨어 색상입니다.
+    - text: navy
+      label: 네이비
+      description: 짙은 남색 양말/레그웨어 색상입니다.
+    - text: brown
+      label: 갈색
+      description: 갈색 양말/레그웨어 색상입니다.
+    - text: pink
+      label: 분홍색
+      description: 분홍색 양말/레그웨어 색상입니다.
+    - text: red
+      label: 빨간색
+      description: 빨간색 양말/레그웨어 색상입니다.
+    - section: 패턴
+    - text: striped
+      label: 스트라이프
+      description: 줄무늬 양말/레그웨어 패턴입니다.
+    - text: ribbed
+      label: 골지
+      description: 골지 양말/레그웨어 질감입니다.
+    - text: polka_dot
+      label: 도트
+      description: 점무늬 양말/레그웨어 패턴입니다.
+    - text: argyle
+      label: 아가일
+      description: 아가일 양말/레그웨어 패턴입니다.
+    - text: plaid
+      label: 체크
+      description: 체크 양말/레그웨어 패턴입니다.
+    - text: lace
+      label: 레이스
+      description: 레이스 장식의 양말/레그웨어입니다.
+    - text: sheer
+      label: 시스루
+      description: 비치는 얇은 양말/레그웨어입니다.
+    - section: 색상+패턴
+    - text: black striped
+      label: 검정 스트라이프
+      description: 검은색 줄무늬 양말/레그웨어입니다.
+    - text: white striped
+      label: 흰색 스트라이프
+      description: 흰색 줄무늬 양말/레그웨어입니다.
+    - text: pink striped
+      label: 분홍 스트라이프
+      description: 분홍색 줄무늬 양말/레그웨어입니다.
+    - text: black ribbed
+      label: 검정 골지
+      description: 검은색 골지 양말/레그웨어입니다.
+    - text: white ribbed
+      label: 흰색 골지
+      description: 흰색 골지 양말/레그웨어입니다.
+    - text: black lace
+      label: 검정 레이스
+      description: 검은색 레이스 양말/레그웨어입니다.
+    - text: white lace
+      label: 흰색 레이스
+      description: 흰색 레이스 양말/레그웨어입니다.
+    - text: red plaid
+      label: 빨간 체크
+      description: 빨간색 체크 양말/레그웨어입니다.
+    - text: navy argyle
+      label: 네이비 아가일
+      description: 네이비색 아가일 양말/레그웨어입니다.
+    - text: pastel striped
+      label: 파스텔 스트라이프
+      description: 파스텔 톤 줄무늬 양말/레그웨어입니다.
+    - text: multicolored striped
+      label: 다색 스트라이프
+      description: 여러 색이 들어간 줄무늬 양말/레그웨어입니다.
+추가디테일:
+  placeholder: <CDE>
+  uiGroup: 의상
+  replaceInsideTags: true
+  tags:
+    - section: 장식/구조
+    - text: lace-up
+      label: 레이스업
+      description: 끈으로 묶는 레이스업 디테일입니다.
+    - text: ribbon-trimmed
+      label: 리본 장식
+      description: 리본 장식이 들어간 의상 디테일입니다.
+    - text: frilled
+      label: 프릴
+      description: 프릴 장식이 들어간 의상 디테일입니다.
+    - text: ruffled
+      label: 러플
+      description: 러플 장식이 들어간 의상 디테일입니다.
+    - text: belted
+      label: 벨트 장식
+      description: 벨트가 포함된 의상 디테일입니다.
+    - text: zip-up
+      label: 집업
+      description: 지퍼 여밈이 있는 의상 디테일입니다.
+    - section: 절개/핏
+    - text: cutout
+      label: 컷아웃
+      description: 일부가 절개되어 피부가 드러나는 의상 디테일입니다.
+    - text: backless
+      label: 백리스
+      description: 등이 드러나는 의상 디테일입니다.
+    - text: off-shoulder
+      label: 오프숄더
+      description: 어깨가 드러나는 의상 디테일입니다.
+    - text: slit
+      label: 슬릿
+      description: 트임이 들어간 의상 디테일입니다.
 기타/소품:
   placeholder: <ETC>
   uiGroup: 기타
@@ -2098,6 +2300,9 @@ _promptboard:
     - text: speech_bubble
       label: 말풍선
       description: 캐릭터의 대사가 담긴 말풍선입니다.
+    - text: spoken_heart
+      label: 하트 말풍선
+      description: 말풍선이나 대사 효과로 하트가 표시되는 태그입니다.
     - section: 효과
     - text: sound_effects
       label: 효과음
