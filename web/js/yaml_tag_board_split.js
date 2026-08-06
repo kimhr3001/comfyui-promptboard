@@ -2644,6 +2644,13 @@ function setTemporaryStatus(node, text) {
   }, 2000);
 }
 
+function yamlErrorMessage(error) {
+  if (error?.code && error?.path) {
+    return `[${error.code}] at ${error.path}: ${error.message}`;
+  }
+  return error?.message || String(error);
+}
+
 function updateTemplateControls(node) {
   const select = node.promptboardTemplateSelect;
   const nameInput = node.promptboardTemplateInput;
@@ -2756,7 +2763,7 @@ function renderFromYaml(node, resetState = false) {
   try {
     model = normalizeYamlDocument(widgetValue(node, "yaml_text", ""));
   } catch (error) {
-    setStatus(node, `YAML error: ${error.message}`);
+    setStatus(node, `YAML error: ${yamlErrorMessage(error)}`);
     return;
   }
   if (String(node.promptboardStatus ?? "").startsWith("YAML error:")) {

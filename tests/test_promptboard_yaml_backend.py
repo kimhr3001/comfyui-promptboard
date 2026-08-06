@@ -157,9 +157,79 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
         self.assertEqual(replaced, "outfit: black leather denim sports bra,white skirt")
         self.assertEqual(report, "")
         self.assertEqual(
+            _preview,
+            "\n".join(
+                [
+                    "<CLOTHES>: black leather denim sports bra,white skirt",
+                    "<TOP_ATTRS>: black leather denim",
+                    "<BOTTOM_ATTRS>: white",
+                ]
+            ),
+        )
+        self.assertEqual(
             selected_text,
             "<TOP_ATTRS> sports bra,<BOTTOM_ATTRS> skirt,black leather denim,white",
         )
+
+    def test_attribute_preview_reports_state_warnings_with_paths(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
+        selected_state = {
+            "$attributes": {
+                "clothing": {
+                    "top": {
+                        "color": "black",
+                        "unused": ["white"],
+                    },
+                    "removed": {"color": ["black"]},
+                },
+                "deleted": {"top": {"color": ["white"]}},
+            }
+        }
+
+        _selection_json, preview, _selected_text = _select_tags_outputs(
+            yaml_text=source,
+            selected_state=json.dumps(selected_state, ensure_ascii=False),
+        )
+
+        self.assertIn("warning: $attributes.deleted no longer exists and was removed.", preview)
+        self.assertIn("warning: $attributes.clothing.removed no longer exists and was removed.", preview)
+        self.assertIn("warning: $attributes.clothing.top.unused no longer exists and was removed.", preview)
+        self.assertIn("warning: $attributes.clothing.top.color must be an array", preview)
+
+    def test_attribute_preview_reports_cycles_from_existing_replace_resolver(self):
+        source = """
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    loopTags:
+      tags:
+      - <TOP_ATTRS> loop
+  attributeBoards:
+    clothing:
+      targets:
+        top:
+          placeholder: <TOP_ATTRS>
+          attributes:
+            color:
+              source: loopTags
+상의:
+  placeholder: <CLOTHES>
+  tags:
+  - <TOP_ATTRS> sports bra
+"""
+        selected_state = {
+            "상의": ["<TOP_ATTRS> sports bra"],
+            "$attributes": {"clothing": {"top": {"color": ["<TOP_ATTRS> loop"]}}},
+        }
+
+        selection_json, preview, _selected_text = _select_tags_outputs(
+            yaml_text=source,
+            selected_state=json.dumps(selected_state, ensure_ascii=False),
+        )
+        _replaced, report = PromptBoardReplace().replace_tags("<CLOTHES>", selection_json)
+
+        self.assertIn("cycle: 상의 -> $attribute:clothing.top -> $attribute:clothing.top", preview)
+        self.assertEqual(report, "cycle: 상의 -> $attribute:clothing.top -> $attribute:clothing.top")
 
     def test_category_only_outputs_remain_unchanged_when_no_attribute_boards_exist(self):
         source = read_text(FIXTURE_ROOT / "valid" / "legacy_v1.yaml")
@@ -266,6 +336,34 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
             normalize_yaml_document("STYLE:\n  tags: []\nSTYLE:\n  tags: []\n")
         self.assertEqual(raised.exception.code, "yaml_parse_error")
         self.assertIn("duplicate key", str(raised.exception))
+
+    def test_select_tags_output_reports_yaml_error_code_and_path(self):
+        selection_json, preview, selected_text = _select_tags_outputs(
+            yaml_text="""
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      tags:
+      - black
+  attributeBoards:
+    clothing:
+      targets:
+        top:
+          placeholder: <TOP_ATTRS>
+          attributes:
+            color:
+              source: missing
+"""
+        )
+
+        self.assertEqual(selection_json, "{}")
+        self.assertEqual(selected_text, "")
+        self.assertIn(
+            "Prompt Board error: [unknown_tag_set] at "
+            "_promptboard.attributeBoards.clothing.targets.top.attributes.color.source",
+            preview,
+        )
 
     def test_preserves_existing_selection_payload_and_preview(self):
         source = read_text(FIXTURE_ROOT / "valid" / "legacy_v1.yaml")

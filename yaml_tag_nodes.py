@@ -3,9 +3,9 @@ import re
 from pathlib import Path
 
 try:
-    from .promptboard_yaml import normalize_yaml_document
+    from .promptboard_yaml import PromptBoardYamlError, normalize_yaml_document
 except ImportError:
-    from promptboard_yaml import normalize_yaml_document
+    from promptboard_yaml import PromptBoardYamlError, normalize_yaml_document
 
 
 FALLBACK_YAML = """GIRL_POS:
@@ -111,6 +111,12 @@ def _write_yaml_file(yaml_file, text):
         raise ValueError("Select a YAML file before saving.")
     normalize_yaml_document(text)
     path.write_text(str(text or ""), encoding="utf-8")
+
+
+def _format_yaml_error(error):
+    if isinstance(error, PromptBoardYamlError):
+        return f"[{error.code}] at {error.path}: {error}"
+    return str(error)
 
 
 def _template_name(name):
@@ -224,6 +230,8 @@ def _register_api_routes():
             text = data.get("text", "")
             _write_yaml_file(yaml_file, text)
             return web.json_response({"ok": True})
+        except PromptBoardYamlError as exc:
+            return web.json_response({"error": _format_yaml_error(exc)}, status=400)
         except Exception as exc:
             return web.json_response({"error": str(exc)}, status=400)
 
@@ -578,17 +586,21 @@ def _select_tags_outputs(yaml_file=DEFAULT_YAML_FILE, yaml_text="", selected_sta
         config = _config_from_model(model)
         state = _load_selected_state(selected_state)
         payload, selected_values = _build_selection_payload(config, state)
-        attribute_payload, attribute_selected_values = _build_attribute_selection_payload(model, state)
+        warnings = []
+        attribute_payload, attribute_selected_values = _build_attribute_selection_payload(model, state, warnings)
         payload.update(attribute_payload)
         selected_values.extend(attribute_selected_values)
         replacements, report, _ = _resolve_selection_replacements(payload)
         selection_json = json.dumps(payload, ensure_ascii=False)
         preview = _preview_text(payload, replacements)
+        report.extend(f"warning: {warning}" for warning in warnings)
         if report:
             preview = f"{preview}\n" if preview else ""
             preview += "\n".join(report)
         selected_text = FIXED_DELIMITER.join(selected_values)
         return (selection_json, preview, selected_text)
+    except PromptBoardYamlError as exc:
+        return ("{}", f"Prompt Board error: {_format_yaml_error(exc)}", "")
     except Exception as exc:
         message = f"Prompt Board error: {exc}"
         return ("{}", message, "")
