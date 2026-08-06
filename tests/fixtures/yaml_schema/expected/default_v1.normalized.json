@@ -129,6 +129,42 @@
           "label": "체크",
           "description": "기존 상의/하의/외투 색상 카테고리의 체크 선택값을 보존합니다.",
           "default": false
+        },
+        {
+          "text": "striped",
+          "label": "스트라이프",
+          "description": "줄무늬 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "polka_dot",
+          "label": "도트",
+          "description": "점무늬 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "argyle",
+          "label": "아가일",
+          "description": "마름모 격자 형태의 아가일 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "checkered",
+          "label": "체커",
+          "description": "바둑판처럼 반복되는 체크 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "ribbed",
+          "label": "골지",
+          "description": "세로 골이 있는 니트/골지 질감입니다.",
+          "default": false
+        },
+        {
+          "text": "floral_print",
+          "label": "플로럴",
+          "description": "꽃무늬 패턴입니다.",
+          "default": false
         }
       ],
       "tagItems": [
@@ -330,6 +366,60 @@
             "text": "plaid",
             "label": "체크",
             "description": "기존 상의/하의/외투 색상 카테고리의 체크 선택값을 보존합니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "striped",
+            "label": "스트라이프",
+            "description": "줄무늬 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "polka_dot",
+            "label": "도트",
+            "description": "점무늬 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "argyle",
+            "label": "아가일",
+            "description": "마름모 격자 형태의 아가일 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "checkered",
+            "label": "체커",
+            "description": "바둑판처럼 반복되는 체크 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "ribbed",
+            "label": "골지",
+            "description": "세로 골이 있는 니트/골지 질감입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "floral_print",
+            "label": "플로럴",
+            "description": "꽃무늬 패턴입니다.",
             "default": false
           }
         }
@@ -4438,97 +4528,97 @@
       "tagSet": null,
       "tags": [
         {
-          "text": "<TCO> t-shirt",
+          "text": "<TCO> <CDE> t-shirt",
           "label": "<TCO> 티셔츠",
           "description": "<TCO> 색상의 티셔츠를 착용한 상태",
           "default": false
         },
         {
-          "text": "<TCO> tank_top",
+          "text": "<TCO> <CDE> tank_top",
           "label": "탱크톱",
           "description": "민소매 형태의 상의입니다.",
           "default": false
         },
         {
-          "text": "<TCO> sweater",
+          "text": "<TCO> <CDE> sweater",
           "label": "스웨터",
           "description": "니트 소재의 상의입니다.",
           "default": false
         },
         {
-          "text": "<TCO> hoodie",
+          "text": "<TCO> <CDE> hoodie",
           "label": "후드티",
           "description": "색상이 적용된 후드 티셔츠입니다.",
           "default": false
         },
         {
-          "text": "<TCO> cardigan",
+          "text": "<TCO> <CDE> cardigan",
           "label": "가디건",
           "description": "색상이 적용된 가디건입니다.",
           "default": false
         },
         {
-          "text": "<TCO> shirt",
+          "text": "<TCO> <CDE> shirt",
           "label": "셔츠",
           "description": "색상이 적용된 셔츠입니다.",
           "default": false
         },
         {
-          "text": "<TCO> collared_shirt",
+          "text": "<TCO> <CDE> collared_shirt",
           "label": "셔츠",
           "description": "깃이 있는 셔츠 스타일입니다.",
           "default": false
         },
         {
-          "text": "<TCO> polo_shirt",
+          "text": "<TCO> <CDE> polo_shirt",
           "label": "폴로 셔츠",
           "description": "칼라가 달린 반소매 셔츠",
           "default": false
         },
         {
-          "text": "<TCO> crop_top",
+          "text": "<TCO> <CDE> crop_top",
           "label": "크롭톱",
           "description": "길이가 짧은 상의입니다.",
           "default": false
         },
         {
-          "text": "<TCO> sleeveless_shirt",
+          "text": "<TCO> <CDE> sleeveless_shirt",
           "label": "민소매 셔츠",
           "description": "색상이 적용된 민소매 셔츠입니다.",
           "default": false
         },
         {
-          "text": "<TCO> blouse",
+          "text": "<TCO> <CDE> blouse",
           "label": "블라우스",
           "description": "색상이 적용된 블라우스 스타일입니다.",
           "default": false
         },
         {
-          "text": "<TCO> lace_camisole",
+          "text": "<TCO> <CDE> lace_camisole",
           "label": "레이스 캐미솔",
           "description": "레이스 장식이 된 캐미솔입니다.",
           "default": false
         },
         {
-          "text": "<TCO> tube_top",
+          "text": "<TCO> <CDE> tube_top",
           "label": "튜브 탑",
           "description": "어깨끈이 없는 소매 없는 상의",
           "default": false
         },
         {
-          "text": "<TCO> bodysuit",
+          "text": "<TCO> <CDE> bodysuit",
           "label": "바디수트",
           "description": "몸에 밀착되는 바디수트 스타일입니다.",
           "default": false
         },
         {
-          "text": "<TCO> corset_top",
+          "text": "<TCO> <CDE> corset_top",
           "label": "코르셋 탑",
           "description": "몸매를 강조하는 코르셋 스타일 상의",
           "default": false
         },
         {
-          "text": "<TCO> dress",
+          "text": "<TCO> <CDE> dress",
           "label": "드레스",
           "description": "원피스 형태의 의상",
           "default": false
@@ -4542,7 +4632,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> t-shirt",
+            "text": "<TCO> <CDE> t-shirt",
             "label": "<TCO> 티셔츠",
             "description": "<TCO> 색상의 티셔츠를 착용한 상태",
             "default": false
@@ -4551,7 +4641,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> tank_top",
+            "text": "<TCO> <CDE> tank_top",
             "label": "탱크톱",
             "description": "민소매 형태의 상의입니다.",
             "default": false
@@ -4560,7 +4650,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> sweater",
+            "text": "<TCO> <CDE> sweater",
             "label": "스웨터",
             "description": "니트 소재의 상의입니다.",
             "default": false
@@ -4569,7 +4659,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> hoodie",
+            "text": "<TCO> <CDE> hoodie",
             "label": "후드티",
             "description": "색상이 적용된 후드 티셔츠입니다.",
             "default": false
@@ -4578,7 +4668,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> cardigan",
+            "text": "<TCO> <CDE> cardigan",
             "label": "가디건",
             "description": "색상이 적용된 가디건입니다.",
             "default": false
@@ -4587,7 +4677,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> shirt",
+            "text": "<TCO> <CDE> shirt",
             "label": "셔츠",
             "description": "색상이 적용된 셔츠입니다.",
             "default": false
@@ -4596,7 +4686,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> collared_shirt",
+            "text": "<TCO> <CDE> collared_shirt",
             "label": "셔츠",
             "description": "깃이 있는 셔츠 스타일입니다.",
             "default": false
@@ -4605,7 +4695,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> polo_shirt",
+            "text": "<TCO> <CDE> polo_shirt",
             "label": "폴로 셔츠",
             "description": "칼라가 달린 반소매 셔츠",
             "default": false
@@ -4618,7 +4708,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> crop_top",
+            "text": "<TCO> <CDE> crop_top",
             "label": "크롭톱",
             "description": "길이가 짧은 상의입니다.",
             "default": false
@@ -4627,7 +4717,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> sleeveless_shirt",
+            "text": "<TCO> <CDE> sleeveless_shirt",
             "label": "민소매 셔츠",
             "description": "색상이 적용된 민소매 셔츠입니다.",
             "default": false
@@ -4636,7 +4726,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> blouse",
+            "text": "<TCO> <CDE> blouse",
             "label": "블라우스",
             "description": "색상이 적용된 블라우스 스타일입니다.",
             "default": false
@@ -4645,7 +4735,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> lace_camisole",
+            "text": "<TCO> <CDE> lace_camisole",
             "label": "레이스 캐미솔",
             "description": "레이스 장식이 된 캐미솔입니다.",
             "default": false
@@ -4654,7 +4744,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> tube_top",
+            "text": "<TCO> <CDE> tube_top",
             "label": "튜브 탑",
             "description": "어깨끈이 없는 소매 없는 상의",
             "default": false
@@ -4667,7 +4757,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> bodysuit",
+            "text": "<TCO> <CDE> bodysuit",
             "label": "바디수트",
             "description": "몸에 밀착되는 바디수트 스타일입니다.",
             "default": false
@@ -4676,7 +4766,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> corset_top",
+            "text": "<TCO> <CDE> corset_top",
             "label": "코르셋 탑",
             "description": "몸매를 강조하는 코르셋 스타일 상의",
             "default": false
@@ -4685,7 +4775,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<TCO> dress",
+            "text": "<TCO> <CDE> dress",
             "label": "드레스",
             "description": "원피스 형태의 의상",
             "default": false
@@ -5007,169 +5097,169 @@
       "tagSet": null,
       "tags": [
         {
-          "text": "<BCO> skirt",
+          "text": "<BCO> <CDE> skirt",
           "label": "컬러 스커트",
           "description": "특정 색상의 스커트",
           "default": false
         },
         {
-          "text": "micro_skirt",
+          "text": "<CDE> micro_skirt",
           "label": "마이크로 스커트",
           "description": "매우 짧고 아슬아슬한 스커트",
           "default": false
         },
         {
-          "text": "miniskirt",
+          "text": "<CDE> miniskirt",
           "label": "미니스커트",
           "description": "짧은 길이의 스커트",
           "default": false
         },
         {
-          "text": "short_skirt",
+          "text": "<CDE> short_skirt",
           "label": "미니스커트",
           "description": "짧은 길이의 스커트입니다.",
           "default": false
         },
         {
-          "text": "knee-length_skirt",
+          "text": "<CDE> knee-length_skirt",
           "label": "무릎 길이 스커트",
           "description": "무릎까지 오는 길이의 스커트입니다.",
           "default": false
         },
         {
-          "text": "midi_skirt",
+          "text": "<CDE> midi_skirt",
           "label": "미디 스커트",
           "description": "종아리까지 오는 중간 길이의 스커트입니다.",
           "default": false
         },
         {
-          "text": "long_skirt",
+          "text": "<CDE> long_skirt",
           "label": "롱 스커트",
           "description": "발목까지 내려오는 긴 스커트입니다.",
           "default": false
         },
         {
-          "text": "maxi_skirt",
+          "text": "<CDE> maxi_skirt",
           "label": "맥시 스커트",
           "description": "발목까지 오는 긴 스커트입니다.",
           "default": false
         },
         {
-          "text": "pleated_skirt",
+          "text": "<CDE> pleated_skirt",
           "label": "주름 스커트",
           "description": "세로 주름이 잡힌 스커트입니다.",
           "default": false
         },
         {
-          "text": "tennis_skirt",
+          "text": "<CDE> tennis_skirt",
           "label": "테니스 스커트",
           "description": "짧고 넓게 퍼지는 주름 스커트입니다.",
           "default": false
         },
         {
-          "text": "pencil_skirt",
+          "text": "<CDE> pencil_skirt",
           "label": "펜슬 스커트",
           "description": "몸에 딱 붙는 슬림한 스커트입니다.",
           "default": false
         },
         {
-          "text": "tight_skirt",
+          "text": "<CDE> tight_skirt",
           "label": "타이트 스커트",
           "description": "몸에 밀착되는 스커트",
           "default": false
         },
         {
-          "text": "flare_skirt",
+          "text": "<CDE> flare_skirt",
           "label": "플레어 스커트",
           "description": "밑단이 넓게 퍼지는 스커트",
           "default": false
         },
         {
-          "text": "a-line_skirt",
+          "text": "<CDE> a-line_skirt",
           "label": "A라인 스커트",
           "description": "A자 실루엣의 스커트",
           "default": false
         },
         {
-          "text": "tiered_skirt",
+          "text": "<CDE> tiered_skirt",
           "label": "티어드 스커트",
           "description": "층층이 겹쳐진 디자인의 스커트",
           "default": false
         },
         {
-          "text": "bubble_skirt",
+          "text": "<CDE> bubble_skirt",
           "label": "벌룬 스커트",
           "description": "풍성하게 부풀어 오른 형태의 스커트입니다.",
           "default": false
         },
         {
-          "text": "suspender_skirt",
+          "text": "<CDE> suspender_skirt",
           "label": "서스펜더 스커트",
           "description": "어깨끈이 달린 형태의 스커트입니다.",
           "default": false
         },
         {
-          "text": "high-waist_skirt",
+          "text": "<CDE> high-waist_skirt",
           "label": "하이웨이스트 스커트",
           "description": "허리선이 높은 위치에 있는 스커트입니다.",
           "default": false
         },
         {
-          "text": "wrap_skirt",
+          "text": "<CDE> wrap_skirt",
           "label": "랩 스커트",
           "description": "허리에 감아서 입는 형태의 스커트입니다.",
           "default": false
         },
         {
-          "text": "plaid_skirt",
+          "text": "<CDE> plaid_skirt",
           "label": "체크 스커트",
           "description": "격자무늬 패턴의 스커트입니다.",
           "default": false
         },
         {
-          "text": "tartan_skirt",
+          "text": "<CDE> tartan_skirt",
           "label": "타탄 스커트",
           "description": "전통적인 타탄 체크 패턴의 스커트입니다.",
           "default": false
         },
         {
-          "text": "denim_skirt",
+          "text": "<CDE> denim_skirt",
           "label": "데님 스커트",
           "description": "청 데님 소재의 스커트입니다.",
           "default": false
         },
         {
-          "text": "leather_skirt",
+          "text": "<CDE> leather_skirt",
           "label": "레더 스커트",
           "description": "가죽 소재의 스커트입니다.",
           "default": false
         },
         {
-          "text": "frilled_skirt",
+          "text": "<CDE> frilled_skirt",
           "label": "프릴 스커트",
           "description": "끝단에 주름 장식이 달린 스커트입니다.",
           "default": false
         },
         {
-          "text": "ruffled_skirt",
+          "text": "<CDE> ruffled_skirt",
           "label": "러플 스커트",
           "description": "물결 모양의 장식이 있는 스커트입니다.",
           "default": false
         },
         {
-          "text": "slit_skirt, side_slit",
+          "text": "<CDE> slit_skirt, side_slit",
           "label": "슬릿 스커트",
           "description": "옆면이 트여 있는 스커트입니다.",
           "default": false
         },
         {
-          "text": "transparent_skirt, see-through",
+          "text": "<CDE> transparent_skirt, see-through",
           "label": "시스루 스커트",
           "description": "안이 비치는 투명한 스커트입니다.",
           "default": false
         },
         {
-          "text": "micro tight skirt",
+          "text": "<CDE> micro tight skirt",
           "label": "마이크로 스커트",
           "description": "몸에 딱 붙는 아주 짧은 치마",
           "default": false
@@ -5183,7 +5273,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<BCO> skirt",
+            "text": "<BCO> <CDE> skirt",
             "label": "컬러 스커트",
             "description": "특정 색상의 스커트",
             "default": false
@@ -5192,7 +5282,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "micro_skirt",
+            "text": "<CDE> micro_skirt",
             "label": "마이크로 스커트",
             "description": "매우 짧고 아슬아슬한 스커트",
             "default": false
@@ -5201,7 +5291,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "miniskirt",
+            "text": "<CDE> miniskirt",
             "label": "미니스커트",
             "description": "짧은 길이의 스커트",
             "default": false
@@ -5210,7 +5300,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "short_skirt",
+            "text": "<CDE> short_skirt",
             "label": "미니스커트",
             "description": "짧은 길이의 스커트입니다.",
             "default": false
@@ -5219,7 +5309,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "knee-length_skirt",
+            "text": "<CDE> knee-length_skirt",
             "label": "무릎 길이 스커트",
             "description": "무릎까지 오는 길이의 스커트입니다.",
             "default": false
@@ -5228,7 +5318,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "midi_skirt",
+            "text": "<CDE> midi_skirt",
             "label": "미디 스커트",
             "description": "종아리까지 오는 중간 길이의 스커트입니다.",
             "default": false
@@ -5237,7 +5327,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "long_skirt",
+            "text": "<CDE> long_skirt",
             "label": "롱 스커트",
             "description": "발목까지 내려오는 긴 스커트입니다.",
             "default": false
@@ -5246,7 +5336,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "maxi_skirt",
+            "text": "<CDE> maxi_skirt",
             "label": "맥시 스커트",
             "description": "발목까지 오는 긴 스커트입니다.",
             "default": false
@@ -5259,7 +5349,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "pleated_skirt",
+            "text": "<CDE> pleated_skirt",
             "label": "주름 스커트",
             "description": "세로 주름이 잡힌 스커트입니다.",
             "default": false
@@ -5268,7 +5358,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "tennis_skirt",
+            "text": "<CDE> tennis_skirt",
             "label": "테니스 스커트",
             "description": "짧고 넓게 퍼지는 주름 스커트입니다.",
             "default": false
@@ -5277,7 +5367,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "pencil_skirt",
+            "text": "<CDE> pencil_skirt",
             "label": "펜슬 스커트",
             "description": "몸에 딱 붙는 슬림한 스커트입니다.",
             "default": false
@@ -5286,7 +5376,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "tight_skirt",
+            "text": "<CDE> tight_skirt",
             "label": "타이트 스커트",
             "description": "몸에 밀착되는 스커트",
             "default": false
@@ -5295,7 +5385,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "flare_skirt",
+            "text": "<CDE> flare_skirt",
             "label": "플레어 스커트",
             "description": "밑단이 넓게 퍼지는 스커트",
             "default": false
@@ -5304,7 +5394,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "a-line_skirt",
+            "text": "<CDE> a-line_skirt",
             "label": "A라인 스커트",
             "description": "A자 실루엣의 스커트",
             "default": false
@@ -5313,7 +5403,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "tiered_skirt",
+            "text": "<CDE> tiered_skirt",
             "label": "티어드 스커트",
             "description": "층층이 겹쳐진 디자인의 스커트",
             "default": false
@@ -5322,7 +5412,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "bubble_skirt",
+            "text": "<CDE> bubble_skirt",
             "label": "벌룬 스커트",
             "description": "풍성하게 부풀어 오른 형태의 스커트입니다.",
             "default": false
@@ -5331,7 +5421,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "suspender_skirt",
+            "text": "<CDE> suspender_skirt",
             "label": "서스펜더 스커트",
             "description": "어깨끈이 달린 형태의 스커트입니다.",
             "default": false
@@ -5340,7 +5430,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "high-waist_skirt",
+            "text": "<CDE> high-waist_skirt",
             "label": "하이웨이스트 스커트",
             "description": "허리선이 높은 위치에 있는 스커트입니다.",
             "default": false
@@ -5349,7 +5439,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "wrap_skirt",
+            "text": "<CDE> wrap_skirt",
             "label": "랩 스커트",
             "description": "허리에 감아서 입는 형태의 스커트입니다.",
             "default": false
@@ -5362,7 +5452,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "plaid_skirt",
+            "text": "<CDE> plaid_skirt",
             "label": "체크 스커트",
             "description": "격자무늬 패턴의 스커트입니다.",
             "default": false
@@ -5371,7 +5461,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "tartan_skirt",
+            "text": "<CDE> tartan_skirt",
             "label": "타탄 스커트",
             "description": "전통적인 타탄 체크 패턴의 스커트입니다.",
             "default": false
@@ -5380,7 +5470,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "denim_skirt",
+            "text": "<CDE> denim_skirt",
             "label": "데님 스커트",
             "description": "청 데님 소재의 스커트입니다.",
             "default": false
@@ -5389,7 +5479,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "leather_skirt",
+            "text": "<CDE> leather_skirt",
             "label": "레더 스커트",
             "description": "가죽 소재의 스커트입니다.",
             "default": false
@@ -5402,7 +5492,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "frilled_skirt",
+            "text": "<CDE> frilled_skirt",
             "label": "프릴 스커트",
             "description": "끝단에 주름 장식이 달린 스커트입니다.",
             "default": false
@@ -5411,7 +5501,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "ruffled_skirt",
+            "text": "<CDE> ruffled_skirt",
             "label": "러플 스커트",
             "description": "물결 모양의 장식이 있는 스커트입니다.",
             "default": false
@@ -5420,7 +5510,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "slit_skirt, side_slit",
+            "text": "<CDE> slit_skirt, side_slit",
             "label": "슬릿 스커트",
             "description": "옆면이 트여 있는 스커트입니다.",
             "default": false
@@ -5429,7 +5519,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "transparent_skirt, see-through",
+            "text": "<CDE> transparent_skirt, see-through",
             "label": "시스루 스커트",
             "description": "안이 비치는 투명한 스커트입니다.",
             "default": false
@@ -5438,7 +5528,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "micro tight skirt",
+            "text": "<CDE> micro tight skirt",
             "label": "마이크로 스커트",
             "description": "몸에 딱 붙는 아주 짧은 치마",
             "default": false
@@ -5696,139 +5786,139 @@
       "tagSet": null,
       "tags": [
         {
-          "text": "<BCO> pants",
+          "text": "<BCO> <CDE> pants",
           "label": "<BCO> 바지",
           "description": "<BCO> 색상의 바지",
           "default": false
         },
         {
-          "text": "denim_shorts",
+          "text": "<CDE> denim_shorts",
           "label": "데님 쇼츠",
           "description": "데님 소재의 반바지입니다.",
           "default": false
         },
         {
-          "text": "denim_hot_pants",
+          "text": "<CDE> denim_hot_pants",
           "label": "데님 핫팬츠",
           "description": "매우 짧은 길이의 데님 팬츠입니다.",
           "default": false
         },
         {
-          "text": "dolphin_shorts",
+          "text": "<CDE> dolphin_shorts",
           "label": "돌핀 팬츠",
           "description": "옆트임이 있는 짧은 운동용 반바지입니다.",
           "default": false
         },
         {
-          "text": "short_shorts",
+          "text": "<CDE> short_shorts",
           "label": "숏 팬츠",
           "description": "길이가 아주 짧은 반바지입니다.",
           "default": false
         },
         {
-          "text": "cargo_shorts",
+          "text": "<CDE> cargo_shorts",
           "label": "카고 반바지",
           "description": "옆면에 큰 주머니가 달린 반바지",
           "default": false
         },
         {
-          "text": "biker_shorts",
+          "text": "<CDE> biker_shorts",
           "label": "바이커 쇼츠",
           "description": "몸에 딱 붙는 짧은 타이즈형 반바지",
           "default": false
         },
         {
-          "text": "sweat_shorts",
+          "text": "<CDE> sweat_shorts",
           "label": "스웨트 쇼츠",
           "description": "면 트레이닝 소재의 반바지",
           "default": false
         },
         {
-          "text": "linen_shorts",
+          "text": "<CDE> linen_shorts",
           "label": "리넨 반바지",
           "description": "얇고 시원한 리넨 소재의 반바지",
           "default": false
         },
         {
-          "text": "leather_shorts",
+          "text": "<CDE> leather_shorts",
           "label": "가죽 쇼츠",
           "description": "가죽 재질의 짧은 바지입니다.",
           "default": false
         },
         {
-          "text": "tight_leggings",
+          "text": "<CDE> tight_leggings",
           "label": "타이트 레깅스",
           "description": "몸에 딱 붙는 레깅스입니다.",
           "default": false
         },
         {
-          "text": "skinny_jeans",
+          "text": "<CDE> skinny_jeans",
           "label": "스키니진",
           "description": "다리 라인이 강조되는 붙는 청바지입니다.",
           "default": false
         },
         {
-          "text": "wide_leg_trousers",
+          "text": "<CDE> wide_leg_trousers",
           "label": "와이드 팬츠",
           "description": "통이 넓은 바지입니다.",
           "default": false
         },
         {
-          "text": "baggy_jeans",
+          "text": "<CDE> baggy_jeans",
           "label": "배기 진",
           "description": "골반부터 밑단까지 통이 넓고 넉넉한 바지",
           "default": false
         },
         {
-          "text": "flare_jeans",
+          "text": "<CDE> flare_jeans",
           "label": "부츠컷 진",
           "description": "무릎 아래로 갈수록 넓어지는 형태의 청바지",
           "default": false
         },
         {
-          "text": "palazzo_pants",
+          "text": "<CDE> palazzo_pants",
           "label": "팔라초 팬츠",
           "description": "통이 매우 넓어 치마처럼 보이는 와이드 팬츠",
           "default": false
         },
         {
-          "text": "culottes",
+          "text": "<CDE> culottes",
           "label": "큐로트",
           "description": "짧은 길이의 넓은 통을 가진 반바지 스타일",
           "default": false
         },
         {
-          "text": "jogger_pants",
+          "text": "<CDE> jogger_pants",
           "label": "조거 팬츠",
           "description": "발목에 시보리가 있는 조거 스타일의 바지",
           "default": false
         },
         {
-          "text": "corduroy_pants",
+          "text": "<CDE> corduroy_pants",
           "label": "코듀로이 팬츠",
           "description": "골이 있는 골덴 소재의 바지",
           "default": false
         },
         {
-          "text": "tailored_trousers",
+          "text": "<CDE> tailored_trousers",
           "label": "슬랙스",
           "description": "핏이 잡힌 정장 스타일의 바지",
           "default": false
         },
         {
-          "text": "ripped_jeans",
+          "text": "<CDE> ripped_jeans",
           "label": "찢어진 청바지",
           "description": "데미지가 들어간 데님 팬츠",
           "default": false
         },
         {
-          "text": "denim_jeans",
+          "text": "<CDE> denim_jeans",
           "label": "청바지",
           "description": "데님 소재의 청바지",
           "default": false
         },
         {
-          "text": "slim_fit_pants",
+          "text": "<CDE> slim_fit_pants",
           "label": "슬림 팬츠",
           "description": "몸에 붙는 슬림한 바지",
           "default": false
@@ -5842,7 +5932,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<BCO> pants",
+            "text": "<BCO> <CDE> pants",
             "label": "<BCO> 바지",
             "description": "<BCO> 색상의 바지",
             "default": false
@@ -5851,7 +5941,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "denim_shorts",
+            "text": "<CDE> denim_shorts",
             "label": "데님 쇼츠",
             "description": "데님 소재의 반바지입니다.",
             "default": false
@@ -5860,7 +5950,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "denim_hot_pants",
+            "text": "<CDE> denim_hot_pants",
             "label": "데님 핫팬츠",
             "description": "매우 짧은 길이의 데님 팬츠입니다.",
             "default": false
@@ -5869,7 +5959,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "dolphin_shorts",
+            "text": "<CDE> dolphin_shorts",
             "label": "돌핀 팬츠",
             "description": "옆트임이 있는 짧은 운동용 반바지입니다.",
             "default": false
@@ -5878,7 +5968,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "short_shorts",
+            "text": "<CDE> short_shorts",
             "label": "숏 팬츠",
             "description": "길이가 아주 짧은 반바지입니다.",
             "default": false
@@ -5887,7 +5977,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "cargo_shorts",
+            "text": "<CDE> cargo_shorts",
             "label": "카고 반바지",
             "description": "옆면에 큰 주머니가 달린 반바지",
             "default": false
@@ -5896,7 +5986,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "biker_shorts",
+            "text": "<CDE> biker_shorts",
             "label": "바이커 쇼츠",
             "description": "몸에 딱 붙는 짧은 타이즈형 반바지",
             "default": false
@@ -5905,7 +5995,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "sweat_shorts",
+            "text": "<CDE> sweat_shorts",
             "label": "스웨트 쇼츠",
             "description": "면 트레이닝 소재의 반바지",
             "default": false
@@ -5914,7 +6004,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "linen_shorts",
+            "text": "<CDE> linen_shorts",
             "label": "리넨 반바지",
             "description": "얇고 시원한 리넨 소재의 반바지",
             "default": false
@@ -5923,7 +6013,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "leather_shorts",
+            "text": "<CDE> leather_shorts",
             "label": "가죽 쇼츠",
             "description": "가죽 재질의 짧은 바지입니다.",
             "default": false
@@ -5936,7 +6026,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "tight_leggings",
+            "text": "<CDE> tight_leggings",
             "label": "타이트 레깅스",
             "description": "몸에 딱 붙는 레깅스입니다.",
             "default": false
@@ -5945,7 +6035,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "skinny_jeans",
+            "text": "<CDE> skinny_jeans",
             "label": "스키니진",
             "description": "다리 라인이 강조되는 붙는 청바지입니다.",
             "default": false
@@ -5954,7 +6044,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "wide_leg_trousers",
+            "text": "<CDE> wide_leg_trousers",
             "label": "와이드 팬츠",
             "description": "통이 넓은 바지입니다.",
             "default": false
@@ -5963,7 +6053,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "baggy_jeans",
+            "text": "<CDE> baggy_jeans",
             "label": "배기 진",
             "description": "골반부터 밑단까지 통이 넓고 넉넉한 바지",
             "default": false
@@ -5972,7 +6062,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "flare_jeans",
+            "text": "<CDE> flare_jeans",
             "label": "부츠컷 진",
             "description": "무릎 아래로 갈수록 넓어지는 형태의 청바지",
             "default": false
@@ -5981,7 +6071,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "palazzo_pants",
+            "text": "<CDE> palazzo_pants",
             "label": "팔라초 팬츠",
             "description": "통이 매우 넓어 치마처럼 보이는 와이드 팬츠",
             "default": false
@@ -5990,7 +6080,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "culottes",
+            "text": "<CDE> culottes",
             "label": "큐로트",
             "description": "짧은 길이의 넓은 통을 가진 반바지 스타일",
             "default": false
@@ -5999,7 +6089,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "jogger_pants",
+            "text": "<CDE> jogger_pants",
             "label": "조거 팬츠",
             "description": "발목에 시보리가 있는 조거 스타일의 바지",
             "default": false
@@ -6008,7 +6098,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "corduroy_pants",
+            "text": "<CDE> corduroy_pants",
             "label": "코듀로이 팬츠",
             "description": "골이 있는 골덴 소재의 바지",
             "default": false
@@ -6017,7 +6107,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "tailored_trousers",
+            "text": "<CDE> tailored_trousers",
             "label": "슬랙스",
             "description": "핏이 잡힌 정장 스타일의 바지",
             "default": false
@@ -6026,7 +6116,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "ripped_jeans",
+            "text": "<CDE> ripped_jeans",
             "label": "찢어진 청바지",
             "description": "데미지가 들어간 데님 팬츠",
             "default": false
@@ -6035,7 +6125,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "denim_jeans",
+            "text": "<CDE> denim_jeans",
             "label": "청바지",
             "description": "데님 소재의 청바지",
             "default": false
@@ -6044,7 +6134,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "slim_fit_pants",
+            "text": "<CDE> slim_fit_pants",
             "label": "슬림 팬츠",
             "description": "몸에 붙는 슬림한 바지",
             "default": false
@@ -6083,25 +6173,25 @@
           "default": false
         },
         {
-          "text": "kneehighs",
+          "text": "<ECO2> kneehighs",
           "label": "니하이삭스",
           "description": "무릎까지 오는 길이의 양말",
           "default": false
         },
         {
-          "text": "loose_socks",
+          "text": "<ECO2> loose_socks",
           "label": "루즈 삭스",
           "description": "발목 부분이 늘어진 스타일의 양말",
           "default": false
         },
         {
-          "text": "ankle_socks",
+          "text": "<ECO2> ankle_socks",
           "label": "발목 양말",
           "description": "발목까지만 오는 짧은 양말",
           "default": false
         },
         {
-          "text": "calf-high_socks",
+          "text": "<ECO2> calf-high_socks",
           "label": "카프 삭스",
           "description": "종아리 중간까지 오는 길이의 양말",
           "default": false
@@ -6155,7 +6245,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "kneehighs",
+            "text": "<ECO2> kneehighs",
             "label": "니하이삭스",
             "description": "무릎까지 오는 길이의 양말",
             "default": false
@@ -6164,7 +6254,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "loose_socks",
+            "text": "<ECO2> loose_socks",
             "label": "루즈 삭스",
             "description": "발목 부분이 늘어진 스타일의 양말",
             "default": false
@@ -6173,7 +6263,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "ankle_socks",
+            "text": "<ECO2> ankle_socks",
             "label": "발목 양말",
             "description": "발목까지만 오는 짧은 양말",
             "default": false
@@ -6182,7 +6272,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "calf-high_socks",
+            "text": "<ECO2> calf-high_socks",
             "label": "카프 삭스",
             "description": "종아리 중간까지 오는 길이의 양말",
             "default": false
@@ -6197,61 +6287,61 @@
       "tagSet": null,
       "tags": [
         {
-          "text": "high_heels",
+          "text": "<CDE> high_heels",
           "label": "하이힐",
           "description": "굽이 높은 신발입니다.",
           "default": false
         },
         {
-          "text": "stiletto_heels",
+          "text": "<CDE> stiletto_heels",
           "label": "스틸레토 힐",
           "description": "끝이 뾰족하고 가는 굽의 신발입니다.",
           "default": false
         },
         {
-          "text": "pumps",
+          "text": "<CDE> pumps",
           "label": "펌프스",
           "description": "장식이 없는 깔끔한 형태의 구두입니다.",
           "default": false
         },
         {
-          "text": "wedge_heels",
+          "text": "<CDE> wedge_heels",
           "label": "웨지힐",
           "description": "굽이 두꺼운 통굽 형태의 힐",
           "default": false
         },
         {
-          "text": "platform_heels",
+          "text": "<CDE> platform_heels",
           "label": "통굽 힐",
           "description": "높은 굽이 있는 플랫폼 스타일의 신발",
           "default": false
         },
         {
-          "text": "kitten_heels",
+          "text": "<CDE> kitten_heels",
           "label": "키튼 힐",
           "description": "낮고 가느다란 굽의 힐",
           "default": false
         },
         {
-          "text": "pointed_toe_heels",
+          "text": "<CDE> pointed_toe_heels",
           "label": "뾰족 코 힐",
           "description": "앞코가 뾰족하게 디자인된 힐",
           "default": false
         },
         {
-          "text": "block_heels",
+          "text": "<CDE> block_heels",
           "label": "블록 힐",
           "description": "두툼하고 넓은 형태의 굽이 있는 하이힐입니다.",
           "default": false
         },
         {
-          "text": "ankle_boots",
+          "text": "<CDE> ankle_boots",
           "label": "앵클 부츠",
           "description": "발목까지 오는 길이의 부츠입니다.",
           "default": false
         },
         {
-          "text": "combat_boots",
+          "text": "<CDE> combat_boots",
           "label": "컴뱃 부츠",
           "description": "튼튼한 전투용 부츠",
           "default": false
@@ -6263,73 +6353,73 @@
           "default": false
         },
         {
-          "text": "platform_boots",
+          "text": "<CDE> platform_boots",
           "label": "통굽 부츠",
           "description": "굽이 높은 플랫폼 형태의 부츠",
           "default": false
         },
         {
-          "text": "loafers",
+          "text": "<CDE> loafers",
           "label": "로퍼",
           "description": "단정한 슬립온 형태의 신발",
           "default": false
         },
         {
-          "text": "ballet_flats",
+          "text": "<CDE> ballet_flats",
           "label": "플랫 슈즈",
           "description": "굽이 거의 없는 발레풍 신발",
           "default": false
         },
         {
-          "text": "flat_shoes",
+          "text": "<CDE> flat_shoes",
           "label": "플랫 슈즈",
           "description": "굽이 없는 평평한 신발입니다.",
           "default": false
         },
         {
-          "text": "mules",
+          "text": "<CDE> mules",
           "label": "뮬",
           "description": "뒷축이 없는 슬리퍼 형태의 신발",
           "default": false
         },
         {
-          "text": "strappy_sandals",
+          "text": "<CDE> strappy_sandals",
           "label": "스트랩 샌들",
           "description": "끈으로 발등을 감싸는 형태의 샌들",
           "default": false
         },
         {
-          "text": "heeled_sandals",
+          "text": "<CDE> heeled_sandals",
           "label": "힐 샌들",
           "description": "높은 굽이 있는 샌들",
           "default": false
         },
         {
-          "text": "fashion_sneakers",
+          "text": "<CDE> fashion_sneakers",
           "label": "패션 스니커즈",
           "description": "스타일리시한 디자인의 운동화입니다.",
           "default": false
         },
         {
-          "text": "sneakers",
+          "text": "<CDE> sneakers",
           "label": "스니커즈",
           "description": "캐주얼한 운동화",
           "default": false
         },
         {
-          "text": "sandals",
+          "text": "<CDE> sandals",
           "label": "샌들",
           "description": "발등이 노출된 형태의 신발입니다.",
           "default": false
         },
         {
-          "text": "sports_shoes",
+          "text": "<CDE> sports_shoes",
           "label": "운동화",
           "description": "스포츠용 운동화입니다.",
           "default": false
         },
         {
-          "text": "high-top_sneakers",
+          "text": "<CDE> high-top_sneakers",
           "label": "하이탑 스니커즈",
           "description": "발목까지 올라오는 스니커즈입니다.",
           "default": false
@@ -6343,7 +6433,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "high_heels",
+            "text": "<CDE> high_heels",
             "label": "하이힐",
             "description": "굽이 높은 신발입니다.",
             "default": false
@@ -6352,7 +6442,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "stiletto_heels",
+            "text": "<CDE> stiletto_heels",
             "label": "스틸레토 힐",
             "description": "끝이 뾰족하고 가는 굽의 신발입니다.",
             "default": false
@@ -6361,7 +6451,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "pumps",
+            "text": "<CDE> pumps",
             "label": "펌프스",
             "description": "장식이 없는 깔끔한 형태의 구두입니다.",
             "default": false
@@ -6370,7 +6460,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "wedge_heels",
+            "text": "<CDE> wedge_heels",
             "label": "웨지힐",
             "description": "굽이 두꺼운 통굽 형태의 힐",
             "default": false
@@ -6379,7 +6469,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "platform_heels",
+            "text": "<CDE> platform_heels",
             "label": "통굽 힐",
             "description": "높은 굽이 있는 플랫폼 스타일의 신발",
             "default": false
@@ -6388,7 +6478,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "kitten_heels",
+            "text": "<CDE> kitten_heels",
             "label": "키튼 힐",
             "description": "낮고 가느다란 굽의 힐",
             "default": false
@@ -6397,7 +6487,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "pointed_toe_heels",
+            "text": "<CDE> pointed_toe_heels",
             "label": "뾰족 코 힐",
             "description": "앞코가 뾰족하게 디자인된 힐",
             "default": false
@@ -6406,7 +6496,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "block_heels",
+            "text": "<CDE> block_heels",
             "label": "블록 힐",
             "description": "두툼하고 넓은 형태의 굽이 있는 하이힐입니다.",
             "default": false
@@ -6419,7 +6509,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "ankle_boots",
+            "text": "<CDE> ankle_boots",
             "label": "앵클 부츠",
             "description": "발목까지 오는 길이의 부츠입니다.",
             "default": false
@@ -6428,7 +6518,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "combat_boots",
+            "text": "<CDE> combat_boots",
             "label": "컴뱃 부츠",
             "description": "튼튼한 전투용 부츠",
             "default": false
@@ -6446,7 +6536,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "platform_boots",
+            "text": "<CDE> platform_boots",
             "label": "통굽 부츠",
             "description": "굽이 높은 플랫폼 형태의 부츠",
             "default": false
@@ -6459,7 +6549,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "loafers",
+            "text": "<CDE> loafers",
             "label": "로퍼",
             "description": "단정한 슬립온 형태의 신발",
             "default": false
@@ -6468,7 +6558,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "ballet_flats",
+            "text": "<CDE> ballet_flats",
             "label": "플랫 슈즈",
             "description": "굽이 거의 없는 발레풍 신발",
             "default": false
@@ -6477,7 +6567,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "flat_shoes",
+            "text": "<CDE> flat_shoes",
             "label": "플랫 슈즈",
             "description": "굽이 없는 평평한 신발입니다.",
             "default": false
@@ -6486,7 +6576,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "mules",
+            "text": "<CDE> mules",
             "label": "뮬",
             "description": "뒷축이 없는 슬리퍼 형태의 신발",
             "default": false
@@ -6499,7 +6589,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "strappy_sandals",
+            "text": "<CDE> strappy_sandals",
             "label": "스트랩 샌들",
             "description": "끈으로 발등을 감싸는 형태의 샌들",
             "default": false
@@ -6508,7 +6598,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "heeled_sandals",
+            "text": "<CDE> heeled_sandals",
             "label": "힐 샌들",
             "description": "높은 굽이 있는 샌들",
             "default": false
@@ -6517,7 +6607,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "fashion_sneakers",
+            "text": "<CDE> fashion_sneakers",
             "label": "패션 스니커즈",
             "description": "스타일리시한 디자인의 운동화입니다.",
             "default": false
@@ -6526,7 +6616,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "sneakers",
+            "text": "<CDE> sneakers",
             "label": "스니커즈",
             "description": "캐주얼한 운동화",
             "default": false
@@ -6535,7 +6625,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "sandals",
+            "text": "<CDE> sandals",
             "label": "샌들",
             "description": "발등이 노출된 형태의 신발입니다.",
             "default": false
@@ -6544,7 +6634,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "sports_shoes",
+            "text": "<CDE> sports_shoes",
             "label": "운동화",
             "description": "스포츠용 운동화입니다.",
             "default": false
@@ -6553,7 +6643,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "high-top_sneakers",
+            "text": "<CDE> high-top_sneakers",
             "label": "하이탑 스니커즈",
             "description": "발목까지 올라오는 스니커즈입니다.",
             "default": false
@@ -6571,6 +6661,18 @@
           "text": "<TCO> bikini",
           "label": "비키니",
           "description": "상하로 분리된 수영복입니다.",
+          "default": false
+        },
+        {
+          "text": "<TCO> bikini_top",
+          "label": "비키니 상의",
+          "description": "비키니의 상의만 착용한 상태입니다.",
+          "default": false
+        },
+        {
+          "text": "<BCO> bikini_bottom",
+          "label": "비키니 하의",
+          "description": "비키니의 하의만 착용한 상태입니다.",
           "default": false
         },
         {
@@ -6681,6 +6783,24 @@
             "text": "<TCO> bikini",
             "label": "비키니",
             "description": "상하로 분리된 수영복입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "<TCO> bikini_top",
+            "label": "비키니 상의",
+            "description": "비키니의 상의만 착용한 상태입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "<BCO> bikini_bottom",
+            "label": "비키니 하의",
+            "description": "비키니의 하의만 착용한 상태입니다.",
             "default": false
           }
         },
@@ -6834,7 +6954,7 @@
         }
       ]
     },
-    "세트의상_오피스": {
+    "세트의상_클래식_역할": {
       "placeholder": "<CLOTHES>",
       "uiGroup": "세트의상",
       "replaceInsideTags": false,
@@ -6857,48 +6977,7 @@
           "label": "사이버 오피스",
           "description": "구조적인 블레이저와 메탈릭 스커트, 바이저 안경이 결합된 미래형 오피스룩입니다.",
           "default": false
-        }
-      ],
-      "tagItems": [
-        {
-          "kind": "section",
-          "label": "오피스룩"
         },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "office_siren, slim_blazer, tight_pencil_skirt, narrow_sunglasses, sheer_pantyhose, pointed_toe_heels, silk_blouse",
-            "label": "오피스 사이렌",
-            "description": "슬림한 블레이저와 좁은 선글라스, 뾰족한 힐로 연출하는 트렌디한 오피스 사이렌 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "power_suit, fitted_blazer, wide_leg_pants, deep_v_neck_silk_blouse, statement_belt, pointed_toe_heels",
-            "label": "파워 수트",
-            "description": "핏되는 블레이저와 깊은 브이넥 실크 블라우스, 와이드 팬츠로 구성된 성숙하고 섹시한 수트 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "cyber_office, structured_blazer, metallic_skirt, sheer_turtleneck, visor_glasses, ankle_boots, silver_accessories",
-            "label": "사이버 오피스",
-            "description": "구조적인 블레이저와 메탈릭 스커트, 바이저 안경이 결합된 미래형 오피스룩입니다.",
-            "default": false
-          }
-        }
-      ]
-    },
-    "세트의상_스쿨_아카데미아": {
-      "placeholder": "<CLOTHES>",
-      "uiGroup": "세트의상",
-      "replaceInsideTags": false,
-      "tagSet": null,
-      "tags": [
         {
           "text": "korean_school_uniform, school_uniform, pleated_skirt, blazer, ribbon_tie, white_shirt, knee_socks, loafers",
           "label": "한국 교복풍",
@@ -6928,70 +7007,7 @@
           "label": "라이트 아카데미아",
           "description": "크림색 카디건과 블라우스, 플리츠 스커트, 리본 타이로 구성한 밝은 아카데미아 스타일입니다.",
           "default": false
-        }
-      ],
-      "tagItems": [
-        {
-          "kind": "section",
-          "label": "교복"
         },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "korean_school_uniform, school_uniform, pleated_skirt, blazer, ribbon_tie, white_shirt, knee_socks, loafers",
-            "label": "한국 교복풍",
-            "description": "블레이저와 리본 타이, 플리츠 스커트, 니삭스로 구성한 한국식 교복풍 패션입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "sailor_uniform, sailor_collar, pleated_skirt, neckerchief, cardigan, knee_socks, loafers",
-            "label": "세일러 교복풍",
-            "description": "세일러 칼라와 네커치프, 플리츠 스커트, 카디건으로 구성한 클래식 교복풍 세트입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "아카데미아"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "university_prep, sweater_vest, button_down_shirt, plaid_skirt, necktie, loafers, tote_bag",
-            "label": "캠퍼스 프레피",
-            "description": "스웨터 베스트와 셔츠, 체크 스커트, 넥타이로 구성된 대학 캠퍼스 프레피 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "dark_academia, fitted_turtleneck, plaid_miniskirt, long_coat, sheer_pantyhose, loafers, leather_satchel",
-            "label": "다크 아카데미아",
-            "description": "터틀넥과 체크 스커트, 롱 코트, 가죽 가방으로 구성한 고전적이고 차분한 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "light_academia, cropped_cardigan, pleated_miniskirt, sheer_blouse, ribbon_tie, thighhighs, mary_janes",
-            "label": "라이트 아카데미아",
-            "description": "크림색 카디건과 블라우스, 플리츠 스커트, 리본 타이로 구성한 밝은 아카데미아 스타일입니다.",
-            "default": false
-          }
-        }
-      ]
-    },
-    "세트의상_유니폼": {
-      "placeholder": "<CLOTHES>",
-      "uiGroup": "세트의상",
-      "replaceInsideTags": false,
-      "tagSet": null,
-      "tags": [
         {
           "text": "flight_attendant, travel_attendant, fitted_jacket, pencil_skirt, neck_scarf, hat, pumps",
           "label": "승무원",
@@ -7032,7 +7048,87 @@
       "tagItems": [
         {
           "kind": "section",
-          "label": "직업 유니폼"
+          "label": "오피스"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "office_siren, slim_blazer, tight_pencil_skirt, narrow_sunglasses, sheer_pantyhose, pointed_toe_heels, silk_blouse",
+            "label": "오피스 사이렌",
+            "description": "슬림한 블레이저와 좁은 선글라스, 뾰족한 힐로 연출하는 트렌디한 오피스 사이렌 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "power_suit, fitted_blazer, wide_leg_pants, deep_v_neck_silk_blouse, statement_belt, pointed_toe_heels",
+            "label": "파워 수트",
+            "description": "핏되는 블레이저와 깊은 브이넥 실크 블라우스, 와이드 팬츠로 구성된 성숙하고 섹시한 수트 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "cyber_office, structured_blazer, metallic_skirt, sheer_turtleneck, visor_glasses, ankle_boots, silver_accessories",
+            "label": "사이버 오피스",
+            "description": "구조적인 블레이저와 메탈릭 스커트, 바이저 안경이 결합된 미래형 오피스룩입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "section",
+          "label": "스쿨/아카데미아"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "korean_school_uniform, school_uniform, pleated_skirt, blazer, ribbon_tie, white_shirt, knee_socks, loafers",
+            "label": "한국 교복풍",
+            "description": "블레이저와 리본 타이, 플리츠 스커트, 니삭스로 구성한 한국식 교복풍 패션입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "sailor_uniform, sailor_collar, pleated_skirt, neckerchief, cardigan, knee_socks, loafers",
+            "label": "세일러 교복풍",
+            "description": "세일러 칼라와 네커치프, 플리츠 스커트, 카디건으로 구성한 클래식 교복풍 세트입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "university_prep, sweater_vest, button_down_shirt, plaid_skirt, necktie, loafers, tote_bag",
+            "label": "캠퍼스 프레피",
+            "description": "스웨터 베스트와 셔츠, 체크 스커트, 넥타이로 구성된 대학 캠퍼스 프레피 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "dark_academia, fitted_turtleneck, plaid_miniskirt, long_coat, sheer_pantyhose, loafers, leather_satchel",
+            "label": "다크 아카데미아",
+            "description": "터틀넥과 체크 스커트, 롱 코트, 가죽 가방으로 구성한 고전적이고 차분한 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "light_academia, cropped_cardigan, pleated_miniskirt, sheer_blouse, ribbon_tie, thighhighs, mary_janes",
+            "label": "라이트 아카데미아",
+            "description": "크림색 카디건과 블라우스, 플리츠 스커트, 리본 타이로 구성한 밝은 아카데미아 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "section",
+          "label": "유니폼"
         },
         {
           "kind": "tag",
@@ -7071,10 +7167,6 @@
           }
         },
         {
-          "kind": "section",
-          "label": "코스튬 유니폼"
-        },
-        {
           "kind": "tag",
           "tag": {
             "text": "maid, maid_headdress, frilled_apron, black_dress, white_apron, thighhighs, mary_janes",
@@ -7094,7 +7186,7 @@
         }
       ]
     },
-    "세트의상_홈웨어": {
+    "세트의상_데일리_라이프": {
       "placeholder": "<CLOTHES>",
       "uiGroup": "세트의상",
       "replaceInsideTags": false,
@@ -7213,12 +7305,84 @@
           "label": "파자마코어 원마일",
           "description": "스트라이프 파자마 셔츠와 라운지 쇼츠, 카디건, 로퍼로 구성된 원마일웨어 스타일입니다.",
           "default": false
+        },
+        {
+          "text": "crochet_summer, crochet_top, linen_skirt, sandals, straw_bag, gold_jewelry",
+          "label": "크로셰 서머",
+          "description": "크로셰 톱과 린넨 스커트, 샌들, 스트로 백으로 구성된 여름 리조트룩입니다.",
+          "default": false
+        },
+        {
+          "text": "resort_linen, unbuttoned_linen_shirt, linen_shorts, bikini_top, rope_sandals, straw_hat, woven_bag",
+          "label": "리조트 린넨",
+          "description": "린넨 셔츠와 쇼츠, 로프 샌들, 밀짚모자로 구성한 휴양지 스타일입니다.",
+          "default": false
+        },
+        {
+          "text": "festival_outfit, crochet_top, denim_shorts, fringe_jacket, cowboy_boots, layered_necklaces",
+          "label": "페스티벌 룩",
+          "description": "크로셰 톱과 데님 쇼츠, 프린지 재킷, 카우보이 부츠가 어우러진 페스티벌 스타일입니다.",
+          "default": false
+        },
+        {
+          "text": "rainy_city_style, trench_coat, transparent_umbrella, ankle_boots, knit_dress, wet_pavement, leather_bag",
+          "label": "레인시티 룩",
+          "description": "트렌치코트와 투명 우산, 앵클부츠, 니트 드레스로 구성된 비 오는 도시 분위기의 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "airport_fashion, oversized_sweatshirt, tight_leggings, baseball_cap, sneakers, carry_on_luggage, crossbody_bag",
+          "label": "공항 패션",
+          "description": "오버사이즈 스웨트셔츠와 레깅스, 볼캡, 캐리어가 어우러진 편안한 이동 스타일입니다.",
+          "default": false
+        },
+        {
+          "text": "apres_ski, cropped_puffer_jacket, tight_turtleneck_sweater, fitted_ski_pants, snow_boots, beanie, goggles_on_head",
+          "label": "아프레스키",
+          "description": "패딩 재킷과 터틀넥, 스노우 부츠, 비니로 구성된 겨울 스키 리조트 스타일입니다.",
+          "default": false
+        },
+        {
+          "text": "french_chic, off_shoulder_striped_top, straight_leg_jeans, ballet_flats, silk_scarf, wicker_bag",
+          "label": "프렌치 시크",
+          "description": "스트라이프 톱과 스트레이트 진, 발레 플랫, 실크 스카프로 완성하는 프렌치 스타일입니다.",
+          "default": false
+        },
+        {
+          "text": "trench_coat_style, beige_trench_coat, turtleneck, straight_leg_pants, loafers, leather_bag",
+          "label": "트렌치 코트",
+          "description": "베이지 트렌치코트와 터틀넥, 스트레이트 팬츠, 로퍼로 구성된 클래식 외출복입니다.",
+          "default": false
+        },
+        {
+          "text": "art_student, oversized_cardigan, paint_stained_apron, wide_leg_pants, canvas_tote, sneakers, beret",
+          "label": "미대생 룩",
+          "description": "오버사이즈 카디건과 물감 묻은 앞치마, 와이드 팬츠, 캔버스 토트백이 있는 아트 스쿨 스타일입니다.",
+          "default": false
+        },
+        {
+          "text": "noir_detective, long_coat, unbuttoned_shirt, loosened_tie, pencil_skirt, sheer_pantyhose, fedora, leather_gloves",
+          "label": "누아르 탐정",
+          "description": "롱 코트와 셔츠, 타이, 페도라, 가죽 장갑으로 구성된 필름 누아르 탐정 콘셉트입니다.",
+          "default": false
+        },
+        {
+          "text": "denim_on_denim, cropped_denim_jacket, denim_miniskirt, crop_top, navel, cowboy_boots, belt, hoop_earrings",
+          "label": "데님 온 데님",
+          "description": "데님 재킷과 데님 스커트, 크롭 톱, 웨스턴 부츠를 조합한 청청 패션입니다.",
+          "default": false
+        },
+        {
+          "text": "utility_cargo, cropped_utility_jacket, cargo_miniskirt, fitted_tank_top, combat_boots, thigh_strap, belt_bag, metal_buckles",
+          "label": "유틸리티 카고",
+          "description": "유틸리티 재킷과 카고 스커트, 벨트백, 컴뱃 부츠로 구성된 실용적인 스트릿 스타일입니다.",
+          "default": false
         }
       ],
       "tagItems": [
         {
           "kind": "section",
-          "label": "라운지/룸웨어"
+          "label": "홈웨어"
         },
         {
           "kind": "tag",
@@ -7293,10 +7457,6 @@
           }
         },
         {
-          "kind": "section",
-          "label": "돌핀/쇼츠 세트"
-        },
-        {
           "kind": "tag",
           "tag": {
             "text": "korean_dolphin_shorts_homewear, sleeveless_top, short_dolphin_shorts, ankle_socks, house_slippers",
@@ -7369,10 +7529,6 @@
           }
         },
         {
-          "kind": "section",
-          "label": "원마일/파자마"
-        },
-        {
           "kind": "tag",
           "tag": {
             "text": "padded_camisole_homewear, padded_camisole, lounge_shorts, sheer_cardigan, slippers",
@@ -7398,10 +7554,126 @@
             "description": "스트라이프 파자마 셔츠와 라운지 쇼츠, 카디건, 로퍼로 구성된 원마일웨어 스타일입니다.",
             "default": false
           }
+        },
+        {
+          "kind": "section",
+          "label": "리조트/시즌"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "crochet_summer, crochet_top, linen_skirt, sandals, straw_bag, gold_jewelry",
+            "label": "크로셰 서머",
+            "description": "크로셰 톱과 린넨 스커트, 샌들, 스트로 백으로 구성된 여름 리조트룩입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "resort_linen, unbuttoned_linen_shirt, linen_shorts, bikini_top, rope_sandals, straw_hat, woven_bag",
+            "label": "리조트 린넨",
+            "description": "린넨 셔츠와 쇼츠, 로프 샌들, 밀짚모자로 구성한 휴양지 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "festival_outfit, crochet_top, denim_shorts, fringe_jacket, cowboy_boots, layered_necklaces",
+            "label": "페스티벌 룩",
+            "description": "크로셰 톱과 데님 쇼츠, 프린지 재킷, 카우보이 부츠가 어우러진 페스티벌 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "rainy_city_style, trench_coat, transparent_umbrella, ankle_boots, knit_dress, wet_pavement, leather_bag",
+            "label": "레인시티 룩",
+            "description": "트렌치코트와 투명 우산, 앵클부츠, 니트 드레스로 구성된 비 오는 도시 분위기의 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "airport_fashion, oversized_sweatshirt, tight_leggings, baseball_cap, sneakers, carry_on_luggage, crossbody_bag",
+            "label": "공항 패션",
+            "description": "오버사이즈 스웨트셔츠와 레깅스, 볼캡, 캐리어가 어우러진 편안한 이동 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "apres_ski, cropped_puffer_jacket, tight_turtleneck_sweater, fitted_ski_pants, snow_boots, beanie, goggles_on_head",
+            "label": "아프레스키",
+            "description": "패딩 재킷과 터틀넥, 스노우 부츠, 비니로 구성된 겨울 스키 리조트 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "section",
+          "label": "시네마틱 라이프스타일"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "french_chic, off_shoulder_striped_top, straight_leg_jeans, ballet_flats, silk_scarf, wicker_bag",
+            "label": "프렌치 시크",
+            "description": "스트라이프 톱과 스트레이트 진, 발레 플랫, 실크 스카프로 완성하는 프렌치 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "trench_coat_style, beige_trench_coat, turtleneck, straight_leg_pants, loafers, leather_bag",
+            "label": "트렌치 코트",
+            "description": "베이지 트렌치코트와 터틀넥, 스트레이트 팬츠, 로퍼로 구성된 클래식 외출복입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "art_student, oversized_cardigan, paint_stained_apron, wide_leg_pants, canvas_tote, sneakers, beret",
+            "label": "미대생 룩",
+            "description": "오버사이즈 카디건과 물감 묻은 앞치마, 와이드 팬츠, 캔버스 토트백이 있는 아트 스쿨 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "noir_detective, long_coat, unbuttoned_shirt, loosened_tie, pencil_skirt, sheer_pantyhose, fedora, leather_gloves",
+            "label": "누아르 탐정",
+            "description": "롱 코트와 셔츠, 타이, 페도라, 가죽 장갑으로 구성된 필름 누아르 탐정 콘셉트입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "denim_on_denim, cropped_denim_jacket, denim_miniskirt, crop_top, navel, cowboy_boots, belt, hoop_earrings",
+            "label": "데님 온 데님",
+            "description": "데님 재킷과 데님 스커트, 크롭 톱, 웨스턴 부츠를 조합한 청청 패션입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "utility_cargo, cropped_utility_jacket, cargo_miniskirt, fitted_tank_top, combat_boots, thigh_strap, belt_bag, metal_buckles",
+            "label": "유틸리티 카고",
+            "description": "유틸리티 재킷과 카고 스커트, 벨트백, 컴뱃 부츠로 구성된 실용적인 스트릿 스타일입니다.",
+            "default": false
+          }
         }
       ]
     },
-    "세트의상_트렌드": {
+    "세트의상_트렌드_스트릿": {
       "placeholder": "<CLOTHES>",
       "uiGroup": "세트의상",
       "replaceInsideTags": false,
@@ -7460,110 +7732,7 @@
           "label": "페어리코어",
           "description": "시어 드레스와 플라워 자수, 나비 헤어핀, 파스텔 그린 톤의 몽환적인 스타일입니다.",
           "default": false
-        }
-      ],
-      "tagItems": [
-        {
-          "kind": "section",
-          "label": "클린/럭셔리"
         },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "quiet_luxury, off_shoulder_sweater, silk_slip_skirt, slit_skirt, loafers, leather_handbag, minimal_jewelry",
-            "label": "콰이어트 럭셔리",
-            "description": "오프숄더 니트와 슬릿 실크 스커트, 미니멀 주얼리로 구성된 절제된 섹시함의 고급 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "minimalist_capsule, fitted_white_tshirt, straight_leg_pants, simple_cardigan, loafers, leather_tote, clean_silhouette",
-            "label": "미니멀 캡슐",
-            "description": "핏되는 화이트 티셔츠와 스트레이트 팬츠, 심플 카디건으로 구성된 절제된 섹시함의 미니멀 캡슐룩입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "로맨틱/코어"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "balletcore, off_shoulder_wrap_cardigan, leotard, sheer_tulle_skirt, leg_warmers, ballet_flats, ribbon_choker, bare_shoulders",
-            "label": "발레코어",
-            "description": "랩 카디건과 레오타드, 튤 스커트, 레그워머, 발레 플랫으로 구성된 발레코어 세트입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "black_swan_balletcore, black_leotard, sheer_black_skirt, leg_warmers, ballet_flats, lace_choker",
-            "label": "블랙스완 발레코어",
-            "description": "블랙 레오타드와 시어 스커트, 어두운 메이크업으로 연출하는 다크 발레코어입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "coquette, lace_blouse, ribbon, miniskirt, mary_janes, frills, pearl_accessories, pastel_pink",
-            "label": "코케트",
-            "description": "레이스 블라우스와 리본, 메리제인 슈즈, 프릴 장식이 강조된 로맨틱 코케트 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "soft_femininity, babydoll_dress, lace_trim, puff_sleeves, bow, pastel_colors, sheer_fabric, bare_shoulders, ballet_flats",
-            "label": "소프트 페미닌",
-            "description": "베이비돌 드레스와 레이스, 퍼프 소매, 리본으로 구성된 부드러운 페미닌 룩입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "내추럴/판타지"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "romantic_boho, embroidered_mini_dress, frills, lace_trim, thigh_strap, raffia_bag, headscarf, sandals, bare_legs",
-            "label": "로맨틱 보헤미안",
-            "description": "자수 미니드레스와 프릴, 라피아 백, 헤드스카프로 구성한 현대적인 보헤미안 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "cottagecore, floral_mini_dress, puff_sleeves, corset_waist, apron, straw_hat, lace_up_boots, bare_legs",
-            "label": "코티지코어",
-            "description": "플로럴 드레스와 앞치마, 밀짚모자, 바구니 백으로 구성된 전원풍 의상 세트입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "fairycore, sheer_dress, floral_embroidery, butterfly_brooch, lace_up_sandals, pastel_green, delicate_jewelry",
-            "label": "페어리코어",
-            "description": "시어 드레스와 플라워 자수, 나비 헤어핀, 파스텔 그린 톤의 몽환적인 스타일입니다.",
-            "default": false
-          }
-        }
-      ]
-    },
-    "세트의상_파티_나이트아웃": {
-      "placeholder": "<CLOTHES>",
-      "uiGroup": "세트의상",
-      "replaceInsideTags": false,
-      "tagSet": null,
-      "tags": [
         {
           "text": "gallery_opening, slip_dress, oversized_blazer, ankle_boots, clutch_bag, minimalist_jewelry",
           "label": "갤러리 오프닝",
@@ -7635,137 +7804,7 @@
           "label": "익스트림 컷아웃 드레스",
           "description": "허리와 옆선 컷아웃이 강조된 바디콘 드레스와 스트랩 힐로 구성된 과감한 나이트아웃 룩입니다.",
           "default": false
-        }
-      ],
-      "tagItems": [
-        {
-          "kind": "section",
-          "label": "포멀/문화공간"
         },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "gallery_opening, slip_dress, oversized_blazer, ankle_boots, clutch_bag, minimalist_jewelry",
-            "label": "갤러리 오프닝",
-            "description": "슬립 드레스와 오버사이즈 블레이저, 앵클부츠, 클러치백으로 구성된 세련된 전시회 룩입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "jazz_club, satin_blouse, high_waist_trousers, suspenders, fedora, oxford_shoes",
-            "label": "재즈 클럽",
-            "description": "새틴 블라우스와 하이웨이스트 팬츠, 서스펜더, 페도라로 구성된 클래식 재즈 클럽 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "tuxedo, fitted_jacket, bowtie, white_shirt, black_slacks, formalwear",
-            "label": "턱시도",
-            "description": "격식을 갖춘 정장 스타일의 파티 의상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "파티 드레스"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "cocktail_party, bodycon_cocktail_dress, strappy_heels, clutch_bag, statement_earrings, bare_shoulders",
-            "label": "칵테일 파티",
-            "description": "바디콘 칵테일 드레스와 스트랩 힐, 클러치백으로 구성된 세련된 파티룩입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "rooftop_bar_outfit, satin_wrap_top, leather_miniskirt, sheer_pantyhose, ankle_strap_heels, small_clutch",
-            "label": "루프탑 바",
-            "description": "새틴 랩 톱과 가죽 미니스커트, 앵클 스트랩 힐로 구성된 밤 외출 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "club_bodycon, low_cut_bodycon_dress, metallic_heels, choker, mini_handbag, bare_legs",
-            "label": "클럽 바디콘",
-            "description": "로우컷 바디콘 드레스와 메탈릭 힐, 초커로 구성된 클럽웨어입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "sequin_nightout, sequin_minidress, strappy_sandals, clutch_bag, hoop_earrings, bare_shoulders",
-            "label": "시퀸 나이트아웃",
-            "description": "반짝이는 시퀸 미니드레스와 스트랩 샌들, 클러치백으로 구성된 화려한 나이트아웃 룩입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "velvet_lounge, velvet_slip_dress, lace_trim, long_coat, pointed_heels, pearl_choker",
-            "label": "벨벳 라운지",
-            "description": "벨벳 슬립 드레스와 롱 코트, 포인티드 힐로 구성된 라운지 바 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "wetlook_party_dress, glossy_bodycon_dress, deep_v_neck, thigh_slit, metallic_heels, clutch_bag",
-            "label": "웨트룩 파티 드레스",
-            "description": "광택감 있는 바디콘 드레스와 깊은 브이넥, 트임 스커트로 구성된 파티 드레스입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "sheer_panel_evening_dress, sheer_panels, bodycon_dress, high_slit, pointed_heels, minimal_jewelry",
-            "label": "시어 패널 이브닝 드레스",
-            "description": "비치는 패널과 하이 슬릿이 들어간 바디콘 이브닝 드레스로 구성된 세련된 파티룩입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "강한 패턴/컷아웃"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "maximalist_prints, low_cut_patterned_blouse, printed_miniskirt, colorful_tights, statement_earrings, bright_handbag",
-            "label": "맥시멀 프린트",
-            "description": "패턴 블라우스와 프린트 스커트, 컬러 타이츠, 큰 귀걸이로 구성된 화려한 맥시멀리즘 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "extreme_cutout_dress, cutout_bodycon_dress, bare_midriff, side_cutouts, strappy_heels, choker",
-            "label": "익스트림 컷아웃 드레스",
-            "description": "허리와 옆선 컷아웃이 강조된 바디콘 드레스와 스트랩 힐로 구성된 과감한 나이트아웃 룩입니다.",
-            "default": false
-          }
-        }
-      ]
-    },
-    "세트의상_스트릿_서브컬처": {
-      "placeholder": "<CLOTHES>",
-      "uiGroup": "세트의상",
-      "replaceInsideTags": false,
-      "tagSet": null,
-      "tags": [
         {
           "text": "y2k_fashion, crop_top, lowrise_jeans, platform_sneakers, mini_bag, tinted_sunglasses, butterfly_choker",
           "label": "Y2K 스트릿",
@@ -7872,7 +7911,204 @@
       "tagItems": [
         {
           "kind": "section",
-          "label": "일본/아시아 서브컬처"
+          "label": "트렌드"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "quiet_luxury, off_shoulder_sweater, silk_slip_skirt, slit_skirt, loafers, leather_handbag, minimal_jewelry",
+            "label": "콰이어트 럭셔리",
+            "description": "오프숄더 니트와 슬릿 실크 스커트, 미니멀 주얼리로 구성된 절제된 섹시함의 고급 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "minimalist_capsule, fitted_white_tshirt, straight_leg_pants, simple_cardigan, loafers, leather_tote, clean_silhouette",
+            "label": "미니멀 캡슐",
+            "description": "핏되는 화이트 티셔츠와 스트레이트 팬츠, 심플 카디건으로 구성된 절제된 섹시함의 미니멀 캡슐룩입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "balletcore, off_shoulder_wrap_cardigan, leotard, sheer_tulle_skirt, leg_warmers, ballet_flats, ribbon_choker, bare_shoulders",
+            "label": "발레코어",
+            "description": "랩 카디건과 레오타드, 튤 스커트, 레그워머, 발레 플랫으로 구성된 발레코어 세트입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "black_swan_balletcore, black_leotard, sheer_black_skirt, leg_warmers, ballet_flats, lace_choker",
+            "label": "블랙스완 발레코어",
+            "description": "블랙 레오타드와 시어 스커트, 어두운 메이크업으로 연출하는 다크 발레코어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "coquette, lace_blouse, ribbon, miniskirt, mary_janes, frills, pearl_accessories, pastel_pink",
+            "label": "코케트",
+            "description": "레이스 블라우스와 리본, 메리제인 슈즈, 프릴 장식이 강조된 로맨틱 코케트 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "soft_femininity, babydoll_dress, lace_trim, puff_sleeves, bow, pastel_colors, sheer_fabric, bare_shoulders, ballet_flats",
+            "label": "소프트 페미닌",
+            "description": "베이비돌 드레스와 레이스, 퍼프 소매, 리본으로 구성된 부드러운 페미닌 룩입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "romantic_boho, embroidered_mini_dress, frills, lace_trim, thigh_strap, raffia_bag, headscarf, sandals, bare_legs",
+            "label": "로맨틱 보헤미안",
+            "description": "자수 미니드레스와 프릴, 라피아 백, 헤드스카프로 구성한 현대적인 보헤미안 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "cottagecore, floral_mini_dress, puff_sleeves, corset_waist, apron, straw_hat, lace_up_boots, bare_legs",
+            "label": "코티지코어",
+            "description": "플로럴 드레스와 앞치마, 밀짚모자, 바구니 백으로 구성된 전원풍 의상 세트입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "fairycore, sheer_dress, floral_embroidery, butterfly_brooch, lace_up_sandals, pastel_green, delicate_jewelry",
+            "label": "페어리코어",
+            "description": "시어 드레스와 플라워 자수, 나비 헤어핀, 파스텔 그린 톤의 몽환적인 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "section",
+          "label": "파티/나이트아웃"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "gallery_opening, slip_dress, oversized_blazer, ankle_boots, clutch_bag, minimalist_jewelry",
+            "label": "갤러리 오프닝",
+            "description": "슬립 드레스와 오버사이즈 블레이저, 앵클부츠, 클러치백으로 구성된 세련된 전시회 룩입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "jazz_club, satin_blouse, high_waist_trousers, suspenders, fedora, oxford_shoes",
+            "label": "재즈 클럽",
+            "description": "새틴 블라우스와 하이웨이스트 팬츠, 서스펜더, 페도라로 구성된 클래식 재즈 클럽 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "tuxedo, fitted_jacket, bowtie, white_shirt, black_slacks, formalwear",
+            "label": "턱시도",
+            "description": "격식을 갖춘 정장 스타일의 파티 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "cocktail_party, bodycon_cocktail_dress, strappy_heels, clutch_bag, statement_earrings, bare_shoulders",
+            "label": "칵테일 파티",
+            "description": "바디콘 칵테일 드레스와 스트랩 힐, 클러치백으로 구성된 세련된 파티룩입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "rooftop_bar_outfit, satin_wrap_top, leather_miniskirt, sheer_pantyhose, ankle_strap_heels, small_clutch",
+            "label": "루프탑 바",
+            "description": "새틴 랩 톱과 가죽 미니스커트, 앵클 스트랩 힐로 구성된 밤 외출 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "club_bodycon, low_cut_bodycon_dress, metallic_heels, choker, mini_handbag, bare_legs",
+            "label": "클럽 바디콘",
+            "description": "로우컷 바디콘 드레스와 메탈릭 힐, 초커로 구성된 클럽웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "sequin_nightout, sequin_minidress, strappy_sandals, clutch_bag, hoop_earrings, bare_shoulders",
+            "label": "시퀸 나이트아웃",
+            "description": "반짝이는 시퀸 미니드레스와 스트랩 샌들, 클러치백으로 구성된 화려한 나이트아웃 룩입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "velvet_lounge, velvet_slip_dress, lace_trim, long_coat, pointed_heels, pearl_choker",
+            "label": "벨벳 라운지",
+            "description": "벨벳 슬립 드레스와 롱 코트, 포인티드 힐로 구성된 라운지 바 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "wetlook_party_dress, glossy_bodycon_dress, deep_v_neck, thigh_slit, metallic_heels, clutch_bag",
+            "label": "웨트룩 파티 드레스",
+            "description": "광택감 있는 바디콘 드레스와 깊은 브이넥, 트임 스커트로 구성된 파티 드레스입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "sheer_panel_evening_dress, sheer_panels, bodycon_dress, high_slit, pointed_heels, minimal_jewelry",
+            "label": "시어 패널 이브닝 드레스",
+            "description": "비치는 패널과 하이 슬릿이 들어간 바디콘 이브닝 드레스로 구성된 세련된 파티룩입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "maximalist_prints, low_cut_patterned_blouse, printed_miniskirt, colorful_tights, statement_earrings, bright_handbag",
+            "label": "맥시멀 프린트",
+            "description": "패턴 블라우스와 프린트 스커트, 컬러 타이츠, 큰 귀걸이로 구성된 화려한 맥시멀리즘 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "extreme_cutout_dress, cutout_bodycon_dress, bare_midriff, side_cutouts, strappy_heels, choker",
+            "label": "익스트림 컷아웃 드레스",
+            "description": "허리와 옆선 컷아웃이 강조된 바디콘 드레스와 스트랩 힐로 구성된 과감한 나이트아웃 룩입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "section",
+          "label": "스트릿/서브컬처"
         },
         {
           "kind": "tag",
@@ -7929,10 +8165,6 @@
           }
         },
         {
-          "kind": "section",
-          "label": "무대/아이돌"
-        },
-        {
           "kind": "tag",
           "tag": {
             "text": "kpop_stage_outfit, crop_jacket, pleated_miniskirt, thighhighs, platform_boots, headset_microphone, metallic_accents",
@@ -7978,10 +8210,6 @@
           }
         },
         {
-          "kind": "section",
-          "label": "스트릿/아웃도어"
-        },
-        {
           "kind": "tag",
           "tag": {
             "text": "korean_streetwear, oversized_blazer, crop_top, lowrise_cargo_pants, chunky_sneakers, crossbody_bag, silver_jewelry",
@@ -7998,10 +8226,6 @@
             "description": "윈드브레이커와 유틸리티 베스트, 트레일 슈즈, 아웃도어 백팩으로 구성한 고프코어 스타일입니다.",
             "default": false
           }
-        },
-        {
-          "kind": "section",
-          "label": "펑크/사이버"
         },
         {
           "kind": "tag",
@@ -8041,7 +8265,7 @@
         }
       ]
     },
-    "세트의상_스포츠_액티브": {
+    "세트의상_액티브_비치": {
       "placeholder": "<CLOTHES>",
       "uiGroup": "세트의상",
       "replaceInsideTags": false,
@@ -8094,97 +8318,7 @@
           "label": "치어리더",
           "description": "크롭 톱과 플리츠 스커트, 응원 수술, 니삭스로 구성된 치어리더 의상입니다.",
           "default": false
-        }
-      ],
-      "tagItems": [
-        {
-          "kind": "section",
-          "label": "데일리 스포츠"
         },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "athleisure, cropped_hoodie, tight_leggings, running_shoes, baseball_cap, gym_bag, sporty_watch",
-            "label": "애슬레저",
-            "description": "크롭 후디와 레깅스, 러닝화, 짐백으로 구성된 스포티한 데일리 의상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "tenniscore, tennis_uniform, pleated_tennis_skirt, polo_shirt, visor_cap, wristbands, white_sneakers",
-            "label": "테니스코어",
-            "description": "폴로 셔츠와 플리츠 테니스 스커트, 바이저 캡, 손목 밴드가 포함된 테니스코어입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "golfcore, fitted_polo_shirt, pleated_miniskirt, argyle_sweater_vest, visor_cap, knee_socks, golf_gloves, bare_legs",
-            "label": "골프코어",
-            "description": "폴로 셔츠와 아가일 베스트, 플리츠 스커트, 바이저 캡으로 구성한 골프웨어 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "종목 콘셉트"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "boxing_club, cropped_tank_top, satin_shorts, boxing_gloves, high_socks, training_shoes, athletic_tape",
-            "label": "복싱 클럽",
-            "description": "크롭 탱크톱과 새틴 쇼츠, 복싱 글러브, 하이삭스로 구성한 스포츠 화보 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "equestrian_style, fitted_riding_jacket, tight_riding_pants, riding_boots, leather_gloves, neck_scarf, helmet",
-            "label": "승마 스타일",
-            "description": "라이딩 재킷과 승마 부츠, 가죽 장갑, 넥 스카프로 구성된 고급스러운 승마복 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "figure_skater, skating_dress, sheer_sleeves, rhinestones, white_skates, tights",
-            "label": "피겨 스케이팅",
-            "description": "스케이팅 드레스와 시어 소매, 라인스톤, 흰 스케이트로 구성된 피겨 의상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "archery_club, fitted_sports_top, pleated_skirt, arm_guard, finger_tab, quiver, athletic_shoes",
-            "label": "양궁 클럽",
-            "description": "스포츠 톱과 플리츠 스커트, 암가드, 화살통으로 구성된 양궁 콘셉트 의상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "cheerleader_uniform, crop_top, pleated_skirt, pom_poms, knee_socks, sneakers, team_colors",
-            "label": "치어리더",
-            "description": "크롭 톱과 플리츠 스커트, 응원 수술, 니삭스로 구성된 치어리더 의상입니다.",
-            "default": false
-          }
-        }
-      ]
-    },
-    "세트의상_비치_스윔웨어": {
-      "placeholder": "<CLOTHES>",
-      "uiGroup": "세트의상",
-      "replaceInsideTags": false,
-      "tagSet": null,
-      "tags": [
         {
           "text": "beach_coverup_set, bikini_top, sarong, oversized_shirt, sandals, sunglasses, shell_jewelry",
           "label": "비치 커버업",
@@ -8249,7 +8383,83 @@
       "tagItems": [
         {
           "kind": "section",
-          "label": "비치/풀"
+          "label": "스포츠/액티브"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "athleisure, cropped_hoodie, tight_leggings, running_shoes, baseball_cap, gym_bag, sporty_watch",
+            "label": "애슬레저",
+            "description": "크롭 후디와 레깅스, 러닝화, 짐백으로 구성된 스포티한 데일리 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "tenniscore, tennis_uniform, pleated_tennis_skirt, polo_shirt, visor_cap, wristbands, white_sneakers",
+            "label": "테니스코어",
+            "description": "폴로 셔츠와 플리츠 테니스 스커트, 바이저 캡, 손목 밴드가 포함된 테니스코어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "golfcore, fitted_polo_shirt, pleated_miniskirt, argyle_sweater_vest, visor_cap, knee_socks, golf_gloves, bare_legs",
+            "label": "골프코어",
+            "description": "폴로 셔츠와 아가일 베스트, 플리츠 스커트, 바이저 캡으로 구성한 골프웨어 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "boxing_club, cropped_tank_top, satin_shorts, boxing_gloves, high_socks, training_shoes, athletic_tape",
+            "label": "복싱 클럽",
+            "description": "크롭 탱크톱과 새틴 쇼츠, 복싱 글러브, 하이삭스로 구성한 스포츠 화보 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "equestrian_style, fitted_riding_jacket, tight_riding_pants, riding_boots, leather_gloves, neck_scarf, helmet",
+            "label": "승마 스타일",
+            "description": "라이딩 재킷과 승마 부츠, 가죽 장갑, 넥 스카프로 구성된 고급스러운 승마복 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "figure_skater, skating_dress, sheer_sleeves, rhinestones, white_skates, tights",
+            "label": "피겨 스케이팅",
+            "description": "스케이팅 드레스와 시어 소매, 라인스톤, 흰 스케이트로 구성된 피겨 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "archery_club, fitted_sports_top, pleated_skirt, arm_guard, finger_tab, quiver, athletic_shoes",
+            "label": "양궁 클럽",
+            "description": "스포츠 톱과 플리츠 스커트, 암가드, 화살통으로 구성된 양궁 콘셉트 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "cheerleader_uniform, crop_top, pleated_skirt, pom_poms, knee_socks, sneakers, team_colors",
+            "label": "치어리더",
+            "description": "크롭 톱과 플리츠 스커트, 응원 수술, 니삭스로 구성된 치어리더 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "section",
+          "label": "비치/스윔웨어"
         },
         {
           "kind": "tag",
@@ -8288,10 +8498,6 @@
           }
         },
         {
-          "kind": "section",
-          "label": "리조트/요트"
-        },
-        {
           "kind": "tag",
           "tag": {
             "text": "resort_sarong_set, cutout_swimwear, sarong, wedge_sandals, sun_hat, gold_jewelry",
@@ -8317,10 +8523,6 @@
             "description": "화이트 스윔웨어와 리넨 커버업, 오버사이즈 선글라스로 구성된 요트 리조트 세트입니다.",
             "default": false
           }
-        },
-        {
-          "kind": "section",
-          "label": "스타일 테마"
         },
         {
           "kind": "tag",
@@ -8351,115 +8553,7 @@
         }
       ]
     },
-    "세트의상_리조트_시즌": {
-      "placeholder": "<CLOTHES>",
-      "uiGroup": "세트의상",
-      "replaceInsideTags": false,
-      "tagSet": null,
-      "tags": [
-        {
-          "text": "crochet_summer, crochet_top, linen_skirt, sandals, straw_bag, gold_jewelry",
-          "label": "크로셰 서머",
-          "description": "크로셰 톱과 린넨 스커트, 샌들, 스트로 백으로 구성된 여름 리조트룩입니다.",
-          "default": false
-        },
-        {
-          "text": "resort_linen, unbuttoned_linen_shirt, linen_shorts, bikini_top, rope_sandals, straw_hat, woven_bag",
-          "label": "리조트 린넨",
-          "description": "린넨 셔츠와 쇼츠, 로프 샌들, 밀짚모자로 구성한 휴양지 스타일입니다.",
-          "default": false
-        },
-        {
-          "text": "festival_outfit, crochet_top, denim_shorts, fringe_jacket, cowboy_boots, layered_necklaces",
-          "label": "페스티벌 룩",
-          "description": "크로셰 톱과 데님 쇼츠, 프린지 재킷, 카우보이 부츠가 어우러진 페스티벌 스타일입니다.",
-          "default": false
-        },
-        {
-          "text": "rainy_city_style, trench_coat, transparent_umbrella, ankle_boots, knit_dress, wet_pavement, leather_bag",
-          "label": "레인시티 룩",
-          "description": "트렌치코트와 투명 우산, 앵클부츠, 니트 드레스로 구성된 비 오는 도시 분위기의 의상입니다.",
-          "default": false
-        },
-        {
-          "text": "airport_fashion, oversized_sweatshirt, tight_leggings, baseball_cap, sneakers, carry_on_luggage, crossbody_bag",
-          "label": "공항 패션",
-          "description": "오버사이즈 스웨트셔츠와 레깅스, 볼캡, 캐리어가 어우러진 편안한 이동 스타일입니다.",
-          "default": false
-        },
-        {
-          "text": "apres_ski, cropped_puffer_jacket, tight_turtleneck_sweater, fitted_ski_pants, snow_boots, beanie, goggles_on_head",
-          "label": "아프레스키",
-          "description": "패딩 재킷과 터틀넥, 스노우 부츠, 비니로 구성된 겨울 스키 리조트 스타일입니다.",
-          "default": false
-        }
-      ],
-      "tagItems": [
-        {
-          "kind": "section",
-          "label": "여름/페스티벌"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "crochet_summer, crochet_top, linen_skirt, sandals, straw_bag, gold_jewelry",
-            "label": "크로셰 서머",
-            "description": "크로셰 톱과 린넨 스커트, 샌들, 스트로 백으로 구성된 여름 리조트룩입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "resort_linen, unbuttoned_linen_shirt, linen_shorts, bikini_top, rope_sandals, straw_hat, woven_bag",
-            "label": "리조트 린넨",
-            "description": "린넨 셔츠와 쇼츠, 로프 샌들, 밀짚모자로 구성한 휴양지 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "festival_outfit, crochet_top, denim_shorts, fringe_jacket, cowboy_boots, layered_necklaces",
-            "label": "페스티벌 룩",
-            "description": "크로셰 톱과 데님 쇼츠, 프린지 재킷, 카우보이 부츠가 어우러진 페스티벌 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "이동/계절"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "rainy_city_style, trench_coat, transparent_umbrella, ankle_boots, knit_dress, wet_pavement, leather_bag",
-            "label": "레인시티 룩",
-            "description": "트렌치코트와 투명 우산, 앵클부츠, 니트 드레스로 구성된 비 오는 도시 분위기의 의상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "airport_fashion, oversized_sweatshirt, tight_leggings, baseball_cap, sneakers, carry_on_luggage, crossbody_bag",
-            "label": "공항 패션",
-            "description": "오버사이즈 스웨트셔츠와 레깅스, 볼캡, 캐리어가 어우러진 편안한 이동 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "apres_ski, cropped_puffer_jacket, tight_turtleneck_sweater, fitted_ski_pants, snow_boots, beanie, goggles_on_head",
-            "label": "아프레스키",
-            "description": "패딩 재킷과 터틀넥, 스노우 부츠, 비니로 구성된 겨울 스키 리조트 스타일입니다.",
-            "default": false
-          }
-        }
-      ]
-    },
-    "세트의상_전통_문화": {
+    "세트의상_문화_판타지": {
       "placeholder": "<CLOTHES>",
       "uiGroup": "세트의상",
       "replaceInsideTags": false,
@@ -8524,119 +8618,7 @@
           "label": "플라멩코 드레스",
           "description": "러플 드레스와 오프숄더 네크라인, 힐 슈즈로 구성된 플라멩코 무드의 의상입니다.",
           "default": false
-        }
-      ],
-      "tagItems": [
-        {
-          "kind": "section",
-          "label": "동아시아"
         },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "modern_qipao, qipao, side_slit, mandarin_collar, silk_fabric, embroidered_pattern, high_heels",
-            "label": "모던 치파오",
-            "description": "차이나 칼라와 사이드 슬릿, 실크 소재, 자수 패턴이 있는 현대적인 치파오입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "modern_hanbok, hanbok, jeogori, chima, sheer_sleeves, embroidered_pattern, ribbon, soft_pastel",
-            "label": "모던 한복",
-            "description": "저고리와 치마 실루엣에 시어 소매와 자수 포인트를 더한 현대식 한복 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "shrine_maiden, miko, hakama, white_kimono, red_skirt, ribbon_sash, tabi",
-            "label": "무녀복",
-            "description": "흰 기모노 상의와 붉은 하카마, 헤어 리본, 타비로 구성된 무녀 의상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "modern_kimono, kimono, obi, floral_pattern, geta, silk_fabric, hair_ornament",
-            "label": "모던 기모노",
-            "description": "플로럴 패턴의 기모노와 오비, 게타로 구성된 현대적인 기모노 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "summer_yukata, yukata, obi_sash, floral_print, geta, small_drawstring_bag",
-            "label": "여름 유카타",
-            "description": "가벼운 유카타와 오비 사시, 게타, 작은 주머니 가방으로 구성된 여름 축제 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "남아시아/동남아"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "vietnamese_ao_dai, ao_dai, silk_tunic, side_slit, wide_leg_pants, embroidered_pattern, high_heels",
-            "label": "아오자이",
-            "description": "실크 튜닉과 와이드 팬츠, 사이드 슬릿이 특징인 베트남 아오자이 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "modern_sari, sari, fitted_blouse, draped_fabric, gold_jewelry, embroidered_border, sandals",
-            "label": "모던 사리",
-            "description": "드레이프된 사리와 핏되는 블라우스, 골드 주얼리로 구성된 현대적인 사리 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "lehenga_choli, lehenga_skirt, choli_blouse, dupatta, embroidered_pattern, bangles, sandals",
-            "label": "레헹가 촐리",
-            "description": "자수 스커트와 촐리 블라우스, 두파타로 구성된 화려한 남아시아 전통풍 의상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "thai_silk_dress, thai_silk_top, wrap_skirt, gold_belt, embroidered_pattern, delicate_sandals",
-            "label": "타이 실크 드레스",
-            "description": "타이 실크 톱과 랩 스커트, 골드 벨트로 구성된 태국 전통풍 의상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "유럽/무대"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "flamenco_dress, ruffled_dress, off_shoulder_neckline, flower_accessory, heeled_shoes, fitted_waist",
-            "label": "플라멩코 드레스",
-            "description": "러플 드레스와 오프숄더 네크라인, 힐 슈즈로 구성된 플라멩코 무드의 의상입니다.",
-            "default": false
-          }
-        }
-      ]
-    },
-    "세트의상_판타지_코스튬": {
-      "placeholder": "<CLOTHES>",
-      "uiGroup": "세트의상",
-      "replaceInsideTags": false,
-      "tagSet": null,
-      "tags": [
         {
           "text": "magical_girl_costume, frilled_dress, ribbon, thighhighs, heart_accessory, wand, pastel_colors",
           "label": "마법소녀풍",
@@ -8701,7 +8683,101 @@
       "tagItems": [
         {
           "kind": "section",
-          "label": "마법/천사악마"
+          "label": "전통/문화"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "modern_qipao, qipao, side_slit, mandarin_collar, silk_fabric, embroidered_pattern, high_heels",
+            "label": "모던 치파오",
+            "description": "차이나 칼라와 사이드 슬릿, 실크 소재, 자수 패턴이 있는 현대적인 치파오입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "modern_hanbok, hanbok, jeogori, chima, sheer_sleeves, embroidered_pattern, ribbon, soft_pastel",
+            "label": "모던 한복",
+            "description": "저고리와 치마 실루엣에 시어 소매와 자수 포인트를 더한 현대식 한복 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "shrine_maiden, miko, hakama, white_kimono, red_skirt, ribbon_sash, tabi",
+            "label": "무녀복",
+            "description": "흰 기모노 상의와 붉은 하카마, 헤어 리본, 타비로 구성된 무녀 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "modern_kimono, kimono, obi, floral_pattern, geta, silk_fabric, hair_ornament",
+            "label": "모던 기모노",
+            "description": "플로럴 패턴의 기모노와 오비, 게타로 구성된 현대적인 기모노 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "summer_yukata, yukata, obi_sash, floral_print, geta, small_drawstring_bag",
+            "label": "여름 유카타",
+            "description": "가벼운 유카타와 오비 사시, 게타, 작은 주머니 가방으로 구성된 여름 축제 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "vietnamese_ao_dai, ao_dai, silk_tunic, side_slit, wide_leg_pants, embroidered_pattern, high_heels",
+            "label": "아오자이",
+            "description": "실크 튜닉과 와이드 팬츠, 사이드 슬릿이 특징인 베트남 아오자이 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "modern_sari, sari, fitted_blouse, draped_fabric, gold_jewelry, embroidered_border, sandals",
+            "label": "모던 사리",
+            "description": "드레이프된 사리와 핏되는 블라우스, 골드 주얼리로 구성된 현대적인 사리 스타일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "lehenga_choli, lehenga_skirt, choli_blouse, dupatta, embroidered_pattern, bangles, sandals",
+            "label": "레헹가 촐리",
+            "description": "자수 스커트와 촐리 블라우스, 두파타로 구성된 화려한 남아시아 전통풍 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "thai_silk_dress, thai_silk_top, wrap_skirt, gold_belt, embroidered_pattern, delicate_sandals",
+            "label": "타이 실크 드레스",
+            "description": "타이 실크 톱과 랩 스커트, 골드 벨트로 구성된 태국 전통풍 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "flamenco_dress, ruffled_dress, off_shoulder_neckline, flower_accessory, heeled_shoes, fitted_waist",
+            "label": "플라멩코 드레스",
+            "description": "러플 드레스와 오프숄더 네크라인, 힐 슈즈로 구성된 플라멩코 무드의 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "section",
+          "label": "판타지/코스튬"
         },
         {
           "kind": "tag",
@@ -8740,10 +8816,6 @@
           }
         },
         {
-          "kind": "section",
-          "label": "전투/SF"
-        },
-        {
           "kind": "tag",
           "tag": {
             "text": "bikini_armor, fantasy_armor, metal_bikini, gauntlets, thigh_boots, cape, armored_accessories",
@@ -8769,10 +8841,6 @@
             "description": "스페이스 에이지 드레스와 비닐 부츠, 기하학적 장신구로 구성된 복고 미래 스타일입니다.",
             "default": false
           }
-        },
-        {
-          "kind": "section",
-          "label": "동물/해양/모험"
         },
         {
           "kind": "tag",
@@ -8803,109 +8871,450 @@
         }
       ]
     },
-    "세트의상_시네마틱_라이프스타일": {
+    "세트의상_페티시": {
       "placeholder": "<CLOTHES>",
       "uiGroup": "세트의상",
       "replaceInsideTags": false,
       "tagSet": null,
       "tags": [
         {
-          "text": "french_chic, off_shoulder_striped_top, straight_leg_jeans, ballet_flats, silk_scarf, wicker_bag",
-          "label": "프렌치 시크",
-          "description": "스트라이프 톱과 스트레이트 진, 발레 플랫, 실크 스카프로 완성하는 프렌치 스타일입니다.",
+          "text": "bondage, rope_bondage, leotard, sheer_pantyhose, collar, wrist_cuffs",
+          "label": "본디지 레오타드",
+          "description": "레오타드와 밧줄, 칼라, 커프스로 구성된 본디지 의상입니다.",
           "default": false
         },
         {
-          "text": "trench_coat_style, beige_trench_coat, turtleneck, straight_leg_pants, loafers, leather_bag",
-          "label": "트렌치 코트",
-          "description": "베이지 트렌치코트와 터틀넥, 스트레이트 팬츠, 로퍼로 구성된 클래식 외출복입니다.",
+          "text": "latex_suit, shiny_latex, tight_bodysuit, high_heels, mask, bodysuit",
+          "label": "라텍스 슈트",
+          "description": "몸에 밀착되는 광택 있는 라텍스 전신 슈트입니다.",
           "default": false
         },
         {
-          "text": "art_student, oversized_cardigan, paint_stained_apron, wide_leg_pants, canvas_tote, sneakers, beret",
-          "label": "미대생 룩",
-          "description": "오버사이즈 카디건과 물감 묻은 앞치마, 와이드 팬츠, 캔버스 토트백이 있는 아트 스쿨 스타일입니다.",
+          "text": "harness, leather_straps, lacy_lingerie, thighhighs, garter_belt",
+          "label": "가죽 하네스",
+          "description": "가죽 스트랩과 레이스 란제리, 가터벨트로 구성된 하네스 의상입니다.",
           "default": false
         },
         {
-          "text": "noir_detective, long_coat, unbuttoned_shirt, loosened_tie, pencil_skirt, sheer_pantyhose, fedora, leather_gloves",
-          "label": "누아르 탐정",
-          "description": "롱 코트와 셔츠, 타이, 페도라, 가죽 장갑으로 구성된 필름 누아르 탐정 콘셉트입니다.",
+          "text": "bondage_gear, heavy_straps, leather_harness, metal_rings, tight_fit",
+          "label": "하드 본디지",
+          "description": "두꺼운 스트랩과 금속 링, 가죽 하네스를 강조한 본디지 의상입니다.",
           "default": false
         },
         {
-          "text": "denim_on_denim, cropped_denim_jacket, denim_miniskirt, crop_top, navel, cowboy_boots, belt, hoop_earrings",
-          "label": "데님 온 데님",
-          "description": "데님 재킷과 데님 스커트, 크롭 톱, 웨스턴 부츠를 조합한 청청 패션입니다.",
+          "text": "bondage_rope, intricate_knots, complex_patterns, tight",
+          "label": "매듭 본디지",
+          "description": "정교한 밧줄 매듭이 중심이 되는 본디지 의상입니다.",
           "default": false
         },
         {
-          "text": "utility_cargo, cropped_utility_jacket, cargo_miniskirt, fitted_tank_top, combat_boots, thigh_strap, belt_bag, metal_buckles",
-          "label": "유틸리티 카고",
-          "description": "유틸리티 재킷과 카고 스커트, 벨트백, 컴뱃 부츠로 구성된 실용적인 스트릿 스타일입니다.",
+          "text": "bondage_mask, full_body_suit, tight_wrap, latex",
+          "label": "전신 본디지 슈트",
+          "description": "마스크와 전신 슈트, 타이트한 랩 형태가 결합된 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "chains, heavy_metal, industrial_fetish, leather_harness, dark_aesthetic",
+          "label": "인더스트리얼 하네스",
+          "description": "체인과 금속 장식, 가죽 하네스를 조합한 산업적인 페티시 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "maid_outfit, frilly_apron, collar, leash, lace, thighhighs",
+          "label": "본디지 메이드",
+          "description": "메이드복에 칼라와 리드줄, 레이스 장식을 더한 페티시 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "secretary, glasses, tight_skirt, undone_buttons, sheer_pantyhose, pumps",
+          "label": "페티시 비서",
+          "description": "타이트한 스커트와 시어 팬티스타킹을 조합한 비서풍 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "nurse_outfit, medical_fetish, bandage, sheer_nurse_uniform, stethoscope",
+          "label": "메디컬 페티시",
+          "description": "시어 간호사 유니폼과 붕대, 청진기가 포함된 메디컬 페티시 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "waitress, apron, micro_mini_skirt, bare_legs, sheer_clothing",
+          "label": "웨이트리스",
+          "description": "앞치마와 마이크로 미니스커트가 중심인 웨이트리스풍 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "bunny_girl, bunny_suit, fishnets, bowtie, cuffs, leotard",
+          "label": "바니걸",
+          "description": "바니 슈트와 망사 스타킹, 보타이, 커프스로 구성된 코스튬입니다.",
+          "default": false
+        },
+        {
+          "text": "nun_habit, sheer_veil, cross_necklace, torn_habit, religious_fetish",
+          "label": "타락한 수녀",
+          "description": "시어 베일과 십자가 목걸이, 다크한 수녀복 요소를 조합한 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "gothic_lolita, dark_dress, heavy_lace, black_ribbons, corset, dark_makeup",
+          "label": "다크 고딕",
+          "description": "검은 드레스와 코르셋, 리본, 레이스를 강조한 고딕 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "vampire_queen, red_eyes, fangs, elegant_dress, blood_stains, corsetry",
+          "label": "뱀파이어 퀸",
+          "description": "우아한 드레스와 코르셋 실루엣을 가진 뱀파이어풍 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "witch_outfit, pointed_hat, sheer_robe, occult_symbols, dark_magic",
+          "label": "흑마법사",
+          "description": "뾰족모자와 시어 로브, 오컬트 장식이 있는 다크 위치 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "fallen_angel, black_wings, tattered_white_dress, halo, dark_aura",
+          "label": "타락천사",
+          "description": "검은 날개와 헤일로, 해진 흰 드레스를 조합한 타락천사 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "elven_beauty, sheer_tunic, forest_elements, vine_bondage, nature_fetish",
+          "label": "엘프 본디지",
+          "description": "시어 튜닉과 덩굴 장식을 조합한 판타지 본디지 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "dark_gothic, veil, lace_mask, black_corset, sheer_fabrics",
+          "label": "베일의 미녀",
+          "description": "검은 베일과 레이스 마스크, 블랙 코르셋으로 구성된 고딕 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "necromancer, bone_accessories, dark_robes, skeletal_patterns",
+          "label": "네크로맨서",
+          "description": "검은 로브와 뼈 장식, 해골 패턴이 중심인 네크로맨서 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "leotard, high_cut, much_skin, tight_fit, bondage_straps",
+          "label": "하이컷 레오타드",
+          "description": "하이컷 레오타드와 본디지 스트랩이 결합된 타이트한 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "sheer_clothing, transparent, see_through, skin_tight, revealing",
+          "label": "시스루",
+          "description": "투명하고 몸에 붙는 소재를 강조한 시스루 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "tight_corset, waist_cincher, hourglass_figure, extreme_curves",
+          "label": "코르셋 강조",
+          "description": "허리를 조이는 코르셋과 웨이스트 신처를 강조한 실루엣입니다.",
+          "default": false
+        },
+        {
+          "text": "sheer_lace, delicate_tearing, fragile, beautiful_destruction",
+          "label": "찢어진 레이스",
+          "description": "섬세한 시어 레이스와 찢어진 장식을 조합한 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "cyborg, mechanical_parts, wires, glowing_lines, tech_bondage",
+          "label": "사이보그",
+          "description": "기계 부품과 와이어, 발광 라인이 포함된 사이버 페티시 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "space_suit, tight_latex, futuristic_design, visor, metallic_accents",
+          "label": "히로인 우주복",
+          "description": "라텍스 질감과 바이저, 금속 포인트가 있는 미래형 우주복입니다.",
+          "default": false
+        },
+        {
+          "text": "dark_fantasy, demon_horns, tail, leather_armor, seductive_look",
+          "label": "서큐버스",
+          "description": "뿔과 꼬리, 가죽 아머를 조합한 서큐버스 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "doll_like, porcelain_skin, joints, frilly_dress, artificial_beauty",
+          "label": "인형(돌)",
+          "description": "프릴 드레스와 인형 관절 표현이 결합된 돌풍 의상입니다.",
+          "default": false
+        },
+        {
+          "text": "dark_gothic, victorian_style, corset, heavy_layers, mourning_veil",
+          "label": "빅토리아 고딕",
+          "description": "빅토리아풍 레이어드 드레스와 코르셋, 상복 베일이 있는 고딕 의상입니다.",
           "default": false
         }
       ],
       "tagItems": [
         {
           "kind": "section",
-          "label": "클래식 라이프스타일"
+          "label": "하드코어"
         },
         {
           "kind": "tag",
           "tag": {
-            "text": "french_chic, off_shoulder_striped_top, straight_leg_jeans, ballet_flats, silk_scarf, wicker_bag",
-            "label": "프렌치 시크",
-            "description": "스트라이프 톱과 스트레이트 진, 발레 플랫, 실크 스카프로 완성하는 프렌치 스타일입니다.",
+            "text": "bondage, rope_bondage, leotard, sheer_pantyhose, collar, wrist_cuffs",
+            "label": "본디지 레오타드",
+            "description": "레오타드와 밧줄, 칼라, 커프스로 구성된 본디지 의상입니다.",
             "default": false
           }
         },
         {
           "kind": "tag",
           "tag": {
-            "text": "trench_coat_style, beige_trench_coat, turtleneck, straight_leg_pants, loafers, leather_bag",
-            "label": "트렌치 코트",
-            "description": "베이지 트렌치코트와 터틀넥, 스트레이트 팬츠, 로퍼로 구성된 클래식 외출복입니다.",
+            "text": "latex_suit, shiny_latex, tight_bodysuit, high_heels, mask, bodysuit",
+            "label": "라텍스 슈트",
+            "description": "몸에 밀착되는 광택 있는 라텍스 전신 슈트입니다.",
             "default": false
           }
         },
         {
           "kind": "tag",
           "tag": {
-            "text": "art_student, oversized_cardigan, paint_stained_apron, wide_leg_pants, canvas_tote, sneakers, beret",
-            "label": "미대생 룩",
-            "description": "오버사이즈 카디건과 물감 묻은 앞치마, 와이드 팬츠, 캔버스 토트백이 있는 아트 스쿨 스타일입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "시네마틱 콘셉트"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "noir_detective, long_coat, unbuttoned_shirt, loosened_tie, pencil_skirt, sheer_pantyhose, fedora, leather_gloves",
-            "label": "누아르 탐정",
-            "description": "롱 코트와 셔츠, 타이, 페도라, 가죽 장갑으로 구성된 필름 누아르 탐정 콘셉트입니다.",
+            "text": "harness, leather_straps, lacy_lingerie, thighhighs, garter_belt",
+            "label": "가죽 하네스",
+            "description": "가죽 스트랩과 레이스 란제리, 가터벨트로 구성된 하네스 의상입니다.",
             "default": false
           }
         },
         {
           "kind": "tag",
           "tag": {
-            "text": "denim_on_denim, cropped_denim_jacket, denim_miniskirt, crop_top, navel, cowboy_boots, belt, hoop_earrings",
-            "label": "데님 온 데님",
-            "description": "데님 재킷과 데님 스커트, 크롭 톱, 웨스턴 부츠를 조합한 청청 패션입니다.",
+            "text": "bondage_gear, heavy_straps, leather_harness, metal_rings, tight_fit",
+            "label": "하드 본디지",
+            "description": "두꺼운 스트랩과 금속 링, 가죽 하네스를 강조한 본디지 의상입니다.",
             "default": false
           }
         },
         {
           "kind": "tag",
           "tag": {
-            "text": "utility_cargo, cropped_utility_jacket, cargo_miniskirt, fitted_tank_top, combat_boots, thigh_strap, belt_bag, metal_buckles",
-            "label": "유틸리티 카고",
-            "description": "유틸리티 재킷과 카고 스커트, 벨트백, 컴뱃 부츠로 구성된 실용적인 스트릿 스타일입니다.",
+            "text": "bondage_rope, intricate_knots, complex_patterns, tight",
+            "label": "매듭 본디지",
+            "description": "정교한 밧줄 매듭이 중심이 되는 본디지 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "bondage_mask, full_body_suit, tight_wrap, latex",
+            "label": "전신 본디지 슈트",
+            "description": "마스크와 전신 슈트, 타이트한 랩 형태가 결합된 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "chains, heavy_metal, industrial_fetish, leather_harness, dark_aesthetic",
+            "label": "인더스트리얼 하네스",
+            "description": "체인과 금속 장식, 가죽 하네스를 조합한 산업적인 페티시 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "maid_outfit, frilly_apron, collar, leash, lace, thighhighs",
+            "label": "본디지 메이드",
+            "description": "메이드복에 칼라와 리드줄, 레이스 장식을 더한 페티시 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "secretary, glasses, tight_skirt, undone_buttons, sheer_pantyhose, pumps",
+            "label": "페티시 비서",
+            "description": "타이트한 스커트와 시어 팬티스타킹을 조합한 비서풍 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "nurse_outfit, medical_fetish, bandage, sheer_nurse_uniform, stethoscope",
+            "label": "메디컬 페티시",
+            "description": "시어 간호사 유니폼과 붕대, 청진기가 포함된 메디컬 페티시 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "waitress, apron, micro_mini_skirt, bare_legs, sheer_clothing",
+            "label": "웨이트리스",
+            "description": "앞치마와 마이크로 미니스커트가 중심인 웨이트리스풍 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "bunny_girl, bunny_suit, fishnets, bowtie, cuffs, leotard",
+            "label": "바니걸",
+            "description": "바니 슈트와 망사 스타킹, 보타이, 커프스로 구성된 코스튬입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "nun_habit, sheer_veil, cross_necklace, torn_habit, religious_fetish",
+            "label": "타락한 수녀",
+            "description": "시어 베일과 십자가 목걸이, 다크한 수녀복 요소를 조합한 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "gothic_lolita, dark_dress, heavy_lace, black_ribbons, corset, dark_makeup",
+            "label": "다크 고딕",
+            "description": "검은 드레스와 코르셋, 리본, 레이스를 강조한 고딕 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "vampire_queen, red_eyes, fangs, elegant_dress, blood_stains, corsetry",
+            "label": "뱀파이어 퀸",
+            "description": "우아한 드레스와 코르셋 실루엣을 가진 뱀파이어풍 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "witch_outfit, pointed_hat, sheer_robe, occult_symbols, dark_magic",
+            "label": "흑마법사",
+            "description": "뾰족모자와 시어 로브, 오컬트 장식이 있는 다크 위치 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "fallen_angel, black_wings, tattered_white_dress, halo, dark_aura",
+            "label": "타락천사",
+            "description": "검은 날개와 헤일로, 해진 흰 드레스를 조합한 타락천사 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "elven_beauty, sheer_tunic, forest_elements, vine_bondage, nature_fetish",
+            "label": "엘프 본디지",
+            "description": "시어 튜닉과 덩굴 장식을 조합한 판타지 본디지 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "dark_gothic, veil, lace_mask, black_corset, sheer_fabrics",
+            "label": "베일의 미녀",
+            "description": "검은 베일과 레이스 마스크, 블랙 코르셋으로 구성된 고딕 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "necromancer, bone_accessories, dark_robes, skeletal_patterns",
+            "label": "네크로맨서",
+            "description": "검은 로브와 뼈 장식, 해골 패턴이 중심인 네크로맨서 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "leotard, high_cut, much_skin, tight_fit, bondage_straps",
+            "label": "하이컷 레오타드",
+            "description": "하이컷 레오타드와 본디지 스트랩이 결합된 타이트한 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "sheer_clothing, transparent, see_through, skin_tight, revealing",
+            "label": "시스루",
+            "description": "투명하고 몸에 붙는 소재를 강조한 시스루 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "tight_corset, waist_cincher, hourglass_figure, extreme_curves",
+            "label": "코르셋 강조",
+            "description": "허리를 조이는 코르셋과 웨이스트 신처를 강조한 실루엣입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "sheer_lace, delicate_tearing, fragile, beautiful_destruction",
+            "label": "찢어진 레이스",
+            "description": "섬세한 시어 레이스와 찢어진 장식을 조합한 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "cyborg, mechanical_parts, wires, glowing_lines, tech_bondage",
+            "label": "사이보그",
+            "description": "기계 부품과 와이어, 발광 라인이 포함된 사이버 페티시 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "space_suit, tight_latex, futuristic_design, visor, metallic_accents",
+            "label": "히로인 우주복",
+            "description": "라텍스 질감과 바이저, 금속 포인트가 있는 미래형 우주복입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "dark_fantasy, demon_horns, tail, leather_armor, seductive_look",
+            "label": "서큐버스",
+            "description": "뿔과 꼬리, 가죽 아머를 조합한 서큐버스 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "doll_like, porcelain_skin, joints, frilly_dress, artificial_beauty",
+            "label": "인형(돌)",
+            "description": "프릴 드레스와 인형 관절 표현이 결합된 돌풍 의상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "dark_gothic, victorian_style, corset, heavy_layers, mourning_veil",
+            "label": "빅토리아 고딕",
+            "description": "빅토리아풍 레이어드 드레스와 코르셋, 상복 베일이 있는 고딕 의상입니다.",
             "default": false
           }
         }
@@ -9571,6 +9980,42 @@
           "label": "격자무늬",
           "description": "체크 패턴의 의상이나 배경 디자인",
           "default": false
+        },
+        {
+          "text": "striped",
+          "label": "스트라이프",
+          "description": "줄무늬 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "polka_dot",
+          "label": "도트",
+          "description": "점무늬 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "argyle",
+          "label": "아가일",
+          "description": "마름모 격자 형태의 아가일 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "checkered",
+          "label": "체커",
+          "description": "바둑판처럼 반복되는 체크 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "ribbed",
+          "label": "골지",
+          "description": "세로 골이 있는 니트/골지 질감입니다.",
+          "default": false
+        },
+        {
+          "text": "floral_print",
+          "label": "플로럴",
+          "description": "꽃무늬 패턴입니다.",
+          "default": false
         }
       ],
       "tagItems": [
@@ -9765,6 +10210,625 @@
             "description": "체크 패턴의 의상이나 배경 디자인",
             "default": false
           }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "striped",
+            "label": "스트라이프",
+            "description": "줄무늬 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "polka_dot",
+            "label": "도트",
+            "description": "점무늬 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "argyle",
+            "label": "아가일",
+            "description": "마름모 격자 형태의 아가일 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "checkered",
+            "label": "체커",
+            "description": "바둑판처럼 반복되는 체크 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "ribbed",
+            "label": "골지",
+            "description": "세로 골이 있는 니트/골지 질감입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "floral_print",
+            "label": "플로럴",
+            "description": "꽃무늬 패턴입니다.",
+            "default": false
+          }
+        }
+      ]
+    },
+    "추가색상2": {
+      "placeholder": "<ECO2>",
+      "uiGroup": "색상",
+      "replaceInsideTags": true,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "white",
+          "label": "흰색",
+          "description": "흰색 양말/레그웨어 색상입니다.",
+          "default": false
+        },
+        {
+          "text": "black",
+          "label": "검정",
+          "description": "검은색 양말/레그웨어 색상입니다.",
+          "default": false
+        },
+        {
+          "text": "gray",
+          "label": "회색",
+          "description": "회색 양말/레그웨어 색상입니다.",
+          "default": false
+        },
+        {
+          "text": "navy",
+          "label": "네이비",
+          "description": "짙은 남색 양말/레그웨어 색상입니다.",
+          "default": false
+        },
+        {
+          "text": "brown",
+          "label": "갈색",
+          "description": "갈색 양말/레그웨어 색상입니다.",
+          "default": false
+        },
+        {
+          "text": "pink",
+          "label": "분홍색",
+          "description": "분홍색 양말/레그웨어 색상입니다.",
+          "default": false
+        },
+        {
+          "text": "red",
+          "label": "빨간색",
+          "description": "빨간색 양말/레그웨어 색상입니다.",
+          "default": false
+        },
+        {
+          "text": "striped",
+          "label": "스트라이프",
+          "description": "줄무늬 양말/레그웨어 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "ribbed",
+          "label": "골지",
+          "description": "골지 양말/레그웨어 질감입니다.",
+          "default": false
+        },
+        {
+          "text": "polka_dot",
+          "label": "도트",
+          "description": "점무늬 양말/레그웨어 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "argyle",
+          "label": "아가일",
+          "description": "아가일 양말/레그웨어 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "plaid",
+          "label": "체크",
+          "description": "체크 양말/레그웨어 패턴입니다.",
+          "default": false
+        },
+        {
+          "text": "lace",
+          "label": "레이스",
+          "description": "레이스 장식의 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "sheer",
+          "label": "시스루",
+          "description": "비치는 얇은 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "black striped",
+          "label": "검정 스트라이프",
+          "description": "검은색 줄무늬 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "white striped",
+          "label": "흰색 스트라이프",
+          "description": "흰색 줄무늬 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "pink striped",
+          "label": "분홍 스트라이프",
+          "description": "분홍색 줄무늬 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "black ribbed",
+          "label": "검정 골지",
+          "description": "검은색 골지 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "white ribbed",
+          "label": "흰색 골지",
+          "description": "흰색 골지 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "black lace",
+          "label": "검정 레이스",
+          "description": "검은색 레이스 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "white lace",
+          "label": "흰색 레이스",
+          "description": "흰색 레이스 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "red plaid",
+          "label": "빨간 체크",
+          "description": "빨간색 체크 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "navy argyle",
+          "label": "네이비 아가일",
+          "description": "네이비색 아가일 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "pastel striped",
+          "label": "파스텔 스트라이프",
+          "description": "파스텔 톤 줄무늬 양말/레그웨어입니다.",
+          "default": false
+        },
+        {
+          "text": "multicolored striped",
+          "label": "다색 스트라이프",
+          "description": "여러 색이 들어간 줄무늬 양말/레그웨어입니다.",
+          "default": false
+        }
+      ],
+      "tagItems": [
+        {
+          "kind": "section",
+          "label": "기본색"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "white",
+            "label": "흰색",
+            "description": "흰색 양말/레그웨어 색상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "black",
+            "label": "검정",
+            "description": "검은색 양말/레그웨어 색상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "gray",
+            "label": "회색",
+            "description": "회색 양말/레그웨어 색상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "navy",
+            "label": "네이비",
+            "description": "짙은 남색 양말/레그웨어 색상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "brown",
+            "label": "갈색",
+            "description": "갈색 양말/레그웨어 색상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "pink",
+            "label": "분홍색",
+            "description": "분홍색 양말/레그웨어 색상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "red",
+            "label": "빨간색",
+            "description": "빨간색 양말/레그웨어 색상입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "section",
+          "label": "패턴"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "striped",
+            "label": "스트라이프",
+            "description": "줄무늬 양말/레그웨어 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "ribbed",
+            "label": "골지",
+            "description": "골지 양말/레그웨어 질감입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "polka_dot",
+            "label": "도트",
+            "description": "점무늬 양말/레그웨어 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "argyle",
+            "label": "아가일",
+            "description": "아가일 양말/레그웨어 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "plaid",
+            "label": "체크",
+            "description": "체크 양말/레그웨어 패턴입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "lace",
+            "label": "레이스",
+            "description": "레이스 장식의 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "sheer",
+            "label": "시스루",
+            "description": "비치는 얇은 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "section",
+          "label": "색상+패턴"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "black striped",
+            "label": "검정 스트라이프",
+            "description": "검은색 줄무늬 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "white striped",
+            "label": "흰색 스트라이프",
+            "description": "흰색 줄무늬 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "pink striped",
+            "label": "분홍 스트라이프",
+            "description": "분홍색 줄무늬 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "black ribbed",
+            "label": "검정 골지",
+            "description": "검은색 골지 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "white ribbed",
+            "label": "흰색 골지",
+            "description": "흰색 골지 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "black lace",
+            "label": "검정 레이스",
+            "description": "검은색 레이스 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "white lace",
+            "label": "흰색 레이스",
+            "description": "흰색 레이스 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "red plaid",
+            "label": "빨간 체크",
+            "description": "빨간색 체크 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "navy argyle",
+            "label": "네이비 아가일",
+            "description": "네이비색 아가일 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "pastel striped",
+            "label": "파스텔 스트라이프",
+            "description": "파스텔 톤 줄무늬 양말/레그웨어입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "multicolored striped",
+            "label": "다색 스트라이프",
+            "description": "여러 색이 들어간 줄무늬 양말/레그웨어입니다.",
+            "default": false
+          }
+        }
+      ]
+    },
+    "추가디테일": {
+      "placeholder": "<CDE>",
+      "uiGroup": "의상",
+      "replaceInsideTags": true,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "lace-up",
+          "label": "레이스업",
+          "description": "끈으로 묶는 레이스업 디테일입니다.",
+          "default": false
+        },
+        {
+          "text": "ribbon-trimmed",
+          "label": "리본 장식",
+          "description": "리본 장식이 들어간 의상 디테일입니다.",
+          "default": false
+        },
+        {
+          "text": "frilled",
+          "label": "프릴",
+          "description": "프릴 장식이 들어간 의상 디테일입니다.",
+          "default": false
+        },
+        {
+          "text": "ruffled",
+          "label": "러플",
+          "description": "러플 장식이 들어간 의상 디테일입니다.",
+          "default": false
+        },
+        {
+          "text": "belted",
+          "label": "벨트 장식",
+          "description": "벨트가 포함된 의상 디테일입니다.",
+          "default": false
+        },
+        {
+          "text": "zip-up",
+          "label": "집업",
+          "description": "지퍼 여밈이 있는 의상 디테일입니다.",
+          "default": false
+        },
+        {
+          "text": "cutout",
+          "label": "컷아웃",
+          "description": "일부가 절개되어 피부가 드러나는 의상 디테일입니다.",
+          "default": false
+        },
+        {
+          "text": "backless",
+          "label": "백리스",
+          "description": "등이 드러나는 의상 디테일입니다.",
+          "default": false
+        },
+        {
+          "text": "off-shoulder",
+          "label": "오프숄더",
+          "description": "어깨가 드러나는 의상 디테일입니다.",
+          "default": false
+        },
+        {
+          "text": "slit",
+          "label": "슬릿",
+          "description": "트임이 들어간 의상 디테일입니다.",
+          "default": false
+        }
+      ],
+      "tagItems": [
+        {
+          "kind": "section",
+          "label": "장식/구조"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "lace-up",
+            "label": "레이스업",
+            "description": "끈으로 묶는 레이스업 디테일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "ribbon-trimmed",
+            "label": "리본 장식",
+            "description": "리본 장식이 들어간 의상 디테일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "frilled",
+            "label": "프릴",
+            "description": "프릴 장식이 들어간 의상 디테일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "ruffled",
+            "label": "러플",
+            "description": "러플 장식이 들어간 의상 디테일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "belted",
+            "label": "벨트 장식",
+            "description": "벨트가 포함된 의상 디테일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "zip-up",
+            "label": "집업",
+            "description": "지퍼 여밈이 있는 의상 디테일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "section",
+          "label": "절개/핏"
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "cutout",
+            "label": "컷아웃",
+            "description": "일부가 절개되어 피부가 드러나는 의상 디테일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "backless",
+            "label": "백리스",
+            "description": "등이 드러나는 의상 디테일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "off-shoulder",
+            "label": "오프숄더",
+            "description": "어깨가 드러나는 의상 디테일입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "slit",
+            "label": "슬릿",
+            "description": "트임이 들어간 의상 디테일입니다.",
+            "default": false
+          }
         }
       ]
     },
@@ -9796,6 +10860,12 @@
           "text": "speech_bubble",
           "label": "말풍선",
           "description": "캐릭터의 대사가 담긴 말풍선입니다.",
+          "default": false
+        },
+        {
+          "text": "spoken_heart",
+          "label": "하트 말풍선",
+          "description": "말풍선이나 대사 효과로 하트가 표시되는 태그입니다.",
           "default": false
         },
         {
@@ -9855,6 +10925,15 @@
             "text": "speech_bubble",
             "label": "말풍선",
             "description": "캐릭터의 대사가 담긴 말풍선입니다.",
+            "default": false
+          }
+        },
+        {
+          "kind": "tag",
+          "tag": {
+            "text": "spoken_heart",
+            "label": "하트 말풍선",
+            "description": "말풍선이나 대사 효과로 하트가 표시되는 태그입니다.",
             "default": false
           }
         },
