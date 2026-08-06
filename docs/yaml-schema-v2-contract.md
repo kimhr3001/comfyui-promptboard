@@ -217,6 +217,7 @@ Semantic validation errors use this stable shape:
 | `empty_tag_set` | tag-set `tags` path | Tag set does not contain a usable tag |
 | `invalid_tag` | tag entry path | Tag is malformed or has empty text |
 | `invalid_attribute_mode` | attribute `mode` | Mode is not `single` or `multiple` |
+| `duplicate_migration_source` | second attribute `migrateFrom` | Target maps more than one attribute from the same legacy category |
 | `invalid_placeholder` | placeholder path | Placeholder syntax is invalid |
 | `placeholder_collision` | target placeholder path | Target placeholder conflicts with another output slot |
 

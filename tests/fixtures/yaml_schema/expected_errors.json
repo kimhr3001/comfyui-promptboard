@@ -60,6 +60,12 @@
     "message": "Unsupported attribute mode: optional"
   },
   {
+    "fixture": "duplicate_migration_source.yaml",
+    "code": "duplicate_migration_source",
+    "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.material.migrateFrom",
+    "message": "Duplicate migrateFrom in target: 상의속성"
+  },
+  {
     "fixture": "missing_attribute_source.yaml",
     "code": "missing_required_field",
     "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.color.source",

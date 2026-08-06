@@ -1,0 +1,21 @@
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      tags:
+      - black
+    materials:
+      tags:
+      - leather
+  attributeBoards:
+    clothing:
+      targets:
+        top:
+          placeholder: <TOP_ATTRS>
+          attributes:
+            color:
+              source: colors
+              migrateFrom: 상의속성
+            material:
+              source: materials
+              migrateFrom: 상의속성

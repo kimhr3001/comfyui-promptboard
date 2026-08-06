@@ -304,10 +304,22 @@ function normalizeTarget(value, path, id, tagSets) {
     ? {}
     : assertMapping(target.attributes, `${path}.attributes`);
   const attributes = {};
+  const migrationSources = new Set();
   for (const [rawAttributeId, rawAttribute] of Object.entries(rawAttributes)) {
     const attributeId = assertIdentifier(rawAttributeId, `${path}.attributes.${rawAttributeId}`);
     const attributePath = `${path}.attributes.${attributeId}`;
-    attributes[attributeId] = normalizeAttribute(rawAttribute, attributePath, attributeId, tagSets);
+    const attribute = normalizeAttribute(rawAttribute, attributePath, attributeId, tagSets);
+    if (attribute.migrateFrom && migrationSources.has(attribute.migrateFrom)) {
+      fail(
+        "duplicate_migration_source",
+        `${attributePath}.migrateFrom`,
+        `Duplicate migrateFrom in target: ${attribute.migrateFrom}`,
+      );
+    }
+    if (attribute.migrateFrom) {
+      migrationSources.add(attribute.migrateFrom);
+    }
+    attributes[attributeId] = attribute;
   }
 
   return {

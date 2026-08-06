@@ -320,15 +320,25 @@ def _normalize_target(value, path, target_id, tag_sets):
         {} if attributes_value is None else _assert_mapping(attributes_value, f"{path}.attributes")
     )
     attributes = {}
+    migration_sources = set()
     for raw_attribute_id, raw_attribute in raw_attributes.items():
         attribute_id = _assert_identifier(raw_attribute_id, f"{path}.attributes.{raw_attribute_id}")
         attribute_path = f"{path}.attributes.{attribute_id}"
-        attributes[attribute_id] = _normalize_attribute(
+        attribute = _normalize_attribute(
             raw_attribute,
             attribute_path,
             attribute_id,
             tag_sets,
         )
+        if attribute["migrateFrom"] and attribute["migrateFrom"] in migration_sources:
+            _fail(
+                "duplicate_migration_source",
+                f"{attribute_path}.migrateFrom",
+                f"Duplicate migrateFrom in target: {attribute['migrateFrom']}",
+            )
+        if attribute["migrateFrom"]:
+            migration_sources.add(attribute["migrateFrom"])
+        attributes[attribute_id] = attribute
 
     separator = str(compose.get("separator") if compose.get("separator") is not None else "")
     if "separator" not in compose:
