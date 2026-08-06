@@ -4,13 +4,21 @@ _promptboard:
     colors:
       label: 색상
       tags:
-      - black
-      - white
+      - text: black
+        label: 검정
+        description: 검은색
+      - text: white
+        label: 흰색
+        description: 흰색
     clothingMaterials:
       label: 의상 소재
       tags:
-      - leather
-      - denim
+      - text: leather
+        label: 가죽
+        description: 가죽 소재
+      - text: denim
+        label: 데님
+        description: 데님 소재
   attributeBoards:
     clothing:
       label: 의상 속성
@@ -36,6 +44,7 @@ _promptboard:
           placeholder: <BOTTOM_ATTRS>
           attributes:
             color:
+              label: 색상
               source: colors
 
 상의:

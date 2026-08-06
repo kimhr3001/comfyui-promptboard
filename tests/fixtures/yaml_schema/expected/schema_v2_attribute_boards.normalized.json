@@ -6,14 +6,14 @@
       "tags": [
         {
           "text": "black",
-          "label": "black",
-          "description": "",
+          "label": "검정",
+          "description": "검은색",
           "default": false
         },
         {
           "text": "white",
-          "label": "white",
-          "description": "",
+          "label": "흰색",
+          "description": "흰색",
           "default": false
         }
       ]
@@ -23,14 +23,14 @@
       "tags": [
         {
           "text": "leather",
-          "label": "leather",
-          "description": "",
+          "label": "가죽",
+          "description": "가죽 소재",
           "default": false
         },
         {
           "text": "denim",
-          "label": "denim",
-          "description": "",
+          "label": "데님",
+          "description": "데님 소재",
           "default": false
         }
       ]
@@ -70,7 +70,7 @@
           },
           "attributes": {
             "color": {
-              "label": "color",
+              "label": "색상",
               "source": "colors",
               "mode": "single",
               "migrateFrom": null

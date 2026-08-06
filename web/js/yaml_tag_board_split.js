@@ -4,8 +4,10 @@
 import { app } from "../../../scripts/app.js";
 import {
   ATTRIBUTE_STATE_KEY,
+  attributeSelectedTexts,
   emptyAttributeState,
   normalizeAttributeState,
+  setAttributeSelected,
 } from "./promptboard_attribute_state.mjs";
 import { normalizeYamlDocument } from "./promptboard_yaml.mjs";
 
@@ -1696,6 +1698,123 @@ function ensureStyles() {
       padding: 0 2px ${SCROLL_BOTTOM_PADDING}px 0;
     }
 
+    .promptboard-attribute-board {
+      box-sizing: border-box;
+      width: 100%;
+      margin: 0 0 10px;
+      padding: 2px 0 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .promptboard-attribute-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+      margin: 0 0 6px;
+      color: #ededed;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .promptboard-attribute-context {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #aeb8c2;
+      font-size: 9px;
+      font-weight: 400;
+    }
+
+    .promptboard-attribute-row {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      align-items: start;
+      gap: 5px;
+      margin-top: 4px;
+      min-width: 0;
+    }
+
+    .promptboard-attribute-row-label {
+      padding-top: 4px;
+      color: #aeb8c2;
+      font-size: 9px;
+      white-space: nowrap;
+    }
+
+    .promptboard-attribute-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .promptboard-attribute-control {
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex: 0 1 auto;
+      min-width: 56px;
+      max-width: 100%;
+      height: 21px;
+      padding: 0 7px;
+      border: 1px solid rgba(120, 120, 120, 0.72);
+      border-radius: 3px;
+      background: rgba(32, 32, 32, 0.92);
+      color: #d4d4d4;
+      font: 10px Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    .promptboard-attribute-control:hover {
+      border-color: #888;
+      background: rgba(48, 48, 48, 0.96);
+    }
+
+    .promptboard-attribute-control.is-active {
+      border-color: rgba(86, 148, 209, 0.95);
+      background: rgba(39, 82, 124, 0.92);
+      color: #f5fbff;
+    }
+
+    .promptboard-attribute-control-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .promptboard-attribute-control-count {
+      flex: 0 0 auto;
+      min-width: 12px;
+      color: #c8d9e8;
+      font-size: 9px;
+      text-align: right;
+    }
+
+    .promptboard-attribute-tags {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+      gap: 3px;
+      min-width: 0;
+      margin-top: 6px;
+    }
+
+    .promptboard-attribute-tags .promptboard-tag {
+      min-height: 20px;
+      height: auto;
+      margin-top: 0;
+      padding-top: 2px;
+      padding-bottom: 2px;
+    }
+
+    .promptboard-attribute-tags .promptboard-tag-label {
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+
     .promptboard-columns {
       column-gap: 8px;
       column-width: 170px;
@@ -1990,6 +2109,203 @@ function createTagButton(node, state, category, tag) {
   return button;
 }
 
+function activeAttributeTargetId(node, boardId, board) {
+  if (!node.promptboardActiveAttributeTargets) {
+    node.promptboardActiveAttributeTargets = {};
+  }
+  const targetIds = Object.keys(board.targets ?? {});
+  const current = node.promptboardActiveAttributeTargets[boardId];
+  const targetId = targetIds.includes(current) ? current : targetIds[0] ?? "";
+  node.promptboardActiveAttributeTargets[boardId] = targetId;
+  return targetId;
+}
+
+function activeAttributeId(node, boardId, targetId, target) {
+  if (!node.promptboardActiveAttributes) {
+    node.promptboardActiveAttributes = {};
+  }
+  if (!node.promptboardActiveAttributes[boardId]) {
+    node.promptboardActiveAttributes[boardId] = {};
+  }
+  const attributeIds = Object.keys(target?.attributes ?? {});
+  const current = node.promptboardActiveAttributes[boardId][targetId];
+  const attributeId = attributeIds.includes(current) ? current : attributeIds[0] ?? "";
+  node.promptboardActiveAttributes[boardId][targetId] = attributeId;
+  return attributeId;
+}
+
+function attributeCountForTarget(state, boardId, targetId, target) {
+  return Object.keys(target?.attributes ?? {}).reduce(
+    (total, attributeId) => total + attributeSelectedTexts(state, boardId, targetId, attributeId).length,
+    0,
+  );
+}
+
+function createAttributeControl(label, count, active, options = {}) {
+  const button = document.createElement("button");
+  const labelElement = document.createElement("span");
+  const countElement = document.createElement("span");
+
+  button.type = "button";
+  button.className = `promptboard-attribute-control${active ? " is-active" : ""}`;
+  button.title = `${label} (${count} selected)`;
+  button.setAttribute("aria-pressed", String(active));
+  labelElement.className = "promptboard-attribute-control-label";
+  labelElement.textContent = label;
+  countElement.className = "promptboard-attribute-control-count";
+  countElement.textContent = String(count);
+  button.append(labelElement, countElement);
+  for (const [key, value] of Object.entries(options.data ?? {})) {
+    button.dataset[key] = value;
+  }
+  stopCanvasEvents(button);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    options.onClick?.();
+  });
+  return button;
+}
+
+function createAttributeTagButton(node, state, boardId, targetId, attributeId, tag) {
+  const selected = attributeSelectedTexts(state, boardId, targetId, attributeId).includes(tag.text);
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+  const stateLabel = document.createElement("span");
+  const sourceLabel = String(tag.label || tag.text);
+  const tagText = String(tag.text ?? "");
+  const displayLabel = sourceLabel && sourceLabel !== tagText ? `[${sourceLabel}] ${tagText}` : tagText;
+  const description = String(tag.description ?? "").trim();
+
+  button.type = "button";
+  button.className = `promptboard-tag${selected ? " is-on" : ""}`;
+  button.title = description || displayLabel;
+  button.dataset.boardId = boardId;
+  button.dataset.targetId = targetId;
+  button.dataset.attributeId = attributeId;
+  button.dataset.tagText = tagText;
+  button.setAttribute("aria-pressed", String(selected));
+  stopCanvasEvents(button);
+  label.className = "promptboard-tag-label";
+  label.textContent = displayLabel;
+  stateLabel.className = "promptboard-tag-state";
+  stateLabel.textContent = selected ? "on" : "off";
+  button.append(label, stateLabel);
+
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setAttributeSelected(
+      node.promptboardYamlModel,
+      state,
+      boardId,
+      targetId,
+      attributeId,
+      tagText,
+      !selected,
+    );
+    syncState(node, state);
+    renderCards(node);
+  });
+  return button;
+}
+
+function createAttributeBoard(node, boardId, board, state) {
+  const section = document.createElement("section");
+  const header = document.createElement("div");
+  const title = document.createElement("span");
+  const context = document.createElement("span");
+  const targetRow = document.createElement("div");
+  const targetRowLabel = document.createElement("span");
+  const targetControls = document.createElement("div");
+  const attributeRow = document.createElement("div");
+  const attributeRowLabel = document.createElement("span");
+  const attributeControls = document.createElement("div");
+  const tags = document.createElement("div");
+  const targetId = activeAttributeTargetId(node, boardId, board);
+  const target = board.targets?.[targetId];
+  const attributeId = activeAttributeId(node, boardId, targetId, target);
+  const attribute = target?.attributes?.[attributeId];
+  const tagSet = attribute ? node.promptboardYamlModel?.tagSets?.[attribute.source] : null;
+
+  section.className = "promptboard-attribute-board";
+  section.dataset.boardId = boardId;
+  header.className = "promptboard-attribute-header";
+  title.textContent = board.label || boardId;
+  context.className = "promptboard-attribute-context";
+  context.textContent = target && attribute
+    ? `${target.label || targetId} / ${attribute.label || attributeId}`
+    : "";
+  header.append(title, context);
+
+  targetRow.className = "promptboard-attribute-row";
+  targetRowLabel.className = "promptboard-attribute-row-label";
+  targetRowLabel.textContent = "적용 대상";
+  targetControls.className = "promptboard-attribute-controls";
+  targetControls.setAttribute("role", "group");
+  targetControls.setAttribute("aria-label", `${board.label || boardId} 적용 대상`);
+  for (const [candidateId, candidate] of Object.entries(board.targets ?? {})) {
+    const active = candidateId === targetId;
+    targetControls.append(createAttributeControl(
+      candidate.label || candidateId,
+      attributeCountForTarget(state, boardId, candidateId, candidate),
+      active,
+      {
+        data: { boardId, targetId: candidateId },
+        onClick: () => {
+          node.promptboardActiveAttributeTargets[boardId] = candidateId;
+          renderCards(node);
+        },
+      },
+    ));
+  }
+  targetRow.append(targetRowLabel, targetControls);
+
+  attributeRow.className = "promptboard-attribute-row";
+  attributeRowLabel.className = "promptboard-attribute-row-label";
+  attributeRowLabel.textContent = "속성";
+  attributeControls.className = "promptboard-attribute-controls";
+  attributeControls.setAttribute("role", "tablist");
+  attributeControls.setAttribute("aria-label", `${target?.label || targetId} 속성`);
+  for (const [candidateId, candidate] of Object.entries(target?.attributes ?? {})) {
+    const active = candidateId === attributeId;
+    const control = createAttributeControl(
+      candidate.label || candidateId,
+      attributeSelectedTexts(state, boardId, targetId, candidateId).length,
+      active,
+      {
+        data: { boardId, targetId, attributeId: candidateId },
+        onClick: () => {
+          node.promptboardActiveAttributes[boardId][targetId] = candidateId;
+          renderCards(node);
+        },
+      },
+    );
+    control.role = "tab";
+    control.setAttribute("aria-selected", String(active));
+    attributeControls.append(control);
+  }
+  attributeRow.append(attributeRowLabel, attributeControls);
+
+  tags.className = "promptboard-attribute-tags";
+  tags.setAttribute("role", "group");
+  tags.setAttribute("aria-label", `${attribute?.label || attributeId} 태그`);
+  for (const tag of tagSet?.tags ?? []) {
+    tags.append(createAttributeTagButton(node, state, boardId, targetId, attributeId, tag));
+  }
+
+  section.append(header, targetRow, attributeRow, tags);
+  return section;
+}
+
+function renderAttributeBoards(node, scroll, state) {
+  const entries = Object.entries(node.promptboardYamlModel?.attributeBoards ?? {});
+  for (const [boardId, board] of entries) {
+    scroll.append(createAttributeBoard(node, boardId, board, state));
+  }
+  return entries.length;
+}
+
 function createCategoryActions(node, state, category, tags) {
   const actions = document.createElement("div");
   const toggleAll = document.createElement("button");
@@ -2025,7 +2341,9 @@ function renderCards(node) {
   destroyBoardMasonry(node);
   scroll.replaceChildren();
 
-  if (!Object.keys(config).length) {
+  const attributeBoardCount = renderAttributeBoards(node, scroll, state);
+
+  if (!Object.keys(config).length && attributeBoardCount === 0) {
     const empty = document.createElement("div");
     empty.className = "promptboard-empty";
     empty.textContent = "No categories";
@@ -2037,7 +2355,7 @@ function renderCards(node) {
   if (!entries.length) {
     const empty = document.createElement("div");
     empty.className = "promptboard-empty";
-    empty.textContent = "No categories in this group";
+    empty.textContent = Object.keys(config).length ? "No categories in this group" : "No categories";
     scroll.append(empty);
     return;
   }
