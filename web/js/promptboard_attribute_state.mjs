@@ -89,6 +89,26 @@ function selectedStateValues(selectedState, category) {
   return Array.isArray(selected) ? selected.map((value) => String(value)) : [];
 }
 
+function cleanupAttributeText(text) {
+  return String(text ?? "")
+    .replace(/[ \t]+,/g, ",")
+    .replace(/,\s*,+/g, ", ")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/^[ \t,]+|[ \t,]+$/g, "");
+}
+
+function migratedStateValues(selectedState, category, placeholder) {
+  const values = selectedStateValues(selectedState, category);
+  if (values === null) {
+    return null;
+  }
+  return values.map((value) =>
+    placeholder && value.includes(placeholder)
+      ? cleanupAttributeText(value.replaceAll(placeholder, ""))
+      : value,
+  );
+}
+
 export function normalizeAttributeState(model, selectedState = {}, warnings = []) {
   const savedRoot = isMapping(selectedState?.[ATTRIBUTE_STATE_KEY])
     ? selectedState[ATTRIBUTE_STATE_KEY]
@@ -106,7 +126,7 @@ export function normalizeAttributeState(model, selectedState = {}, warnings = []
         const savedTarget = savedRoot?.[boardId]?.[targetId];
         const hasSavedValue = hasOwn(savedTarget, attributeId);
         const migratedValues = !hasSavedValue && attribute.migrateFrom
-          ? selectedStateValues(selectedState, attribute.migrateFrom)
+          ? migratedStateValues(selectedState, attribute.migrateFrom, target.placeholder)
           : null;
         if (migratedValues !== null) {
           warnings.push(`${path} migrated from ${attribute.migrateFrom}.`);

@@ -367,6 +367,18 @@ def _selected_state_values(selected_state, category):
     return [str(value) for value in selected] if isinstance(selected, list) else []
 
 
+def _migrated_state_values(selected_state, category, placeholder):
+    values = _selected_state_values(selected_state, category)
+    if values is None:
+        return None
+    return [
+        _cleanup_replaced_text(value.replace(placeholder, ""))
+        if placeholder and placeholder in value
+        else value
+        for value in values
+    ]
+
+
 def _normalize_attribute_state(model, selected_state=None, warnings=None):
     selected_state = selected_state if isinstance(selected_state, dict) else {}
     warnings = warnings if isinstance(warnings, list) else []
@@ -390,7 +402,11 @@ def _normalize_attribute_state(model, selected_state=None, warnings=None):
                 path = f"{ATTRIBUTE_STATE_KEY}.{board_id}.{target_id}.{attribute_id}"
                 has_saved_value = attribute_id in saved_target
                 migrated_values = (
-                    _selected_state_values(selected_state, attribute["migrateFrom"])
+                    _migrated_state_values(
+                        selected_state,
+                        attribute["migrateFrom"],
+                        target.get("placeholder", ""),
+                    )
                     if not has_saved_value and attribute.get("migrateFrom")
                     else None
                 )
@@ -491,6 +507,7 @@ def _preview_text(payload, replacements=None):
             continue
         seen.add(placeholder)
         value = replacements.get(placeholder, FIXED_DELIMITER.join(selected))
+        value = _cleanup_replaced_text(value)
         if selected or value:
             lines.append(f"{placeholder}: {value}")
 

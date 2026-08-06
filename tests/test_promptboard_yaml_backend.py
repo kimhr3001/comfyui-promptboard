@@ -213,6 +213,58 @@ class PromptBoardYamlBackendTests(unittest.TestCase):
         self.assertIn("<CLOTHES>: white sports bra", preview)
         self.assertIn("warning: $attributes.clothing.top.color migrated from 상의색상.", preview)
 
+    def test_preview_matches_replace_cleanup_when_attribute_value_is_empty(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
+        selected_state = {"상의": ["<TOP_ATTRS> sports bra"]}
+
+        selection_json, preview, _selected_text = _select_tags_outputs(
+            yaml_text=source,
+            selected_state=json.dumps(selected_state, ensure_ascii=False),
+        )
+        replaced, report = PromptBoardReplace().replace_tags("<CLOTHES>", selection_json)
+
+        self.assertEqual(preview, "<CLOTHES>: sports bra")
+        self.assertEqual(replaced, "sports bra")
+        self.assertEqual(report, "")
+
+    def test_migrates_legacy_placeholder_pattern_values(self):
+        source = """
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      tags:
+      - plaid
+  attributeBoards:
+    clothing:
+      targets:
+        top:
+          placeholder: <TCO>
+          attributes:
+            color:
+              source: colors
+              migrateFrom: 상의색상
+상의:
+  placeholder: <CLOTHES>
+  tags:
+  - <TCO> shirt
+"""
+        selected_state = {
+            "상의": ["<TCO> shirt"],
+            "상의색상": ["<TCO> plaid"],
+        }
+
+        selection_json, preview, _selected_text = _select_tags_outputs(
+            yaml_text=source,
+            selected_state=json.dumps(selected_state, ensure_ascii=False),
+        )
+        replaced, report = PromptBoardReplace().replace_tags("<CLOTHES>", selection_json)
+
+        self.assertEqual(json.loads(selection_json)["$attribute:clothing.top"]["selected"], ["plaid"])
+        self.assertEqual(preview.splitlines()[0], "<CLOTHES>: plaid shirt")
+        self.assertEqual(replaced, "plaid shirt")
+        self.assertEqual(report, "")
+
     def test_attribute_preview_reports_cycles_from_existing_replace_resolver(self):
         source = """
 _promptboard:

@@ -112,6 +112,31 @@ test("migrates legacy category selections only when new attribute state is missi
   assert.deepEqual(normalizeAttributeState(model, nextState).clothing.top.color, ["black"]);
 });
 
+test("migrates legacy values that include the target placeholder", async () => {
+  const model = normalizeYamlDocument(`
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      tags:
+      - plaid
+  attributeBoards:
+    clothing:
+      targets:
+        top:
+          placeholder: <TOP_ATTRS>
+          attributes:
+            color:
+              source: colors
+              migrateFrom: 상의색상
+`);
+
+  assert.deepEqual(
+    normalizeAttributeState(model, { 상의색상: ["<TOP_ATTRS> plaid"] }).clothing.top.color,
+    ["plaid"],
+  );
+});
+
 test("composes attribute targets in attribute and YAML tag order", async () => {
   const model = await fixtureModel();
   const warnings = [];
