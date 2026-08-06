@@ -748,16 +748,23 @@ function categoryUiGroup(item) {
   return normalizeUiGroup(item?.uiGroup) || inferUiGroup(item);
 }
 
-function availableUiGroups(config) {
+function attributeBoardUiGroup(board) {
+  return normalizeUiGroup(board?.uiGroup) || DEFAULT_UI_GROUP;
+}
+
+function availableUiGroups(config, attributeBoards = {}) {
   const groups = new Set();
   for (const item of Object.values(config ?? {})) {
     groups.add(categoryUiGroup(item));
+  }
+  for (const board of Object.values(attributeBoards ?? {})) {
+    groups.add(attributeBoardUiGroup(board));
   }
   return [...groups];
 }
 
 function activeUiGroup(node, config = node.promptboardConfig ?? {}) {
-  const groups = availableUiGroups(config);
+  const groups = availableUiGroups(config, node.promptboardYamlModel?.attributeBoards);
   const active = normalizeUiGroup(node.promptboardActiveUiGroup) || GROUP_ALL;
   if (active === GROUP_ALL || groups.includes(active)) {
     return active;
@@ -774,6 +781,13 @@ function categoryMatchesActiveUiGroup(node, item) {
 function visibleCategoryEntries(node) {
   const config = node.promptboardConfig ?? {};
   return Object.entries(config).filter(([, item]) => categoryMatchesActiveUiGroup(node, item));
+}
+
+function visibleAttributeBoardEntries(node) {
+  const active = activeUiGroup(node);
+  return Object.entries(node.promptboardYamlModel?.attributeBoards ?? {}).filter(([, board]) =>
+    active === GROUP_ALL || attributeBoardUiGroup(board) === active,
+  );
 }
 
 function parseSelectedState(node) {
@@ -820,11 +834,21 @@ function selectedCount(state, category, tags) {
   return tags.filter((tag) => selected.has(tag.text)).length;
 }
 
-function selectedCountsByUiGroup(config, state) {
+function selectedCountsByUiGroup(config, attributeBoards, state) {
   const counts = { [GROUP_ALL]: 0 };
   for (const [category, item] of Object.entries(config ?? {})) {
     const count = selectedCount(state, category, item.tags ?? []);
     const group = categoryUiGroup(item);
+    counts[GROUP_ALL] += count;
+    counts[group] = (counts[group] ?? 0) + count;
+  }
+  for (const [boardId, board] of Object.entries(attributeBoards ?? {})) {
+    const count = Object.entries(board.targets ?? {}).reduce(
+      (boardTotal, [targetId, target]) =>
+        boardTotal + attributeCountForTarget(state, boardId, targetId, target),
+      0,
+    );
+    const group = attributeBoardUiGroup(board);
     counts[GROUP_ALL] += count;
     counts[group] = (counts[group] ?? 0) + count;
   }
@@ -918,13 +942,14 @@ function collectBoardSearchMatches(node, regex) {
   for (const [category, item] of visibleCategoryEntries(node)) {
     const uiGroup = categoryUiGroup(item);
     if (regex.test(category)) {
-      matches.push({ category, tagText: "", label: category, description: "", uiGroup });
+      matches.push({ kind: "category", category, tagText: "", label: category, description: "", uiGroup });
     }
     for (const tag of item.tags ?? []) {
       const label = tag.label || tag.text;
       const description = tag.description || "";
       if (regex.test(label) || regex.test(tag.text) || regex.test(description)) {
         matches.push({
+          kind: "category",
           category,
           tagText: tag.text,
           label: String(label),
@@ -934,11 +959,38 @@ function collectBoardSearchMatches(node, regex) {
       }
     }
   }
+  for (const [boardId, board] of visibleAttributeBoardEntries(node)) {
+    const uiGroup = attributeBoardUiGroup(board);
+    for (const [targetId, target] of Object.entries(board.targets ?? {})) {
+      for (const [attributeId, attribute] of Object.entries(target.attributes ?? {})) {
+        const tagSet = node.promptboardYamlModel?.tagSets?.[attribute.source];
+        for (const tag of tagSet?.tags ?? []) {
+          const label = tag.label || tag.text;
+          const description = tag.description || "";
+          if (regex.test(label) || regex.test(tag.text) || regex.test(description)) {
+            matches.push({
+              kind: "attribute",
+              boardId,
+              targetId,
+              attributeId,
+              tagText: tag.text,
+              label: String(label),
+              description: String(description),
+              uiGroup,
+              context: `${board.label || boardId} / ${target.label || targetId} / ${attribute.label || attributeId}`,
+            });
+          }
+        }
+      }
+    }
+  }
   return matches;
 }
 
 function boardSearchMatchKey(match) {
-  return `${match.category}\u0000${match.tagText}`;
+  return match?.kind === "attribute"
+    ? `attribute\u0000${match.boardId}\u0000${match.targetId}\u0000${match.attributeId}\u0000${match.tagText}`
+    : `category\u0000${match?.category}\u0000${match?.tagText}`;
 }
 
 function currentBoardSearchMatch(node) {
@@ -951,7 +1003,18 @@ function currentBoardSearchMatch(node) {
 
 function isCurrentBoardSearchMatch(node, category, tagText = "") {
   const match = currentBoardSearchMatch(node);
-  return !!match && boardSearchMatchKey(match) === boardSearchMatchKey({ category, tagText });
+  return !!match && boardSearchMatchKey(match) === boardSearchMatchKey({ kind: "category", category, tagText });
+}
+
+function isCurrentAttributeSearchMatch(node, boardId, targetId, attributeId, tagText) {
+  const match = currentBoardSearchMatch(node);
+  return !!match && boardSearchMatchKey(match) === boardSearchMatchKey({
+    kind: "attribute",
+    boardId,
+    targetId,
+    attributeId,
+    tagText,
+  });
 }
 
 function setBoardSearchCount(node, current, total) {
@@ -993,6 +1056,14 @@ function showBoardSearchMenu(node) {
 function boardSearchMatchSelected(node, match) {
   if (!match?.tagText) {
     return false;
+  }
+  if (match.kind === "attribute") {
+    return attributeSelectedTexts(
+      node.promptboardState,
+      match.boardId,
+      match.targetId,
+      match.attributeId,
+    ).includes(match.tagText);
   }
   const selected = node.promptboardState?.[match.category];
   return Array.isArray(selected) && selected.includes(match.tagText);
@@ -1041,10 +1112,10 @@ function renderBoardSearchMenu(node) {
     option.dataset.index = String(index);
     option.setAttribute("role", "option");
     option.setAttribute("aria-selected", String(isActive));
-    option.title = match.description || match.tagText || match.category;
+    option.title = match.description || match.tagText || match.category || match.context;
     heading.className = "promptboard-search-menu-heading";
     label.className = "promptboard-search-menu-label";
-    label.textContent = match.label || match.tagText || match.category;
+    label.textContent = match.label || match.tagText || match.category || match.context;
     selected.className = "promptboard-search-menu-selected";
     selected.textContent = isSelected ? "선택됨" : "";
     heading.append(label, selected);
@@ -1056,7 +1127,7 @@ function renderBoardSearchMenu(node) {
       option.append(tagText);
     }
     context.className = "promptboard-search-menu-context";
-    context.textContent = `${match.category} · ${match.uiGroup}`;
+    context.textContent = `${match.context || match.category} · ${match.uiGroup}`;
     option.append(context);
     option.addEventListener("mousedown", (event) => {
       event.preventDefault();
@@ -1086,7 +1157,9 @@ function setBoardSearchMenuIndex(node, index) {
 
 function applyBoardSearchCollapsedState(node, matches) {
   const config = node.promptboardConfig ?? {};
-  const openCategories = new Set(matches.map((match) => match.category));
+  const openCategories = new Set(
+    matches.filter((match) => match.kind !== "attribute").map((match) => match.category),
+  );
   const collapsedSet = collapsedCategories(node);
 
   collapsedSet.clear();
@@ -1100,6 +1173,20 @@ function applyBoardSearchCollapsedState(node, matches) {
 function findBoardSearchElement(node, match) {
   const scroll = node.promptboardScroll;
   if (!scroll || !match) {
+    return null;
+  }
+
+  if (match.kind === "attribute") {
+    for (const element of scroll.querySelectorAll(".promptboard-attribute-tags .promptboard-tag")) {
+      if (
+        element.dataset.boardId === match.boardId &&
+        element.dataset.targetId === match.targetId &&
+        element.dataset.attributeId === match.attributeId &&
+        element.dataset.tagText === match.tagText
+      ) {
+        return element;
+      }
+    }
     return null;
   }
 
@@ -1134,6 +1221,13 @@ function navigateToBoardSearchMatch(node, index) {
 
   state.index = (index + state.matches.length) % state.matches.length;
   const match = state.matches[state.index];
+  if (match.kind === "attribute") {
+    node.promptboardActiveAttributeTargets ??= {};
+    node.promptboardActiveAttributes ??= {};
+    node.promptboardActiveAttributes[match.boardId] ??= {};
+    node.promptboardActiveAttributeTargets[match.boardId] = match.targetId;
+    node.promptboardActiveAttributes[match.boardId][match.targetId] = match.attributeId;
+  }
   setBoardSearchCount(node, state.index + 1, state.matches.length);
   applyBoardSearchCollapsedState(node, state.matches);
   renderCards(node);
@@ -2062,10 +2156,11 @@ function renderGroupFilter(node) {
   }
 
   const config = node.promptboardConfig ?? {};
+  const attributeBoards = node.promptboardYamlModel?.attributeBoards ?? {};
   const state = node.promptboardState ?? {};
-  const groups = availableUiGroups(config);
+  const groups = availableUiGroups(config, attributeBoards);
   const active = activeUiGroup(node, config);
-  const counts = selectedCountsByUiGroup(config, state);
+  const counts = selectedCountsByUiGroup(config, attributeBoards, state);
   container.replaceChildren();
   for (const group of [GROUP_ALL, ...groups]) {
     container.append(createGroupFilterButton(node, group, group === active, counts[group] ?? 0));
@@ -2149,6 +2244,7 @@ function createAttributeControl(label, count, active, options = {}) {
   button.type = "button";
   button.className = `promptboard-attribute-control${active ? " is-active" : ""}`;
   button.title = `${label} (${count} selected)`;
+  button.tabIndex = active ? 0 : -1;
   button.setAttribute("aria-pressed", String(active));
   labelElement.className = "promptboard-attribute-control-label";
   labelElement.textContent = label;
@@ -2185,6 +2281,10 @@ function createAttributeTagButton(node, state, boardId, targetId, attributeId, t
   button.dataset.attributeId = attributeId;
   button.dataset.tagText = tagText;
   button.setAttribute("aria-pressed", String(selected));
+  button.classList.toggle(
+    "is-search-match",
+    isCurrentAttributeSearchMatch(node, boardId, targetId, attributeId, tagText),
+  );
   stopCanvasEvents(button);
   label.className = "promptboard-tag-label";
   label.textContent = displayLabel;
@@ -2204,6 +2304,7 @@ function createAttributeTagButton(node, state, boardId, targetId, attributeId, t
       tagText,
       !selected,
     );
+    requestBoardFocus(node, { kind: "attributeTag", boardId, targetId, attributeId, tagText });
     syncState(node, state);
     renderCards(node);
   });
@@ -2244,9 +2345,10 @@ function createAttributeBoard(node, boardId, board, state) {
   targetControls.className = "promptboard-attribute-controls";
   targetControls.setAttribute("role", "group");
   targetControls.setAttribute("aria-label", `${board.label || boardId} 적용 대상`);
-  for (const [candidateId, candidate] of Object.entries(board.targets ?? {})) {
+  const targetEntries = Object.entries(board.targets ?? {});
+  for (const [targetIndex, [candidateId, candidate]] of targetEntries.entries()) {
     const active = candidateId === targetId;
-    targetControls.append(createAttributeControl(
+    const control = createAttributeControl(
       candidate.label || candidateId,
       attributeCountForTarget(state, boardId, candidateId, candidate),
       active,
@@ -2254,10 +2356,24 @@ function createAttributeBoard(node, boardId, board, state) {
         data: { boardId, targetId: candidateId },
         onClick: () => {
           node.promptboardActiveAttributeTargets[boardId] = candidateId;
+          requestBoardFocus(node, { kind: "target", boardId, targetId: candidateId });
           renderCards(node);
         },
       },
-    ));
+    );
+    control.addEventListener("keydown", (event) => {
+      const nextIndex = controlNavigationIndex(event, targetIndex, targetEntries.length);
+      if (nextIndex == null) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      const nextTargetId = targetEntries[nextIndex][0];
+      node.promptboardActiveAttributeTargets[boardId] = nextTargetId;
+      requestBoardFocus(node, { kind: "target", boardId, targetId: nextTargetId });
+      renderCards(node);
+    });
+    targetControls.append(control);
   }
   targetRow.append(targetRowLabel, targetControls);
 
@@ -2267,7 +2383,8 @@ function createAttributeBoard(node, boardId, board, state) {
   attributeControls.className = "promptboard-attribute-controls";
   attributeControls.setAttribute("role", "tablist");
   attributeControls.setAttribute("aria-label", `${target?.label || targetId} 속성`);
-  for (const [candidateId, candidate] of Object.entries(target?.attributes ?? {})) {
+  const attributeEntries = Object.entries(target?.attributes ?? {});
+  for (const [attributeIndex, [candidateId, candidate]] of attributeEntries.entries()) {
     const active = candidateId === attributeId;
     const control = createAttributeControl(
       candidate.label || candidateId,
@@ -2277,12 +2394,25 @@ function createAttributeBoard(node, boardId, board, state) {
         data: { boardId, targetId, attributeId: candidateId },
         onClick: () => {
           node.promptboardActiveAttributes[boardId][targetId] = candidateId;
+          requestBoardFocus(node, { kind: "attribute", boardId, targetId, attributeId: candidateId });
           renderCards(node);
         },
       },
     );
     control.role = "tab";
     control.setAttribute("aria-selected", String(active));
+    control.addEventListener("keydown", (event) => {
+      const nextIndex = controlNavigationIndex(event, attributeIndex, attributeEntries.length);
+      if (nextIndex == null) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      const nextAttributeId = attributeEntries[nextIndex][0];
+      node.promptboardActiveAttributes[boardId][targetId] = nextAttributeId;
+      requestBoardFocus(node, { kind: "attribute", boardId, targetId, attributeId: nextAttributeId });
+      renderCards(node);
+    });
     attributeControls.append(control);
   }
   attributeRow.append(attributeRowLabel, attributeControls);
@@ -2299,11 +2429,71 @@ function createAttributeBoard(node, boardId, board, state) {
 }
 
 function renderAttributeBoards(node, scroll, state) {
-  const entries = Object.entries(node.promptboardYamlModel?.attributeBoards ?? {});
+  const entries = visibleAttributeBoardEntries(node);
   for (const [boardId, board] of entries) {
     scroll.append(createAttributeBoard(node, boardId, board, state));
   }
   return entries.length;
+}
+
+function controlNavigationIndex(event, currentIndex, length) {
+  if (!length) {
+    return null;
+  }
+  if (event.key === "Home") {
+    return 0;
+  }
+  if (event.key === "End") {
+    return length - 1;
+  }
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    return (currentIndex + 1) % length;
+  }
+  if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    return (currentIndex - 1 + length) % length;
+  }
+  return null;
+}
+
+function requestBoardFocus(node, identity) {
+  node.promptboardPendingFocus = identity;
+}
+
+function findPendingBoardFocusElement(node, identity) {
+  const scroll = node.promptboardScroll;
+  if (!scroll || !identity) {
+    return null;
+  }
+  const selector = identity.kind === "attributeTag"
+    ? ".promptboard-attribute-tags .promptboard-tag"
+    : ".promptboard-attribute-control";
+  for (const element of scroll.querySelectorAll(selector)) {
+    if (element.dataset.boardId !== identity.boardId || element.dataset.targetId !== identity.targetId) {
+      continue;
+    }
+    if (identity.attributeId && element.dataset.attributeId !== identity.attributeId) {
+      continue;
+    }
+    if (identity.tagText && element.dataset.tagText !== identity.tagText) {
+      continue;
+    }
+    if (identity.kind === "target" && element.dataset.attributeId) {
+      continue;
+    }
+    return element;
+  }
+  return null;
+}
+
+function restorePendingBoardFocus(node) {
+  const identity = node.promptboardPendingFocus;
+  if (!identity || typeof requestAnimationFrame !== "function") {
+    return;
+  }
+  node.promptboardPendingFocus = null;
+  requestAnimationFrame(() => {
+    findPendingBoardFocusElement(node, identity)?.focus({ preventScroll: true });
+  });
 }
 
 function createCategoryActions(node, state, category, tags) {
@@ -2348,15 +2538,21 @@ function renderCards(node) {
     empty.className = "promptboard-empty";
     empty.textContent = "No categories";
     scroll.append(empty);
+    restorePendingBoardFocus(node);
     return;
   }
 
   const entries = visibleCategoryEntries(node);
   if (!entries.length) {
+    if (attributeBoardCount > 0) {
+      restorePendingBoardFocus(node);
+      return;
+    }
     const empty = document.createElement("div");
     empty.className = "promptboard-empty";
     empty.textContent = Object.keys(config).length ? "No categories in this group" : "No categories";
     scroll.append(empty);
+    restorePendingBoardFocus(node);
     return;
   }
 
@@ -2421,6 +2617,7 @@ function renderCards(node) {
   scroll.append(columns);
   node.promptboardMasonryContainer = columns;
   scheduleBoardMasonry(node);
+  restorePendingBoardFocus(node);
 }
 
 function setStatus(node, text) {
