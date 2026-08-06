@@ -1,0 +1,80 @@
+[
+  {
+    "fixture": "unsupported_schema_version.yaml",
+    "code": "unsupported_schema_version",
+    "path": "_promptboard.schemaVersion",
+    "message": "Unsupported schema version: 3"
+  },
+  {
+    "fixture": "invalid_yaml_root.yaml",
+    "code": "invalid_yaml_root",
+    "path": "$",
+    "message": "YAML root must be a mapping"
+  },
+  {
+    "fixture": "schema_version_required.yaml",
+    "code": "schema_version_required",
+    "path": "_promptboard.schemaVersion",
+    "message": "schemaVersion: 2 is required for tagSets or attributeBoards"
+  },
+  {
+    "fixture": "reserved_category_name.yaml",
+    "code": "reserved_category_name",
+    "path": "$attributes",
+    "message": "Reserved category name: $attributes"
+  },
+  {
+    "fixture": "reserved_tag_set_identifier.yaml",
+    "code": "reserved_identifier",
+    "path": "_promptboard.tagSets._promptboard",
+    "message": "Reserved identifier: _promptboard"
+  },
+  {
+    "fixture": "empty_tag_set.yaml",
+    "code": "empty_tag_set",
+    "path": "_promptboard.tagSets.colors.tags",
+    "message": "Tag set must contain at least one tag: colors"
+  },
+  {
+    "fixture": "invalid_tag.yaml",
+    "code": "invalid_tag",
+    "path": "_promptboard.tagSets.colors.tags[0]",
+    "message": "Tag text must not be empty: _promptboard.tagSets.colors.tags[0]"
+  },
+  {
+    "fixture": "unknown_tag_set.yaml",
+    "code": "unknown_tag_set",
+    "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.color.source",
+    "message": "Unknown tag set: missingColors"
+  },
+  {
+    "fixture": "ambiguous_category_source.yaml",
+    "code": "ambiguous_category_source",
+    "path": "상의색상",
+    "message": "Category must declare either tags or tagSet, not both: 상의색상"
+  },
+  {
+    "fixture": "invalid_attribute_mode.yaml",
+    "code": "invalid_attribute_mode",
+    "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.color.mode",
+    "message": "Unsupported attribute mode: optional"
+  },
+  {
+    "fixture": "duplicate_migration_source.yaml",
+    "code": "duplicate_migration_source",
+    "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.material.migrateFrom",
+    "message": "Duplicate migrateFrom in target: 상의속성"
+  },
+  {
+    "fixture": "missing_attribute_source.yaml",
+    "code": "missing_required_field",
+    "path": "_promptboard.attributeBoards.clothing.targets.top.attributes.color.source",
+    "message": "Missing required field: _promptboard.attributeBoards.clothing.targets.top.attributes.color.source"
+  },
+  {
+    "fixture": "placeholder_collision.yaml",
+    "code": "placeholder_collision",
+    "path": "_promptboard.attributeBoards.clothing.targets.top.placeholder",
+    "message": "Attribute target placeholder conflicts with category placeholder: <CLOTHES>"
+  }
+]

@@ -45,9 +45,12 @@ def _read_safetensors_metadata(path):
 def _sha256(path):
     base, _ext = os.path.splitext(path)
     hash_file = base + ".sha256"
+    meta_file = base + ".sha256.json"
+    signature = _file_signature(path)
     if os.path.isfile(hash_file):
-        with open(hash_file, "rt", encoding="utf-8") as file:
-            return file.read().strip()
+        cached = _read_cached_sha256(hash_file, meta_file, signature)
+        if cached:
+            return cached
 
     digest = hashlib.sha256()
     with open(path, "rb") as file:
@@ -57,7 +60,42 @@ def _sha256(path):
     value = digest.hexdigest()
     with open(hash_file, "wt", encoding="utf-8") as file:
         file.write(value)
+    try:
+        with open(meta_file, "wt", encoding="utf-8") as file:
+            json.dump({"sha256": value, "signature": signature}, file, ensure_ascii=False, indent=2)
+    except OSError:
+        pass
     return value
+
+
+def _file_signature(path):
+    stat = os.stat(path)
+    return {"size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+
+
+def _read_cached_sha256(hash_file, meta_file, signature):
+    try:
+        with open(hash_file, "rt", encoding="utf-8") as file:
+            value = file.read().strip()
+    except OSError:
+        return None
+    if not value:
+        return None
+
+    try:
+        if os.path.isfile(meta_file):
+            with open(meta_file, "rt", encoding="utf-8") as file:
+                metadata = json.load(file)
+            if metadata.get("signature") == signature and metadata.get("sha256") == value:
+                return value
+            return None
+
+        model_mtime = signature["mtime_ns"] / 1_000_000_000
+        if os.path.getmtime(hash_file) >= model_mtime:
+            return value
+    except Exception:
+        return None
+    return None
 
 
 def _metadata_response(model_type, model_name):
@@ -248,11 +286,13 @@ def _fill_civitai_model_description(info):
 
 def _civitai_response(model_type, model_name, refresh=False):
     path = _model_path(model_type, model_name)
+    hash_value = _sha256(path)
     if not refresh:
         cached = _load_civitai_cache(path)
-        if cached is not None:
+        if cached is not None and cached.get("promptboard.sha256") == hash_value:
             cached = _fill_civitai_model_description(cached)
             info = _prepare_civitai_preview_info(path, cached)
+            info["promptboard.sha256"] = hash_value
             with open(_civitai_cache_path(path), "wt", encoding="utf-8") as file:
                 json.dump(info, file, ensure_ascii=False, indent=2)
             return info
@@ -261,10 +301,11 @@ def _civitai_response(model_type, model_name, refresh=False):
                 "images": [],
                 "trainedWords": [],
                 "promptboardCivitaiDeferred": True,
+                "promptboard.sha256": hash_value,
             })
 
     try:
-        info = _fetch_civitai_info(_sha256(path))
+        info = _fetch_civitai_info(hash_value)
     except Exception as exc:
         cached = _load_civitai_cache(path)
         if cached is not None:
@@ -277,6 +318,7 @@ def _civitai_response(model_type, model_name, refresh=False):
 
     info = _fill_civitai_model_description(info)
     info = _prepare_civitai_preview_info(path, info)
+    info["promptboard.sha256"] = hash_value
     with open(_civitai_cache_path(path), "wt", encoding="utf-8") as file:
         json.dump(info, file, ensure_ascii=False, indent=2)
     return info

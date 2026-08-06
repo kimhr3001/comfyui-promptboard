@@ -1,0 +1,19 @@
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      tags:
+      - black
+  attributeBoards:
+    clothing:
+      targets:
+        top:
+          placeholder: <CLOTHES>
+          attributes:
+            color:
+              source: colors
+
+상의:
+  placeholder: <CLOTHES>
+  tags:
+  - shirt

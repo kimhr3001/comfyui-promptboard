@@ -1,0 +1,15 @@
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      tags:
+      - black
+  attributeBoards:
+    clothing:
+      targets:
+        top:
+          placeholder: <TOP_ATTRS>
+          attributes:
+            color:
+              source: colors
+              mode: optional

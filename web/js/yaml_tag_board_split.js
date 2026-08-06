@@ -2,13 +2,21 @@
  * Prompt Board node UI.
  */
 import { app } from "../../../scripts/app.js";
+import {
+  ATTRIBUTE_STATE_KEY,
+  attributeSelectedTexts,
+  emptyAttributeState,
+  normalizeAttributeState,
+  setAttributeSelected,
+} from "./promptboard_attribute_state.mjs";
+import { normalizeYamlDocument } from "./promptboard_yaml.mjs";
 
 const NODE_NAME = "PromptBoard";
 const LAYOUT_WIDGET = "split_layout";
 const RESET_BUTTON = "Reset";
 const SAVE_TEMPLATE_BUTTON = "Save";
 const SAVE_TEMPLATE_NEW_BUTTON = "Save (New)";
-const DELETE_TEMPLATE_BUTTON = "Del";
+const DELETE_TEMPLATE_BUTTON = "Delete";
 const TEMPLATE_SAVE_MODE_SAVE = "save";
 const TEMPLATE_SAVE_MODE_NEW = "new";
 const DEFAULT_YAML_FILE = "default.yaml";
@@ -31,6 +39,9 @@ const TEMPLATE_STORAGE_PREFIX = "promptboard:template:v1";
 const SEARCH_DEBOUNCE_MS = 150;
 const GROUP_ALL = "전체";
 const DEFAULT_UI_GROUP = "기타";
+const VIEW_MODE_NAVIGATOR = "navigator";
+const VIEW_MODE_OVERVIEW = "overview";
+const DEFAULT_VIEW_MODE = VIEW_MODE_NAVIGATOR;
 const PLACEHOLDER_UI_GROUPS = {
   "<PHOTOSHOT>": "구도",
   "<INTER>": "구도",
@@ -517,6 +528,162 @@ function scrollYamlEditorToMatch(node, match) {
   }
 }
 
+function escapeRegExp(value) {
+  return String(value ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findTopLevelYamlBlock(lines, key) {
+  const pattern = new RegExp(`^${escapeRegExp(key)}:\\s*(?:#.*)?$`);
+  let start = -1;
+  for (let index = 0; index < lines.length; index += 1) {
+    if (pattern.test(lines[index])) {
+      start = index;
+      break;
+    }
+  }
+  if (start < 0) {
+    return null;
+  }
+
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^[^\s#][^:]*:\s*(?:#.*)?$/.test(lines[index])) {
+      end = index;
+      break;
+    }
+  }
+  return { start, end, indent: 0 };
+}
+
+function findNestedYamlBlock(lines, parentBlock, key) {
+  if (!parentBlock) {
+    return null;
+  }
+  const indent = Number(parentBlock.indent ?? 0) + 2;
+  const pattern = new RegExp(`^\\s{${indent}}${escapeRegExp(key)}:\\s*(?:#.*)?$`);
+  let start = -1;
+  for (let index = parentBlock.start + 1; index < parentBlock.end; index += 1) {
+    if (pattern.test(lines[index])) {
+      start = index;
+      break;
+    }
+  }
+  if (start < 0) {
+    return null;
+  }
+
+  let end = parentBlock.end;
+  const siblingPattern = new RegExp(`^\\s{${indent}}[^\\s#][^:]*:\\s*(?:#.*)?$`);
+  for (let index = start + 1; index < parentBlock.end; index += 1) {
+    if (siblingPattern.test(lines[index])) {
+      end = index;
+      break;
+    }
+  }
+  return { start, end, indent };
+}
+
+function yamlLineMatch(lines, lineIndex) {
+  return {
+    lineIndex,
+    offset: lineStartOffset(lines, lineIndex),
+  };
+}
+
+function findYamlCategoryMatch(text, category) {
+  const lines = String(text ?? "").split("\n");
+  const block = findTopLevelYamlBlock(lines, category);
+  return block ? yamlLineMatch(lines, block.start) : null;
+}
+
+function findYamlTagMatch(text, category, tagText) {
+  const lines = String(text ?? "").split("\n");
+  const block = findTopLevelYamlBlock(lines, category);
+  if (!block) {
+    return null;
+  }
+  const needle = String(tagText ?? "");
+  for (let index = block.start + 1; index < block.end; index += 1) {
+    const trimmed = lines[index].trim();
+    if (trimmed.startsWith("-") && lines[index].includes(needle)) {
+      return yamlLineMatch(lines, index);
+    }
+  }
+  return yamlLineMatch(lines, block.start);
+}
+
+function findYamlTagSetMatch(text, tagSetId, tagText) {
+  const lines = String(text ?? "").split("\n");
+  const rootBlock = findTopLevelYamlBlock(lines, "_promptboard");
+  const tagSetsBlock = findNestedYamlBlock(lines, rootBlock, "tagSets");
+  const tagSetBlock = findNestedYamlBlock(lines, tagSetsBlock, tagSetId);
+  if (!tagSetBlock) {
+    return null;
+  }
+  const needle = String(tagText ?? "");
+  if (!needle) {
+    return yamlLineMatch(lines, tagSetBlock.start);
+  }
+  for (let index = tagSetBlock.start + 1; index < tagSetBlock.end; index += 1) {
+    const trimmed = lines[index].trim();
+    if (trimmed.startsWith("-") && lines[index].includes(needle)) {
+      return yamlLineMatch(lines, index);
+    }
+  }
+  return yamlLineMatch(lines, tagSetBlock.start);
+}
+
+function focusYamlSourceMatch(node, match) {
+  if (!isYamlPanelOpen(node) || !match) {
+    return;
+  }
+  setYamlSearchHighlight(node, match);
+  scrollYamlEditorToMatch(node, match);
+}
+
+function focusYamlCategory(node, category) {
+  focusYamlSourceMatch(node, findYamlCategoryMatch(widgetValue(node, "yaml_text", ""), category));
+}
+
+function focusYamlCategoryTag(node, category, tagText) {
+  focusYamlSourceMatch(node, findYamlTagMatch(widgetValue(node, "yaml_text", ""), category, tagText));
+}
+
+function focusYamlAttributeTag(node, boardId, targetId, attributeId, tagText) {
+  const source = node.promptboardYamlModel
+    ?.attributeBoards?.[boardId]
+    ?.targets?.[targetId]
+    ?.attributes?.[attributeId]
+    ?.source;
+  if (!source) {
+    return;
+  }
+  focusYamlSourceMatch(node, findYamlTagSetMatch(widgetValue(node, "yaml_text", ""), source, tagText));
+}
+
+function focusYamlNavigatorItem(node, item) {
+  if (item?.kind === "attribute") {
+    focusYamlAttributeTag(node, item.boardId, item.targetId, item.attributeId, "");
+    return;
+  }
+  if (item?.kind === "category") {
+    focusYamlCategory(node, item.category);
+  }
+}
+
+function focusYamlBoardSearchMatch(node, match) {
+  if (!match) {
+    return;
+  }
+  if (match.kind === "attribute") {
+    focusYamlAttributeTag(node, match.boardId, match.targetId, match.attributeId, match.tagText);
+  } else if (match.tagText) {
+    focusYamlCategoryTag(node, match.category, match.tagText);
+  } else {
+    focusYamlCategory(node, match.category);
+  }
+}
+
 function runYamlSearch(node, direction = 0) {
   const input = node.promptboardYamlSearchInput;
   const pattern = String(input?.value ?? "").trim();
@@ -727,24 +894,6 @@ async function createCodeMirrorEditor(node, host, textarea) {
   }
 }
 
-function unquote(value) {
-  let text = String(value ?? "").trim();
-  if (
-    (text.startsWith('"') && text.endsWith('"')) ||
-    (text.startsWith("'") && text.endsWith("'"))
-  ) {
-    text = text.slice(1, -1);
-  }
-  return text;
-}
-
-function parseBool(value) {
-  if (typeof value === "boolean") {
-    return value;
-  }
-  return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase());
-}
-
 function normalizeUiGroup(value) {
   return String(value ?? "").trim();
 }
@@ -758,16 +907,32 @@ function categoryUiGroup(item) {
   return normalizeUiGroup(item?.uiGroup) || inferUiGroup(item);
 }
 
-function availableUiGroups(config) {
+function categoryLabel(category, item) {
+  const label = String(item?.label || "").trim();
+  if (label) {
+    return label;
+  }
+  const [prefix, ...suffix] = String(category ?? "").split("_");
+  return prefix && suffix.length ? suffix.join("/") : String(category ?? "");
+}
+
+function attributeBoardUiGroup(board) {
+  return normalizeUiGroup(board?.uiGroup) || DEFAULT_UI_GROUP;
+}
+
+function availableUiGroups(config, attributeBoards = {}) {
   const groups = new Set();
   for (const item of Object.values(config ?? {})) {
     groups.add(categoryUiGroup(item));
+  }
+  for (const board of Object.values(attributeBoards ?? {})) {
+    groups.add(attributeBoardUiGroup(board));
   }
   return [...groups];
 }
 
 function activeUiGroup(node, config = node.promptboardConfig ?? {}) {
-  const groups = availableUiGroups(config);
+  const groups = availableUiGroups(config, node.promptboardYamlModel?.attributeBoards);
   const active = normalizeUiGroup(node.promptboardActiveUiGroup) || GROUP_ALL;
   if (active === GROUP_ALL || groups.includes(active)) {
     return active;
@@ -786,104 +951,123 @@ function visibleCategoryEntries(node) {
   return Object.entries(config).filter(([, item]) => categoryMatchesActiveUiGroup(node, item));
 }
 
-function parseYamlTags(yamlText) {
-  const config = {};
-  let currentCategory = null;
-  let currentTag = null;
-  let inTags = false;
+function visibleAttributeBoardEntries(node) {
+  const active = activeUiGroup(node);
+  return Object.entries(node.promptboardYamlModel?.attributeBoards ?? {}).filter(([, board]) =>
+    active === GROUP_ALL || attributeBoardUiGroup(board) === active,
+  );
+}
 
-  for (const rawLine of String(yamlText ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n")) {
-    if (!rawLine.trim() || rawLine.trimStart().startsWith("#")) {
-      continue;
-    }
+function boardViewMode(node) {
+  const mode = node.promptboardViewMode || DEFAULT_VIEW_MODE;
+  if (mode === VIEW_MODE_NAVIGATOR || mode === VIEW_MODE_OVERVIEW) {
+    return mode;
+  }
+  node.promptboardViewMode = DEFAULT_VIEW_MODE;
+  return DEFAULT_VIEW_MODE;
+}
 
-    const indent = rawLine.match(/^ */)?.[0]?.length ?? 0;
-    const line = rawLine.trim();
+function setBoardViewMode(node, mode) {
+  node.promptboardViewMode = mode === VIEW_MODE_OVERVIEW ? VIEW_MODE_OVERVIEW : VIEW_MODE_NAVIGATOR;
+  renderCards(node);
+}
 
-    if (indent === 0 && line.endsWith(":")) {
-      currentCategory = unquote(line.slice(0, -1));
-      currentTag = null;
-      inTags = false;
-      if (currentCategory) {
-        config[currentCategory] = {
-          placeholder: `<${currentCategory}>`,
-          uiGroup: "",
-          replaceInsideTags: false,
-          tags: [],
-        };
-      }
-      continue;
-    }
+function navigatorItemId(item) {
+  if (!item) {
+    return "";
+  }
+  return item.kind === "attribute"
+    ? `attribute\u0000${item.boardId}\u0000${item.targetId}\u0000${item.attributeId}`
+    : `category\u0000${item.category}`;
+}
 
-    if (!currentCategory || !config[currentCategory]) {
-      continue;
-    }
+function navigatorItemFromMatch(match) {
+  if (!match) {
+    return "";
+  }
+  return match.kind === "attribute"
+    ? navigatorItemId(match)
+    : navigatorItemId({ kind: "category", category: match.category });
+}
 
-    if (indent <= 2 && line.startsWith("placeholder:")) {
-      inTags = false;
-      config[currentCategory].placeholder = unquote(line.slice("placeholder:".length));
-      continue;
-    }
+function tagDisplayLabel(tag) {
+  const sourceLabel = String(tag?.label || tag?.text || "");
+  const tagText = String(tag?.text ?? "");
+  return sourceLabel && sourceLabel !== tagText ? `[${sourceLabel}] ${tagText}` : tagText;
+}
 
-    if (indent <= 2 && line.startsWith("uiGroup:")) {
-      inTags = false;
-      config[currentCategory].uiGroup = normalizeUiGroup(unquote(line.slice("uiGroup:".length)));
-      continue;
-    }
+function tagItemsForTags(tags = [], tagItems = null) {
+  return Array.isArray(tagItems) && tagItems.length
+    ? tagItems
+    : tags.map((tag) => ({ kind: "tag", tag }));
+}
 
-    if (indent <= 2 && line.startsWith("replaceInsideTags:")) {
-      inTags = false;
-      config[currentCategory].replaceInsideTags = parseBool(line.slice("replaceInsideTags:".length));
-      continue;
-    }
+function tagItemsForCategory(item) {
+  return tagItemsForTags(item?.tags ?? [], item?.tagItems);
+}
 
-    if (indent <= 2 && line === "tags:") {
-      currentTag = null;
-      inTags = true;
-      continue;
-    }
+function tagItemsForTagSet(tagSet) {
+  return tagItemsForTags(tagSet?.tags ?? [], tagSet?.tagItems);
+}
 
-    if (inTags && indent >= 2 && line.startsWith("- ")) {
-      const body = line.slice(2).trim();
-      currentTag = { text: "", label: "", description: "", default: false };
-
-      if (body.startsWith("text:")) {
-        currentTag.text = unquote(body.slice("text:".length));
-      } else if (body.startsWith("value:")) {
-        currentTag.text = unquote(body.slice("value:".length));
-      } else {
-        currentTag.text = unquote(body);
-      }
-
-      currentTag.label = currentTag.text;
-      if (currentTag.text) {
-        config[currentCategory].tags.push(currentTag);
-      }
-      continue;
-    }
-
-    if (inTags && indent >= 4 && currentTag) {
-      if (line.startsWith("text:")) {
-        currentTag.text = unquote(line.slice("text:".length));
-        if (!currentTag.label) {
-          currentTag.label = currentTag.text;
-        }
-      } else if (line.startsWith("value:")) {
-        currentTag.text = unquote(line.slice("value:".length));
-        if (!currentTag.label) {
-          currentTag.label = currentTag.text;
-        }
-      } else if (line.startsWith("label:")) {
-        currentTag.label = unquote(line.slice("label:".length));
-      } else if (line.startsWith("description:")) {
-        currentTag.description = unquote(line.slice("description:".length));
-      } else if (line.startsWith("default:")) {
-        currentTag.default = parseBool(line.slice("default:".length));
+function navigatorItems(node) {
+  const items = [];
+  for (const [category, item] of visibleCategoryEntries(node)) {
+    items.push({
+      kind: "category",
+      category,
+      label: categoryLabel(category, item),
+      context: categoryUiGroup(item),
+      tags: item.tags ?? [],
+      tagItems: tagItemsForCategory(item),
+    });
+  }
+  for (const [boardId, board] of visibleAttributeBoardEntries(node)) {
+    for (const [targetId, target] of Object.entries(board.targets ?? {})) {
+      for (const [attributeId, attribute] of Object.entries(target.attributes ?? {})) {
+        const tagSet = node.promptboardYamlModel?.tagSets?.[attribute.source];
+        items.push({
+          kind: "attribute",
+          boardId,
+          targetId,
+          attributeId,
+          label: `${target.label || targetId} / ${attribute.label || attributeId}`,
+          context: board.label || boardId,
+          tags: tagSet?.tags ?? [],
+          tagItems: tagItemsForTagSet(tagSet),
+        });
       }
     }
   }
+  return items;
+}
 
-  return config;
+function navigatorItemCount(node, item) {
+  const state = node.promptboardState ?? {};
+  if (item?.kind === "attribute") {
+    return attributeSelectedTexts(state, item.boardId, item.targetId, item.attributeId).length;
+  }
+  return selectedCount(state, item?.category, item?.tags ?? []);
+}
+
+function activeNavigatorItem(node, items = navigatorItems(node)) {
+  if (!items.length) {
+    node.promptboardNavigatorItemId = "";
+    return null;
+  }
+  const activeId = node.promptboardNavigatorItemId || "";
+  const active = items.find((item) => navigatorItemId(item) === activeId);
+  if (active) {
+    return active;
+  }
+  const selected = items.find((item) => navigatorItemCount(node, item) > 0);
+  const next = selected || items[0];
+  node.promptboardNavigatorItemId = navigatorItemId(next);
+  return next;
+}
+
+function setActiveNavigatorItem(node, id) {
+  node.promptboardNavigatorItemId = id;
 }
 
 function parseSelectedState(node) {
@@ -910,13 +1094,17 @@ function selectedTextsForCategory(category, tags, selectedState) {
   return tags.filter((tag) => tag.default).map((tag) => tag.text);
 }
 
-function pruneSelectedState(config, selectedState) {
+function pruneSelectedState(model, selectedState, warnings = []) {
+  const config = model.categories ?? {};
   const nextState = {};
   for (const [category, item] of Object.entries(config)) {
     const tagTexts = new Set(item.tags.map((tag) => tag.text));
     nextState[category] = selectedTextsForCategory(category, item.tags, selectedState).filter((text) =>
       tagTexts.has(text),
     );
+  }
+  if (Object.keys(model.attributeBoards ?? {}).length) {
+    nextState[ATTRIBUTE_STATE_KEY] = normalizeAttributeState(model, selectedState, warnings);
   }
   return nextState;
 }
@@ -926,11 +1114,21 @@ function selectedCount(state, category, tags) {
   return tags.filter((tag) => selected.has(tag.text)).length;
 }
 
-function selectedCountsByUiGroup(config, state) {
+function selectedCountsByUiGroup(config, attributeBoards, state) {
   const counts = { [GROUP_ALL]: 0 };
   for (const [category, item] of Object.entries(config ?? {})) {
     const count = selectedCount(state, category, item.tags ?? []);
     const group = categoryUiGroup(item);
+    counts[GROUP_ALL] += count;
+    counts[group] = (counts[group] ?? 0) + count;
+  }
+  for (const [boardId, board] of Object.entries(attributeBoards ?? {})) {
+    const count = Object.entries(board.targets ?? {}).reduce(
+      (boardTotal, [targetId, target]) =>
+        boardTotal + attributeCountForTarget(state, boardId, targetId, target),
+      0,
+    );
+    const group = attributeBoardUiGroup(board);
     counts[GROUP_ALL] += count;
     counts[group] = (counts[group] ?? 0) + count;
   }
@@ -1000,6 +1198,9 @@ function resetSelectionAndCollapse(node) {
     state[category] = [];
     collapsedSet.add(category);
   }
+  if (Object.keys(node.promptboardYamlModel?.attributeBoards ?? {}).length) {
+    Object.assign(state, emptyAttributeState(node.promptboardYamlModel));
+  }
 
   syncState(node, state);
   renderCards(node);
@@ -1020,14 +1221,16 @@ function collectBoardSearchMatches(node, regex) {
   const matches = [];
   for (const [category, item] of visibleCategoryEntries(node)) {
     const uiGroup = categoryUiGroup(item);
-    if (regex.test(category)) {
-      matches.push({ category, tagText: "", label: category, description: "", uiGroup });
+    const label = categoryLabel(category, item);
+    if (regex.test(category) || regex.test(label)) {
+      matches.push({ kind: "category", category, tagText: "", label, description: "", uiGroup });
     }
     for (const tag of item.tags ?? []) {
       const label = tag.label || tag.text;
       const description = tag.description || "";
       if (regex.test(label) || regex.test(tag.text) || regex.test(description)) {
         matches.push({
+          kind: "category",
           category,
           tagText: tag.text,
           label: String(label),
@@ -1037,11 +1240,38 @@ function collectBoardSearchMatches(node, regex) {
       }
     }
   }
+  for (const [boardId, board] of visibleAttributeBoardEntries(node)) {
+    const uiGroup = attributeBoardUiGroup(board);
+    for (const [targetId, target] of Object.entries(board.targets ?? {})) {
+      for (const [attributeId, attribute] of Object.entries(target.attributes ?? {})) {
+        const tagSet = node.promptboardYamlModel?.tagSets?.[attribute.source];
+        for (const tag of tagSet?.tags ?? []) {
+          const label = tag.label || tag.text;
+          const description = tag.description || "";
+          if (regex.test(label) || regex.test(tag.text) || regex.test(description)) {
+            matches.push({
+              kind: "attribute",
+              boardId,
+              targetId,
+              attributeId,
+              tagText: tag.text,
+              label: String(label),
+              description: String(description),
+              uiGroup,
+              context: `${board.label || boardId} / ${target.label || targetId} / ${attribute.label || attributeId}`,
+            });
+          }
+        }
+      }
+    }
+  }
   return matches;
 }
 
 function boardSearchMatchKey(match) {
-  return `${match.category}\u0000${match.tagText}`;
+  return match?.kind === "attribute"
+    ? `attribute\u0000${match.boardId}\u0000${match.targetId}\u0000${match.attributeId}\u0000${match.tagText}`
+    : `category\u0000${match?.category}\u0000${match?.tagText}`;
 }
 
 function currentBoardSearchMatch(node) {
@@ -1054,7 +1284,18 @@ function currentBoardSearchMatch(node) {
 
 function isCurrentBoardSearchMatch(node, category, tagText = "") {
   const match = currentBoardSearchMatch(node);
-  return !!match && boardSearchMatchKey(match) === boardSearchMatchKey({ category, tagText });
+  return !!match && boardSearchMatchKey(match) === boardSearchMatchKey({ kind: "category", category, tagText });
+}
+
+function isCurrentAttributeSearchMatch(node, boardId, targetId, attributeId, tagText) {
+  const match = currentBoardSearchMatch(node);
+  return !!match && boardSearchMatchKey(match) === boardSearchMatchKey({
+    kind: "attribute",
+    boardId,
+    targetId,
+    attributeId,
+    tagText,
+  });
 }
 
 function setBoardSearchCount(node, current, total) {
@@ -1096,6 +1337,14 @@ function showBoardSearchMenu(node) {
 function boardSearchMatchSelected(node, match) {
   if (!match?.tagText) {
     return false;
+  }
+  if (match.kind === "attribute") {
+    return attributeSelectedTexts(
+      node.promptboardState,
+      match.boardId,
+      match.targetId,
+      match.attributeId,
+    ).includes(match.tagText);
   }
   const selected = node.promptboardState?.[match.category];
   return Array.isArray(selected) && selected.includes(match.tagText);
@@ -1144,10 +1393,10 @@ function renderBoardSearchMenu(node) {
     option.dataset.index = String(index);
     option.setAttribute("role", "option");
     option.setAttribute("aria-selected", String(isActive));
-    option.title = match.description || match.tagText || match.category;
+    option.title = match.description || match.tagText || match.category || match.context;
     heading.className = "promptboard-search-menu-heading";
     label.className = "promptboard-search-menu-label";
-    label.textContent = match.label || match.tagText || match.category;
+    label.textContent = match.label || match.tagText || match.category || match.context;
     selected.className = "promptboard-search-menu-selected";
     selected.textContent = isSelected ? "선택됨" : "";
     heading.append(label, selected);
@@ -1159,7 +1408,7 @@ function renderBoardSearchMenu(node) {
       option.append(tagText);
     }
     context.className = "promptboard-search-menu-context";
-    context.textContent = `${match.category} · ${match.uiGroup}`;
+    context.textContent = `${match.context || match.category} · ${match.uiGroup}`;
     option.append(context);
     option.addEventListener("mousedown", (event) => {
       event.preventDefault();
@@ -1189,7 +1438,9 @@ function setBoardSearchMenuIndex(node, index) {
 
 function applyBoardSearchCollapsedState(node, matches) {
   const config = node.promptboardConfig ?? {};
-  const openCategories = new Set(matches.map((match) => match.category));
+  const openCategories = new Set(
+    matches.filter((match) => match.kind !== "attribute").map((match) => match.category),
+  );
   const collapsedSet = collapsedCategories(node);
 
   collapsedSet.clear();
@@ -1206,7 +1457,21 @@ function findBoardSearchElement(node, match) {
     return null;
   }
 
-  const selector = match.tagText ? ".promptboard-tag" : ".promptboard-card-title";
+  if (match.kind === "attribute") {
+    for (const element of scroll.querySelectorAll(".promptboard-tag")) {
+      if (
+        element.dataset.boardId === match.boardId &&
+        element.dataset.targetId === match.targetId &&
+        element.dataset.attributeId === match.attributeId &&
+        element.dataset.tagText === match.tagText
+      ) {
+        return element;
+      }
+    }
+    return null;
+  }
+
+  const selector = match.tagText ? ".promptboard-tag" : ".promptboard-card-title, .promptboard-navigator-category";
   for (const element of scroll.querySelectorAll(selector)) {
     if (element.dataset.category !== match.category) {
       continue;
@@ -1237,10 +1502,19 @@ function navigateToBoardSearchMatch(node, index) {
 
   state.index = (index + state.matches.length) % state.matches.length;
   const match = state.matches[state.index];
+  setActiveNavigatorItem(node, navigatorItemFromMatch(match));
+  if (match.kind === "attribute") {
+    node.promptboardActiveAttributeTargets ??= {};
+    node.promptboardActiveAttributes ??= {};
+    node.promptboardActiveAttributes[match.boardId] ??= {};
+    node.promptboardActiveAttributeTargets[match.boardId] = match.targetId;
+    node.promptboardActiveAttributes[match.boardId][match.targetId] = match.attributeId;
+  }
   setBoardSearchCount(node, state.index + 1, state.matches.length);
   applyBoardSearchCollapsedState(node, state.matches);
   renderCards(node);
   hideBoardSearchMenu(node);
+  focusYamlBoardSearchMatch(node, match);
   requestAnimationFrame(() => {
     scrollBoardElementIntoView(node, findBoardSearchElement(node, match));
   });
@@ -1386,21 +1660,21 @@ function ensureStyles() {
   const style = document.createElement("style");
   style.id = "promptboard-styles";
   style.textContent = `
-    .promptboard {
-      box-sizing: border-box;
-      display: grid;
-      grid-template-columns: ${EDITOR_PANEL_WIDTH}px minmax(260px, 1fr);
-      gap: 8px;
-      width: 100%;
-      height: 100%;
+	    .promptboard {
+	      box-sizing: border-box;
+	      display: grid;
+	      grid-template-columns: minmax(260px, 1fr) 22px var(--promptboard-yaml-width, 0px);
+	      column-gap: 0;
+	      width: 100%;
+	      height: 100%;
       padding: 0;
       color: #e0e0e0;
       font: 11px Arial, sans-serif;
     }
 
-    .promptboard-panel {
-      box-sizing: border-box;
-      min-width: 0;
+	    .promptboard-panel {
+	      box-sizing: border-box;
+	      min-width: 0;
       min-height: 0;
       display: grid;
       grid-template-rows: auto auto 1fr auto auto;
@@ -1408,12 +1682,63 @@ function ensureStyles() {
       border: 1px solid rgba(95, 95, 95, 0.8);
       background: rgba(35, 35, 35, 0.96);
       padding: 6px;
-      overflow: hidden;
-    }
+	      overflow: hidden;
+	    }
 
-    .promptboard-right {
-      grid-template-rows: auto 1fr;
-    }
+	    .promptboard-yaml-panel {
+	      grid-template-rows: minmax(0, 1fr);
+	      width: var(--promptboard-yaml-width, 0px);
+	      transition: width 120ms ease;
+	    }
+
+	    .promptboard-yaml-panel.is-collapsed {
+	      border-width: 0;
+	      padding: 0;
+	    }
+
+	    .promptboard-yaml-toggle {
+	      box-sizing: border-box;
+	      align-self: stretch;
+	      justify-self: stretch;
+	      width: 18px;
+	      min-width: 18px;
+	      height: 100%;
+	      margin: 0 2px;
+	      padding: 0;
+	      border: 1px solid rgba(90, 90, 90, 0.82);
+	      border-radius: 3px;
+	      background: rgba(28, 28, 28, 0.72);
+	      color: #cfcfcf;
+	      display: flex;
+	      align-items: center;
+	      justify-content: center;
+	      font: 18px Arial, sans-serif;
+	      line-height: 1;
+	      cursor: pointer;
+	      white-space: nowrap;
+	    }
+
+	    .promptboard-yaml-toggle:hover {
+	      border-color: rgba(120, 170, 220, 0.95);
+	      background: rgba(46, 72, 96, 0.86);
+	      color: #ffffff;
+	    }
+
+	    .promptboard-yaml-content {
+	      display: grid;
+	      grid-template-rows: auto auto 1fr auto auto;
+	      gap: 6px;
+	      min-width: 0;
+	      min-height: 0;
+	    }
+
+	    .promptboard-yaml-panel.is-collapsed .promptboard-yaml-content {
+	      display: none;
+	    }
+
+	    .promptboard-right {
+	      grid-template-rows: auto 1fr;
+	    }
 
     .promptboard-toolbar {
       display: grid;
@@ -1432,7 +1757,7 @@ function ensureStyles() {
 
     .promptboard-toolbar-left-top {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(48px, auto);
+      grid-template-columns: 58px minmax(0, 1fr) minmax(48px, auto);
       gap: 4px;
       min-width: 0;
     }
@@ -1629,9 +1954,15 @@ function ensureStyles() {
       color: #f5fbff;
     }
 
-    .promptboard-group-button.is-active .promptboard-group-count {
-      background: rgba(154, 196, 236, 0.32);
-      color: #ffffff;
+	    .promptboard-group-button.is-active .promptboard-group-count {
+	      background: rgba(154, 196, 236, 0.32);
+	      color: #ffffff;
+	    }
+
+    .promptboard-view-mode-select {
+      min-width: 0;
+      padding: 0 2px;
+      font-size: 10px;
     }
 
     .promptboard-button {
@@ -1792,14 +2123,332 @@ function ensureStyles() {
       font-size: 10px;
     }
 
-    .promptboard-scroll {
-      box-sizing: border-box;
-      min-height: 0;
+	    .promptboard-scroll {
+	      box-sizing: border-box;
+	      min-height: 0;
       overflow-x: hidden;
       overflow-y: auto;
       scrollbar-width: thin;
-      padding: 0 2px ${SCROLL_BOTTOM_PADDING}px 0;
+	      padding: 0 2px ${SCROLL_BOTTOM_PADDING}px 0;
+	    }
+
+	    .promptboard-navigator {
+	      box-sizing: border-box;
+	      display: grid;
+	      grid-template-columns: minmax(0, 1fr) minmax(136px, 210px);
+	      gap: 8px;
+	      min-height: 0;
+	      width: 100%;
+	    }
+
+	    .promptboard-navigator-main,
+	    .promptboard-selected-summary {
+	      box-sizing: border-box;
+	      min-width: 0;
+	      border: 1px solid rgba(111, 137, 154, 0.46);
+	      border-radius: 4px;
+	      background: rgba(38, 43, 47, 0.72);
+	      padding: 6px;
+	    }
+
+	    .promptboard-navigator-category-rail {
+	      display: flex;
+	      flex-wrap: wrap;
+	      gap: 4px;
+	      min-width: 0;
+	      max-height: 50px;
+	      overflow: auto;
+	      scrollbar-width: thin;
+	    }
+
+	    .promptboard-navigator-category {
+	      box-sizing: border-box;
+	      display: inline-flex;
+	      align-items: center;
+	      gap: 5px;
+	      max-width: 190px;
+	      height: 22px;
+	      padding: 0 7px;
+	      border: 1px solid rgba(120, 120, 120, 0.72);
+	      border-radius: 4px;
+	      background: rgba(32, 32, 32, 0.92);
+	      color: #d4d4d4;
+	      font: 11px Arial, sans-serif;
+	      cursor: pointer;
+	    }
+
+	    .promptboard-navigator-category:hover {
+	      border-color: #888;
+	      background: rgba(48, 48, 48, 0.96);
+	    }
+
+	    .promptboard-navigator-category.is-active {
+	      border-color: rgba(86, 148, 209, 0.95);
+	      background: rgba(39, 82, 124, 0.92);
+	      color: #f5fbff;
+	    }
+
+	    .promptboard-navigator-category-label {
+	      min-width: 0;
+	      overflow: hidden;
+	      text-overflow: ellipsis;
+	      white-space: nowrap;
+	    }
+
+	    .promptboard-navigator-category-count {
+	      box-sizing: border-box;
+	      flex: 0 0 auto;
+	      min-width: 14px;
+	      height: 14px;
+	      padding: 1px 4px 0;
+	      border-radius: 7px;
+	      background: rgba(105, 105, 105, 0.62);
+	      color: #f0f0f0;
+	      font-size: 9px;
+	      line-height: 12px;
+	      text-align: center;
+	    }
+
+	    .promptboard-navigator-category.is-active .promptboard-navigator-category-count {
+	      background: rgba(154, 196, 236, 0.32);
+	      color: #ffffff;
+	    }
+
+	    .promptboard-navigator-action-row {
+	      display: flex;
+	      justify-content: flex-end;
+	      min-width: 0;
+	      margin: 6px 0 5px;
+	    }
+
+	    .promptboard-navigator-clear {
+	      box-sizing: border-box;
+	      width: 48px;
+	      height: 22px;
+	      border: 1px solid rgba(120, 120, 120, 0.72);
+	      border-radius: 3px;
+	      background: rgba(32, 32, 32, 0.92);
+	      color: #d4d4d4;
+	      font: 10px Arial, sans-serif;
+	      cursor: pointer;
+	    }
+
+	    .promptboard-navigator-clear:disabled {
+	      cursor: default;
+	      opacity: 0.45;
+	    }
+
+	    .promptboard-navigator-path {
+	      min-width: 0;
+	      overflow: hidden;
+	      text-overflow: ellipsis;
+	      white-space: nowrap;
+	      color: #d8e7f4;
+	      font-size: 10px;
+	      font-weight: 700;
+	    }
+
+	    .promptboard-navigator-tags {
+	      display: grid;
+	      grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+	      gap: 4px;
+	      min-width: 0;
+	    }
+
+		    .promptboard-navigator-tags .promptboard-tag {
+		      min-height: 22px;
+		      height: auto;
+		      margin-top: 0;
+		      padding-top: 2px;
+	      padding-bottom: 2px;
+	    }
+
+		    .promptboard-navigator-tags .promptboard-tag-label {
+		      overflow: hidden;
+		      text-overflow: ellipsis;
+		      white-space: nowrap;
+		    }
+
+	    .promptboard-selected-summary {
+	      display: grid;
+	      grid-template-rows: auto minmax(0, 1fr);
+	      max-height: 100%;
+	    }
+
+	    .promptboard-selected-summary-title {
+	      margin-bottom: 5px;
+	      color: #e8e8e8;
+	      font-size: 10px;
+	      font-weight: 700;
+	    }
+
+	    .promptboard-selected-chips {
+	      display: flex;
+	      flex-direction: column;
+	      gap: 4px;
+	      min-height: 0;
+	      overflow: auto;
+	      scrollbar-width: thin;
+	    }
+
+	    .promptboard-selected-chip {
+	      box-sizing: border-box;
+	      display: flex;
+	      align-items: center;
+	      gap: 5px;
+	      width: 100%;
+	      min-height: 20px;
+	      padding: 2px 5px;
+	      border: 1px solid rgba(120, 120, 120, 0.72);
+	      border-radius: 4px;
+	      background: rgba(35, 53, 68, 0.82);
+	      color: #e4e4e4;
+	      font: 10px Arial, sans-serif;
+	      text-align: left;
+	      cursor: pointer;
+	    }
+
+	    .promptboard-selected-chip:hover {
+	      border-color: #888;
+	      background: rgba(47, 68, 84, 0.9);
+	    }
+
+	    .promptboard-selected-chip-label {
+	      min-width: 0;
+	      overflow: hidden;
+	      text-overflow: ellipsis;
+	      white-space: nowrap;
+	      flex: 1 1 auto;
+	    }
+
+	    .promptboard-selected-chip-remove {
+	      flex: 0 0 auto;
+	      color: #bfcfe0;
+	      font-size: 9px;
+	    }
+
+	    .promptboard-selected-empty {
+	      color: #a9a9a9;
+	      font-size: 10px;
+	    }
+
+    .promptboard-attribute-board {
+      box-sizing: border-box;
+      width: 100%;
+      margin: 0 0 10px;
+      padding: 2px 0 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     }
+
+    .promptboard-attribute-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+      margin: 0 0 6px;
+      color: #ededed;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .promptboard-attribute-context {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #aeb8c2;
+      font-size: 9px;
+      font-weight: 400;
+    }
+
+    .promptboard-attribute-row {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      align-items: start;
+      gap: 5px;
+      margin-top: 4px;
+      min-width: 0;
+    }
+
+    .promptboard-attribute-row-label {
+      padding-top: 4px;
+      color: #aeb8c2;
+      font-size: 9px;
+      white-space: nowrap;
+    }
+
+    .promptboard-attribute-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .promptboard-attribute-control {
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex: 0 1 auto;
+      min-width: 56px;
+      max-width: 100%;
+      height: 21px;
+      padding: 0 7px;
+      border: 1px solid rgba(120, 120, 120, 0.72);
+      border-radius: 3px;
+      background: rgba(32, 32, 32, 0.92);
+      color: #d4d4d4;
+      font: 10px Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    .promptboard-attribute-control:hover {
+      border-color: #888;
+      background: rgba(48, 48, 48, 0.96);
+    }
+
+    .promptboard-attribute-control.is-active {
+      border-color: rgba(86, 148, 209, 0.95);
+      background: rgba(39, 82, 124, 0.92);
+      color: #f5fbff;
+    }
+
+    .promptboard-attribute-control-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .promptboard-attribute-control-count {
+      flex: 0 0 auto;
+      min-width: 12px;
+      color: #c8d9e8;
+      font-size: 9px;
+      text-align: right;
+    }
+
+    .promptboard-attribute-tags {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+      gap: 3px;
+      min-width: 0;
+      margin-top: 6px;
+    }
+
+	    .promptboard-attribute-tags .promptboard-tag {
+	      min-height: 22px;
+	      height: auto;
+	      margin-top: 0;
+	      padding-top: 2px;
+      padding-bottom: 2px;
+    }
+
+	    .promptboard-attribute-tags .promptboard-tag-label {
+	      overflow: hidden;
+	      text-overflow: ellipsis;
+	      white-space: nowrap;
+	    }
 
     .promptboard-columns {
       column-gap: 8px;
@@ -1913,20 +2562,20 @@ function ensureStyles() {
       font-size: 10px;
     }
 
-    .promptboard-tag {
-      box-sizing: border-box;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      width: 100%;
-      height: 18px;
-      margin-top: 3px;
-      padding: 0 5px;
-      border: 1px solid #656565;
+	    .promptboard-tag {
+	      box-sizing: border-box;
+	      display: flex;
+	      align-items: center;
+	      gap: 7px;
+	      width: 100%;
+	      height: 22px;
+	      margin-top: 4px;
+	      padding: 0 7px;
+	      border: 1px solid #656565;
       border-radius: 4px;
       background: var(--promptboard-card-tag-bg, rgba(52, 61, 66, 0.78));
       color: #d4d4d4;
-      font: 10px Arial, sans-serif;
+	      font: 11px Arial, sans-serif;
       text-align: left;
       cursor: pointer;
     }
@@ -1962,10 +2611,45 @@ function ensureStyles() {
       flex: 1 1 auto;
     }
 
-    .promptboard-tag-state {
-      flex: 0 0 auto;
-      color: #bdbdbd;
-      font-size: 9px;
+	    .promptboard-tag-state {
+	      flex: 0 0 auto;
+	      color: #bdbdbd;
+	      font-size: 10px;
+	    }
+
+    .promptboard-tag-section {
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      width: 100%;
+      min-width: 0;
+      margin: 9px 0 2px;
+      color: #b9d6ee;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.2;
+      grid-column: 1 / -1;
+    }
+
+    .promptboard-tag-section::after {
+      content: "";
+      flex: 1 1 auto;
+      height: 1px;
+      min-width: 18px;
+      background: rgba(137, 176, 209, 0.38);
+    }
+
+    .promptboard-card-actions + .promptboard-tag-section,
+    .promptboard-tag-section:first-child {
+      margin-top: 4px;
+    }
+
+    .promptboard-tag-section-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .promptboard-empty {
@@ -2008,6 +2692,60 @@ function createResetButton(node) {
   });
 }
 
+function updateViewModeControl(node) {
+  const select = node.promptboardViewModeSelect;
+  if (!select) {
+    return;
+  }
+  const mode = boardViewMode(node);
+  select.value = mode;
+  select.title = mode === VIEW_MODE_NAVIGATOR
+    ? "간편: 선택한 카테고리만 보기"
+    : "전체: 모든 카테고리 펼쳐보기";
+}
+
+function setYamlPanelOpen(node, open) {
+  node.promptboardYamlPanelOpen = !!open;
+  const panel = node.promptboardYamlPanel;
+  const button = node.promptboardYamlToggleButton;
+  const root = node.promptboardElement;
+  if (root) {
+    root.style.setProperty("--promptboard-yaml-width", open ? `${EDITOR_PANEL_WIDTH}px` : "0px");
+  }
+  if (panel) {
+    panel.classList.toggle("is-collapsed", !open);
+  }
+  if (button) {
+    button.textContent = open ? "›" : "‹";
+    button.title = open ? "YAML 닫기" : "YAML 열기";
+    button.setAttribute("aria-label", button.title);
+    button.setAttribute("aria-expanded", String(open));
+  }
+  node.promptboardCodeMirror?.requestMeasure?.();
+  scheduleLayoutSizeSync(node);
+}
+
+function isYamlPanelOpen(node) {
+  const panel = node.promptboardYamlPanel;
+  if (panel) {
+    return !panel.classList.contains("is-collapsed");
+  }
+  return !!node.promptboardYamlPanelOpen;
+}
+
+function createYamlToggleButton(node) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "promptboard-yaml-toggle";
+  stopCanvasEvents(button);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setYamlPanelOpen(node, !isYamlPanelOpen(node));
+  });
+  return button;
+}
+
 function createGroupFilterButton(node, label, active, count) {
   const button = document.createElement("button");
   const name = document.createElement("span");
@@ -2048,14 +2786,64 @@ function renderGroupFilter(node) {
   }
 
   const config = node.promptboardConfig ?? {};
+  const attributeBoards = node.promptboardYamlModel?.attributeBoards ?? {};
   const state = node.promptboardState ?? {};
-  const groups = availableUiGroups(config);
+  const groups = availableUiGroups(config, attributeBoards);
   const active = activeUiGroup(node, config);
-  const counts = selectedCountsByUiGroup(config, state);
+  const counts = selectedCountsByUiGroup(config, attributeBoards, state);
   container.replaceChildren();
   for (const group of [GROUP_ALL, ...groups]) {
     container.append(createGroupFilterButton(node, group, group === active, counts[group] ?? 0));
   }
+}
+
+function updateGroupFilterCounts(node) {
+  const container = node.promptboardGroupFilter;
+  if (!container) {
+    return;
+  }
+
+  const config = node.promptboardConfig ?? {};
+  const attributeBoards = node.promptboardYamlModel?.attributeBoards ?? {};
+  const state = node.promptboardState ?? {};
+  const counts = selectedCountsByUiGroup(config, attributeBoards, state);
+
+  for (const button of container.querySelectorAll(".promptboard-group-button")) {
+    const group = button.dataset.group || GROUP_ALL;
+    const count = counts[group] ?? 0;
+    const countLabel = button.querySelector(".promptboard-group-count");
+    if (countLabel) {
+      countLabel.textContent = String(count);
+    }
+    button.title =
+      group === GROUP_ALL ? `Show all groups (${count} selected)` : `Show ${group} group (${count} selected)`;
+  }
+}
+
+function updateCategorySelectionUi(node, category) {
+  const scroll = node.promptboardScroll;
+  const item = node.promptboardConfig?.[category];
+  if (!scroll || !item) {
+    return;
+  }
+
+  for (const card of scroll.querySelectorAll(".promptboard-card")) {
+    if (card.dataset.category !== category) {
+      continue;
+    }
+    const count = card.querySelector(".promptboard-card-count");
+    if (count) {
+      count.textContent = `${selectedCount(node.promptboardState ?? {}, category, item.tags ?? [])}/${item.tags.length}`;
+    }
+    const action = card.querySelector(".promptboard-card-action");
+    if (action) {
+      const fullySelected = isCategoryFullySelected(node.promptboardState ?? {}, category, item.tags ?? []);
+      action.textContent = fullySelected ? "none" : "all";
+      action.title = fullySelected ? "Clear this category" : "Select all tags in this category";
+    }
+    break;
+  }
+  updateGroupFilterCounts(node);
 }
 
 function createTagButton(node, state, category, tag) {
@@ -2089,10 +2877,353 @@ function createTagButton(node, state, category, tag) {
     stateLabel.textContent = nextSelected ? "on" : "off";
     setSelected(state, category, tag.text, nextSelected);
     syncState(node, state);
-    renderCards(node);
+    if (boardViewMode(node) === VIEW_MODE_NAVIGATOR) {
+      renderCards(node);
+    } else {
+      updateCategorySelectionUi(node, category);
+    }
+    focusYamlCategoryTag(node, category, tag.text);
   });
 
   return button;
+}
+
+function activeAttributeTargetId(node, boardId, board) {
+  if (!node.promptboardActiveAttributeTargets) {
+    node.promptboardActiveAttributeTargets = {};
+  }
+  const targetIds = Object.keys(board.targets ?? {});
+  const current = node.promptboardActiveAttributeTargets[boardId];
+  const targetId = targetIds.includes(current) ? current : targetIds[0] ?? "";
+  node.promptboardActiveAttributeTargets[boardId] = targetId;
+  return targetId;
+}
+
+function activeAttributeId(node, boardId, targetId, target) {
+  if (!node.promptboardActiveAttributes) {
+    node.promptboardActiveAttributes = {};
+  }
+  if (!node.promptboardActiveAttributes[boardId]) {
+    node.promptboardActiveAttributes[boardId] = {};
+  }
+  const attributeIds = Object.keys(target?.attributes ?? {});
+  const current = node.promptboardActiveAttributes[boardId][targetId];
+  const attributeId = attributeIds.includes(current) ? current : attributeIds[0] ?? "";
+  node.promptboardActiveAttributes[boardId][targetId] = attributeId;
+  return attributeId;
+}
+
+function attributeCountForTarget(state, boardId, targetId, target) {
+  return Object.keys(target?.attributes ?? {}).reduce(
+    (total, attributeId) => total + attributeSelectedTexts(state, boardId, targetId, attributeId).length,
+    0,
+  );
+}
+
+function createAttributeControl(label, count, active, options = {}) {
+  const button = document.createElement("button");
+  const labelElement = document.createElement("span");
+  const countElement = document.createElement("span");
+
+  button.type = "button";
+  button.className = `promptboard-attribute-control${active ? " is-active" : ""}`;
+  button.title = `${label} (${count} selected)`;
+  button.tabIndex = active ? 0 : -1;
+  button.setAttribute("aria-pressed", String(active));
+  labelElement.className = "promptboard-attribute-control-label";
+  labelElement.textContent = label;
+  countElement.className = "promptboard-attribute-control-count";
+  countElement.textContent = String(count);
+  button.append(labelElement, countElement);
+  for (const [key, value] of Object.entries(options.data ?? {})) {
+    button.dataset[key] = value;
+  }
+  stopCanvasEvents(button);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    options.onClick?.();
+  });
+  return button;
+}
+
+function createAttributeTagButton(node, state, boardId, targetId, attributeId, tag) {
+  const selected = attributeSelectedTexts(state, boardId, targetId, attributeId).includes(tag.text);
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+  const stateLabel = document.createElement("span");
+  const sourceLabel = String(tag.label || tag.text);
+  const tagText = String(tag.text ?? "");
+  const displayLabel = sourceLabel && sourceLabel !== tagText ? `[${sourceLabel}] ${tagText}` : tagText;
+  const description = String(tag.description ?? "").trim();
+
+  button.type = "button";
+  button.className = `promptboard-tag${selected ? " is-on" : ""}`;
+  button.title = description || displayLabel;
+  button.dataset.boardId = boardId;
+  button.dataset.targetId = targetId;
+  button.dataset.attributeId = attributeId;
+  button.dataset.tagText = tagText;
+  button.setAttribute("aria-pressed", String(selected));
+  button.classList.toggle(
+    "is-search-match",
+    isCurrentAttributeSearchMatch(node, boardId, targetId, attributeId, tagText),
+  );
+  stopCanvasEvents(button);
+  label.className = "promptboard-tag-label";
+  label.textContent = displayLabel;
+  stateLabel.className = "promptboard-tag-state";
+  stateLabel.textContent = selected ? "on" : "off";
+  button.append(label, stateLabel);
+
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setAttributeSelected(
+      node.promptboardYamlModel,
+      state,
+      boardId,
+      targetId,
+      attributeId,
+      tagText,
+      !selected,
+    );
+    requestBoardFocus(node, { kind: "attributeTag", boardId, targetId, attributeId, tagText });
+    syncState(node, state);
+    renderCards(node);
+    focusYamlAttributeTag(node, boardId, targetId, attributeId, tagText);
+  });
+  return button;
+}
+
+function createTagSection(label) {
+  const section = document.createElement("div");
+  const text = document.createElement("span");
+
+  section.className = "promptboard-tag-section";
+  text.className = "promptboard-tag-section-label";
+  text.textContent = label;
+  section.append(text);
+  return section;
+}
+
+function appendCategoryTagItems(container, node, state, category, item) {
+  for (const tagItem of tagItemsForCategory(item)) {
+    if (tagItem.kind === "section") {
+      container.append(createTagSection(tagItem.label));
+      continue;
+    }
+    if (tagItem.kind === "tag" && tagItem.tag) {
+      container.append(createTagButton(node, state, category, tagItem.tag));
+    }
+  }
+}
+
+function appendAttributeTagItems(container, node, state, boardId, targetId, attributeId, tagSet) {
+  for (const tagItem of tagItemsForTagSet(tagSet)) {
+    if (tagItem.kind === "section") {
+      container.append(createTagSection(tagItem.label));
+      continue;
+    }
+    if (tagItem.kind === "tag" && tagItem.tag) {
+      container.append(createAttributeTagButton(node, state, boardId, targetId, attributeId, tagItem.tag));
+    }
+  }
+}
+
+function appendNavigatorTagItems(container, node, state, item) {
+  for (const tagItem of item?.tagItems ?? []) {
+    if (tagItem.kind === "section") {
+      container.append(createTagSection(tagItem.label));
+      continue;
+    }
+    if (tagItem.kind === "tag" && tagItem.tag) {
+      container.append(createNavigatorTagButton(node, state, item, tagItem.tag));
+    }
+  }
+}
+
+function createAttributeBoard(node, boardId, board, state) {
+  const section = document.createElement("section");
+  const header = document.createElement("div");
+  const title = document.createElement("span");
+  const context = document.createElement("span");
+  const targetRow = document.createElement("div");
+  const targetRowLabel = document.createElement("span");
+  const targetControls = document.createElement("div");
+  const attributeRow = document.createElement("div");
+  const attributeRowLabel = document.createElement("span");
+  const attributeControls = document.createElement("div");
+  const tags = document.createElement("div");
+  const targetId = activeAttributeTargetId(node, boardId, board);
+  const target = board.targets?.[targetId];
+  const attributeId = activeAttributeId(node, boardId, targetId, target);
+  const attribute = target?.attributes?.[attributeId];
+  const tagSet = attribute ? node.promptboardYamlModel?.tagSets?.[attribute.source] : null;
+
+  section.className = "promptboard-attribute-board";
+  section.dataset.boardId = boardId;
+  header.className = "promptboard-attribute-header";
+  title.textContent = board.label || boardId;
+  context.className = "promptboard-attribute-context";
+  context.textContent = target && attribute
+    ? `${target.label || targetId} / ${attribute.label || attributeId}`
+    : "";
+  header.append(title, context);
+
+  targetRow.className = "promptboard-attribute-row";
+  targetRowLabel.className = "promptboard-attribute-row-label";
+  targetRowLabel.textContent = "적용 대상";
+  targetControls.className = "promptboard-attribute-controls";
+  targetControls.setAttribute("role", "group");
+  targetControls.setAttribute("aria-label", `${board.label || boardId} 적용 대상`);
+  const targetEntries = Object.entries(board.targets ?? {});
+  for (const [targetIndex, [candidateId, candidate]] of targetEntries.entries()) {
+    const active = candidateId === targetId;
+    const control = createAttributeControl(
+      candidate.label || candidateId,
+      attributeCountForTarget(state, boardId, candidateId, candidate),
+      active,
+      {
+        data: { boardId, targetId: candidateId },
+        onClick: () => {
+          node.promptboardActiveAttributeTargets[boardId] = candidateId;
+          requestBoardFocus(node, { kind: "target", boardId, targetId: candidateId });
+          renderCards(node);
+        },
+      },
+    );
+    control.addEventListener("keydown", (event) => {
+      const nextIndex = controlNavigationIndex(event, targetIndex, targetEntries.length);
+      if (nextIndex == null) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      const nextTargetId = targetEntries[nextIndex][0];
+      node.promptboardActiveAttributeTargets[boardId] = nextTargetId;
+      requestBoardFocus(node, { kind: "target", boardId, targetId: nextTargetId });
+      renderCards(node);
+    });
+    targetControls.append(control);
+  }
+  targetRow.append(targetRowLabel, targetControls);
+
+  attributeRow.className = "promptboard-attribute-row";
+  attributeRowLabel.className = "promptboard-attribute-row-label";
+  attributeRowLabel.textContent = "속성";
+  attributeControls.className = "promptboard-attribute-controls";
+  attributeControls.setAttribute("role", "tablist");
+  attributeControls.setAttribute("aria-label", `${target?.label || targetId} 속성`);
+  const attributeEntries = Object.entries(target?.attributes ?? {});
+  for (const [attributeIndex, [candidateId, candidate]] of attributeEntries.entries()) {
+    const active = candidateId === attributeId;
+    const control = createAttributeControl(
+      candidate.label || candidateId,
+      attributeSelectedTexts(state, boardId, targetId, candidateId).length,
+      active,
+      {
+        data: { boardId, targetId, attributeId: candidateId },
+        onClick: () => {
+          node.promptboardActiveAttributes[boardId][targetId] = candidateId;
+          requestBoardFocus(node, { kind: "attribute", boardId, targetId, attributeId: candidateId });
+          renderCards(node);
+        },
+      },
+    );
+    control.role = "tab";
+    control.setAttribute("aria-selected", String(active));
+    control.addEventListener("keydown", (event) => {
+      const nextIndex = controlNavigationIndex(event, attributeIndex, attributeEntries.length);
+      if (nextIndex == null) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      const nextAttributeId = attributeEntries[nextIndex][0];
+      node.promptboardActiveAttributes[boardId][targetId] = nextAttributeId;
+      requestBoardFocus(node, { kind: "attribute", boardId, targetId, attributeId: nextAttributeId });
+      renderCards(node);
+    });
+    attributeControls.append(control);
+  }
+  attributeRow.append(attributeRowLabel, attributeControls);
+
+  tags.className = "promptboard-attribute-tags";
+  tags.setAttribute("role", "group");
+  tags.setAttribute("aria-label", `${attribute?.label || attributeId} 태그`);
+  appendAttributeTagItems(tags, node, state, boardId, targetId, attributeId, tagSet);
+
+  section.append(header, targetRow, attributeRow, tags);
+  return section;
+}
+
+function renderAttributeBoards(node, scroll, state) {
+  const entries = visibleAttributeBoardEntries(node);
+  for (const [boardId, board] of entries) {
+    scroll.append(createAttributeBoard(node, boardId, board, state));
+  }
+  return entries.length;
+}
+
+function controlNavigationIndex(event, currentIndex, length) {
+  if (!length) {
+    return null;
+  }
+  if (event.key === "Home") {
+    return 0;
+  }
+  if (event.key === "End") {
+    return length - 1;
+  }
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    return (currentIndex + 1) % length;
+  }
+  if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    return (currentIndex - 1 + length) % length;
+  }
+  return null;
+}
+
+function requestBoardFocus(node, identity) {
+  node.promptboardPendingFocus = identity;
+}
+
+function findPendingBoardFocusElement(node, identity) {
+  const scroll = node.promptboardScroll;
+  if (!scroll || !identity) {
+    return null;
+  }
+  const selector = identity.kind === "attributeTag"
+    ? ".promptboard-tag"
+    : ".promptboard-attribute-control";
+  for (const element of scroll.querySelectorAll(selector)) {
+    if (element.dataset.boardId !== identity.boardId || element.dataset.targetId !== identity.targetId) {
+      continue;
+    }
+    if (identity.attributeId && element.dataset.attributeId !== identity.attributeId) {
+      continue;
+    }
+    if (identity.tagText && element.dataset.tagText !== identity.tagText) {
+      continue;
+    }
+    if (identity.kind === "target" && element.dataset.attributeId) {
+      continue;
+    }
+    return element;
+  }
+  return null;
+}
+
+function restorePendingBoardFocus(node) {
+  const identity = node.promptboardPendingFocus;
+  if (!identity || typeof requestAnimationFrame !== "function") {
+    return;
+  }
+  node.promptboardPendingFocus = null;
+  requestAnimationFrame(() => {
+    findPendingBoardFocusElement(node, identity)?.focus({ preventScroll: true });
+  });
 }
 
 function createCategoryActions(node, state, category, tags) {
@@ -2119,31 +3250,258 @@ function createCategoryActions(node, state, category, tags) {
   return actions;
 }
 
-function renderCards(node) {
-  const scroll = node.promptboardScroll;
-  const config = node.promptboardConfig ?? {};
+function clearNavigatorItemSelection(node, item) {
   const state = node.promptboardState ?? {};
-  if (!scroll) {
+  if (item?.kind === "attribute") {
+    for (const text of attributeSelectedTexts(state, item.boardId, item.targetId, item.attributeId)) {
+      setAttributeSelected(
+        node.promptboardYamlModel,
+        state,
+        item.boardId,
+        item.targetId,
+        item.attributeId,
+        text,
+        false,
+      );
+    }
+  } else if (item?.kind === "category") {
+    state[item.category] = [];
+  }
+  syncState(node, state);
+  renderCards(node);
+}
+
+function createNavigatorTagButton(node, state, item, tag) {
+  if (item.kind === "attribute") {
+    return createAttributeTagButton(node, state, item.boardId, item.targetId, item.attributeId, tag);
+  }
+  return createTagButton(node, state, item.category, tag);
+}
+
+function createNavigatorCategoryButton(node, item, active) {
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+  const count = document.createElement("span");
+  const selectedCountValue = navigatorItemCount(node, item);
+
+  button.type = "button";
+  button.className = `promptboard-navigator-category${active ? " is-active" : ""}`;
+  if (item.kind === "category") {
+    button.dataset.category = item.category;
+  }
+  button.title = item.kind === "category" && item.label !== item.category
+    ? `${item.context} > ${item.label} (${item.category}, ${selectedCountValue} selected)`
+    : `${item.context} > ${item.label} (${selectedCountValue} selected)`;
+  button.setAttribute("aria-pressed", String(active));
+  label.className = "promptboard-navigator-category-label";
+  label.textContent = item.label;
+  count.className = "promptboard-navigator-category-count";
+  count.textContent = String(selectedCountValue);
+  button.append(label, count);
+  stopCanvasEvents(button);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setActiveNavigatorItem(node, navigatorItemId(item));
+    renderCards(node);
+    focusYamlNavigatorItem(node, item);
+  });
+  return button;
+}
+
+function createNavigatorCategoryRail(node, items, active) {
+  const rail = document.createElement("div");
+  const activeId = navigatorItemId(active);
+
+  rail.className = "promptboard-navigator-category-rail";
+  rail.setAttribute("role", "group");
+  rail.setAttribute("aria-label", "카테고리");
+  for (const item of items) {
+    rail.append(createNavigatorCategoryButton(node, item, navigatorItemId(item) === activeId));
+  }
+  return rail;
+}
+
+function createSelectedSummaryButton(node, state, entry) {
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+  const remove = document.createElement("span");
+
+  button.type = "button";
+  button.className = "promptboard-selected-chip";
+  button.title = `${entry.context}: ${entry.text}`;
+  label.className = "promptboard-selected-chip-label";
+  label.textContent = `${entry.label}: ${entry.display}`;
+  remove.className = "promptboard-selected-chip-remove";
+  remove.textContent = "x";
+  button.append(label, remove);
+  stopCanvasEvents(button);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (entry.kind === "attribute") {
+      setAttributeSelected(
+        node.promptboardYamlModel,
+        state,
+        entry.boardId,
+        entry.targetId,
+        entry.attributeId,
+        entry.text,
+        false,
+      );
+    } else {
+      setSelected(state, entry.category, entry.text, false);
+    }
+    syncState(node, state);
+    renderCards(node);
+    if (entry.kind === "attribute") {
+      focusYamlAttributeTag(node, entry.boardId, entry.targetId, entry.attributeId, entry.text);
+    } else {
+      focusYamlCategoryTag(node, entry.category, entry.text);
+    }
+  });
+  return button;
+}
+
+function selectedSummaryEntries(node, state) {
+  const entries = [];
+  const config = node.promptboardConfig ?? {};
+  for (const [category, item] of Object.entries(config)) {
+    const selected = Array.isArray(state[category]) ? state[category] : [];
+    for (const text of selected) {
+      const tag = item.tags?.find((candidate) => candidate.text === text) ?? { text };
+      entries.push({
+        kind: "category",
+        category,
+        label: categoryLabel(category, item),
+        context: categoryUiGroup(item),
+        text,
+        display: tagDisplayLabel(tag),
+      });
+    }
+  }
+  for (const [boardId, board] of Object.entries(node.promptboardYamlModel?.attributeBoards ?? {})) {
+    for (const [targetId, target] of Object.entries(board.targets ?? {})) {
+      for (const [attributeId, attribute] of Object.entries(target.attributes ?? {})) {
+        const tagSet = node.promptboardYamlModel?.tagSets?.[attribute.source];
+        for (const text of attributeSelectedTexts(state, boardId, targetId, attributeId)) {
+          const tag = tagSet?.tags?.find((candidate) => candidate.text === text) ?? { text };
+          entries.push({
+            kind: "attribute",
+            boardId,
+            targetId,
+            attributeId,
+            label: target.label || targetId,
+            context: `${board.label || boardId} / ${attribute.label || attributeId}`,
+            text,
+            display: tagDisplayLabel(tag),
+          });
+        }
+      }
+    }
+  }
+  return entries;
+}
+
+function createSelectedSummary(node, state) {
+  const section = document.createElement("aside");
+  const title = document.createElement("div");
+  const chips = document.createElement("div");
+  const entries = selectedSummaryEntries(node, state);
+
+  section.className = "promptboard-selected-summary";
+  title.className = "promptboard-selected-summary-title";
+  title.textContent = `선택됨 ${entries.length}`;
+  chips.className = "promptboard-selected-chips";
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-selected-empty";
+    empty.textContent = "선택된 태그 없음";
+    chips.append(empty);
+  } else {
+    for (const entry of entries) {
+      chips.append(createSelectedSummaryButton(node, state, entry));
+    }
+  }
+  section.append(title, chips);
+  return section;
+}
+
+function renderNavigator(node, scroll, state) {
+  const items = navigatorItems(node);
+  const active = activeNavigatorItem(node, items);
+  const shell = document.createElement("div");
+  const main = document.createElement("section");
+  const actionRow = document.createElement("div");
+  const clearButton = document.createElement("button");
+  const tags = document.createElement("div");
+  const count = active ? navigatorItemCount(node, active) : 0;
+
+  shell.className = "promptboard-navigator";
+  main.className = "promptboard-navigator-main";
+  actionRow.className = "promptboard-navigator-action-row";
+  tags.className = "promptboard-navigator-tags";
+
+  if (!active) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-empty";
+    empty.textContent = "No categories in this group";
+    main.append(empty);
+    shell.append(main, createSelectedSummary(node, state));
+    scroll.append(shell);
     return;
   }
-  renderGroupFilter(node);
-  destroyBoardMasonry(node);
-  scroll.replaceChildren();
 
-  if (!Object.keys(config).length) {
+  clearButton.type = "button";
+  clearButton.className = "promptboard-navigator-clear";
+  clearButton.textContent = count ? "clear" : "clear";
+  clearButton.disabled = !count;
+  clearButton.title = "Clear current selection";
+  stopCanvasEvents(clearButton);
+  clearButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    clearNavigatorItemSelection(node, active);
+  });
+  actionRow.append(clearButton);
+  appendNavigatorTagItems(tags, node, state, active);
+  if (!active.tags?.length) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-empty";
+    empty.textContent = "No tags";
+    tags.append(empty);
+  }
+
+  main.append(createNavigatorCategoryRail(node, items, active), actionRow, tags);
+  shell.append(main, createSelectedSummary(node, state));
+  scroll.append(shell);
+  restorePendingBoardFocus(node);
+}
+
+function renderOverviewCards(node, scroll, state) {
+  const config = node.promptboardConfig ?? {};
+  const attributeBoardCount = renderAttributeBoards(node, scroll, state);
+
+  if (!Object.keys(config).length && attributeBoardCount === 0) {
     const empty = document.createElement("div");
     empty.className = "promptboard-empty";
     empty.textContent = "No categories";
     scroll.append(empty);
+    restorePendingBoardFocus(node);
     return;
   }
 
   const entries = visibleCategoryEntries(node);
   if (!entries.length) {
+    if (attributeBoardCount > 0) {
+      restorePendingBoardFocus(node);
+      return;
+    }
     const empty = document.createElement("div");
     empty.className = "promptboard-empty";
-    empty.textContent = "No categories in this group";
+    empty.textContent = Object.keys(config).length ? "No categories in this group" : "No categories";
     scroll.append(empty);
+    restorePendingBoardFocus(node);
     return;
   }
 
@@ -2171,8 +3529,9 @@ function renderCards(node) {
     count.className = "promptboard-card-count";
 
     toggle.textContent = collapsed ? ">" : "v";
-    name.textContent = category;
-    name.title = category;
+    const displayName = categoryLabel(category, item);
+    name.textContent = displayName;
+    name.title = displayName !== category ? `${displayName} (${category})` : category;
     count.textContent = `${selectedCount(state, category, item.tags)}/${item.tags.length}`;
 
     title.append(toggle, name, count);
@@ -2186,6 +3545,7 @@ function renderCards(node) {
         collapsedSet.add(category);
       }
       renderCards(node);
+      focusYamlCategory(node, category);
     });
     title.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") {
@@ -2198,9 +3558,7 @@ function renderCards(node) {
     card.append(title);
     if (!collapsed) {
       card.append(createCategoryActions(node, state, category, item.tags));
-      for (const tag of item.tags) {
-        card.append(createTagButton(node, state, category, tag));
-      }
+      appendCategoryTagItems(card, node, state, category, item);
     }
     columns.append(card);
   }
@@ -2208,6 +3566,25 @@ function renderCards(node) {
   scroll.append(columns);
   node.promptboardMasonryContainer = columns;
   scheduleBoardMasonry(node);
+  restorePendingBoardFocus(node);
+}
+
+function renderCards(node) {
+  const scroll = node.promptboardScroll;
+  const state = node.promptboardState ?? {};
+  if (!scroll) {
+    return;
+  }
+  updateViewModeControl(node);
+  renderGroupFilter(node);
+  destroyBoardMasonry(node);
+  scroll.replaceChildren();
+
+  if (boardViewMode(node) === VIEW_MODE_NAVIGATOR) {
+    renderNavigator(node, scroll, state);
+    return;
+  }
+  renderOverviewCards(node, scroll, state);
 }
 
 function setStatus(node, text) {
@@ -2232,6 +3609,13 @@ function setTemporaryStatus(node, text) {
       status.textContent = "";
     }
   }, 2000);
+}
+
+function yamlErrorMessage(error) {
+  if (error?.code && error?.path) {
+    return `[${error.code}] at ${error.path}: ${error.message}`;
+  }
+  return error?.message || String(error);
 }
 
 function updateTemplateControls(node) {
@@ -2341,20 +3725,37 @@ function showTemplateDeleteDone(node) {
   }, 2000);
 }
 
-function renderFromYaml(node, resetState = false) {
-  let config = {};
+function renderFromYaml(node, resetState = false, options = {}) {
+  let model;
   try {
-    config = parseYamlTags(widgetValue(node, "yaml_text", ""));
+    model = normalizeYamlDocument(widgetValue(node, "yaml_text", ""));
   } catch (error) {
-    setStatus(node, `YAML error: ${error.message}`);
+    if (options.openOnError !== false) {
+      setYamlPanelOpen(node, true);
+    }
+    setStatus(node, `YAML error: ${yamlErrorMessage(error)}`);
+    return false;
+  }
+  if (String(node.promptboardStatus ?? "").startsWith("YAML error:")) {
+    setStatus(node, "");
   }
 
-  const state = pruneSelectedState(config, resetState ? {} : parseSelectedState(node));
+  const config = model.categories;
+  const warnings = [];
+  const sourceState = resetState ? emptyAttributeState(model) : parseSelectedState(node);
+  const state = pruneSelectedState(model, sourceState, warnings);
+  node.promptboardYamlModel = model;
   node.promptboardConfig = config;
   ensureInitialCollapsedCategories(node, config);
   syncState(node, state);
   renderCards(node);
   scheduleLayoutSizeSync(node);
+  if (warnings.length) {
+    setStatus(node, `State warning: ${warnings[0]}${warnings.length > 1 ? ` (+${warnings.length - 1})` : ""}`);
+  } else if (String(node.promptboardStatus ?? "").startsWith("State warning:")) {
+    setStatus(node, "");
+  }
+  return true;
 }
 
 async function refreshYamlFileOptions(node) {
@@ -2408,7 +3809,7 @@ async function refreshBoardTemplatesAndLoadStored(node) {
   const storedTemplate = node.promptboardSelectedTemplate ?? "";
   await refreshBoardTemplates(node, storedTemplate);
   if (!node.promptboardSelectedTemplate) {
-    await loadSelectedYaml(node);
+    await loadSelectedYaml(node, { resetState: false });
     return;
   }
   await loadBoardTemplate(node, node.promptboardSelectedTemplate, { silent: true });
@@ -2517,6 +3918,7 @@ async function loadBoardTemplate(node, name, options = {}) {
   if (!templateName) {
     return;
   }
+  const yamlPanelOpen = isYamlPanelOpen(node);
 
   try {
     const response = await fetch(`/promptboard/template?name=${encodeURIComponent(templateName)}`);
@@ -2548,14 +3950,16 @@ async function loadBoardTemplate(node, name, options = {}) {
     if (!options.silent) {
       setTemporaryTemplateStatus(node, `Loaded: ${node.promptboardSelectedTemplate}`);
     }
-    renderFromYaml(node);
+    renderFromYaml(node, false, { openOnError: false });
+    setYamlPanelOpen(node, yamlPanelOpen);
     updateTemplateControls(node);
   } catch (error) {
     setTemplateStatus(node, `Template load error: ${error.message}`);
   }
 }
 
-async function loadSelectedYaml(node) {
+async function loadSelectedYaml(node, options = {}) {
+  const resetState = options.resetState !== false;
   const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
   if (!yamlFile || yamlFile === INLINE_YAML_OPTION) {
     return;
@@ -2568,7 +3972,7 @@ async function loadSelectedYaml(node) {
       throw new Error(data.error || `HTTP ${response.status}`);
     }
     setYamlEditorText(node, data.text ?? "");
-    renderFromYaml(node, true);
+    renderFromYaml(node, resetState);
     setStatus(node, "");
   } catch (error) {
     setStatus(node, `Load error: ${error.message}`);
@@ -2578,6 +3982,7 @@ async function loadSelectedYaml(node) {
 async function saveSelectedYaml(node) {
   const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
   if (!yamlFile || yamlFile === INLINE_YAML_OPTION) {
+    setYamlPanelOpen(node, true);
     setStatus(node, "Save error: select a YAML file.");
     return;
   }
@@ -2596,6 +4001,7 @@ async function saveSelectedYaml(node) {
     setTemporaryStatus(node, "Saved");
     renderFromYaml(node);
   } catch (error) {
+    setYamlPanelOpen(node, true);
     setStatus(node, `Save error: ${error.message}`);
   }
 }
@@ -2606,6 +4012,8 @@ function createSplitElement(node) {
   const root = document.createElement("div");
   const left = document.createElement("div");
   const right = document.createElement("div");
+  const yamlToggle = createYamlToggleButton(node);
+  const yamlContent = document.createElement("div");
   const select = document.createElement("select");
   const yamlSearchRow = document.createElement("div");
   const yamlSearch = document.createElement("input");
@@ -2624,6 +4032,7 @@ function createSplitElement(node) {
   const boardSearch = document.createElement("input");
   const boardSearchCount = document.createElement("div");
   const boardSearchMenu = document.createElement("div");
+  const viewModeSelect = document.createElement("select");
   const groupFilter = document.createElement("div");
   const templateInput = document.createElement("input");
   const templateSaveRow = document.createElement("div");
@@ -2635,8 +4044,9 @@ function createSplitElement(node) {
   const scroll = document.createElement("div");
 
   root.className = "promptboard";
-  left.className = "promptboard-panel";
+  left.className = "promptboard-panel promptboard-yaml-panel";
   right.className = "promptboard-panel promptboard-right";
+  yamlContent.className = "promptboard-yaml-content";
   select.className = "promptboard-select";
   yamlSearchRow.className = "promptboard-search-row";
   yamlSearch.className = "promptboard-input";
@@ -2651,6 +4061,7 @@ function createSplitElement(node) {
   toolbarLeftTop.className = "promptboard-toolbar-left-top";
   toolbarRight.className = "promptboard-toolbar-right";
   boardSearchRow.className = "promptboard-search-row";
+  viewModeSelect.className = "promptboard-select promptboard-view-mode-select";
   groupFilter.className = "promptboard-group-filter";
   templateSelect.className = "promptboard-select";
   boardSearch.className = "promptboard-input";
@@ -2684,6 +4095,16 @@ function createSplitElement(node) {
   templateInput.type = "text";
   templateInput.placeholder = "template name";
   templateInput.value = node.promptboardTemplateName ?? "";
+  viewModeSelect.ariaLabel = "Board view mode";
+  for (const [value, label] of [
+    [VIEW_MODE_NAVIGATOR, "간편"],
+    [VIEW_MODE_OVERVIEW, "전체"],
+  ]) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    viewModeSelect.append(option);
+  }
   save.type = "button";
   save.textContent = "Save YAML";
   templateSave.type = "button";
@@ -2710,6 +4131,7 @@ function createSplitElement(node) {
   stopCanvasEvents(templateSelect);
   stopCanvasEvents(boardSearch);
   stopCanvasEvents(boardSearchMenu);
+  stopCanvasEvents(viewModeSelect);
   stopCanvasEvents(groupFilter);
   stopCanvasEvents(templateInput);
   stopCanvasEvents(templateSave);
@@ -2746,6 +4168,12 @@ function createSplitElement(node) {
     loadBoardTemplate(node, templateSelect.value);
   });
   templateSelect.addEventListener("keydown", (event) => {
+    handleTemplateSaveShortcut(event, node);
+  });
+  viewModeSelect.addEventListener("change", () => {
+    setBoardViewMode(node, viewModeSelect.value);
+  });
+  viewModeSelect.addEventListener("keydown", (event) => {
     handleTemplateSaveShortcut(event, node);
   });
   templateInput.addEventListener("input", () => {
@@ -2858,18 +4286,21 @@ function createSplitElement(node) {
 
   yamlSearchRow.append(yamlSearch, yamlSearchCount);
   editor.append(editorHost, textarea);
-  left.append(select, yamlSearchRow, editor, save, status);
+  yamlContent.append(select, yamlSearchRow, editor, save, status);
+  left.append(yamlContent);
   templateSaveCombo.append(templateSave, templateSaveMode);
   templateSaveRow.append(templateSaveCombo, templateDelete);
-  toolbarLeftTop.append(templateSelect, createResetButton(node));
+  toolbarLeftTop.append(viewModeSelect, templateSelect, createResetButton(node));
   boardSearchRow.append(boardSearch, boardSearchCount);
   toolbarLeft.append(toolbarLeftTop, boardSearchRow);
   toolbarRight.append(templateInput, templateSaveRow);
   toolbar.append(toolbarLeft, toolbarRight, groupFilter, templateStatus);
   right.append(toolbar, scroll);
-  root.append(left, right);
+  root.append(right, yamlToggle, left);
 
   node.promptboardElement = root;
+  node.promptboardYamlPanel = left;
+  node.promptboardYamlToggleButton = yamlToggle;
   node.promptboardFileSelect = select;
   node.promptboardYamlSearchInput = yamlSearch;
   node.promptboardYamlSearchCount = yamlSearchCount;
@@ -2882,6 +4313,7 @@ function createSplitElement(node) {
   node.promptboardBoardSearchCount = boardSearchCount;
   node.promptboardBoardSearchRow = boardSearchRow;
   node.promptboardBoardSearchMenu = boardSearchMenu;
+  node.promptboardViewModeSelect = viewModeSelect;
   node.promptboardGroupFilter = groupFilter;
   node.promptboardTemplateInput = templateInput;
   node.promptboardTemplateSaveButton = templateSave;
@@ -2889,6 +4321,7 @@ function createSplitElement(node) {
   node.promptboardTemplateDeleteButton = templateDelete;
   node.promptboardTemplateStatusElement = templateStatus;
   node.promptboardScroll = scroll;
+  setYamlPanelOpen(node, !!node.promptboardYamlPanelOpen);
   renderFromYaml(node);
   createCodeMirrorEditor(node, editorHost, textarea);
   updateTemplateControls(node);

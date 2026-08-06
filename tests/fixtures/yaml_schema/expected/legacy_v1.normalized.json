@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "tagSets": {},
+  "attributeBoards": {},
+  "categories": {
+    "STYLE": {
+      "placeholder": "<STYLE>",
+      "uiGroup": "Look",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "cinematic",
+          "label": "cinematic",
+          "description": "",
+          "default": false
+        },
+        {
+          "text": "soft light",
+          "label": "Soft Light",
+          "description": "Gentle low-contrast lighting.",
+          "default": true
+        }
+      ]
+    },
+    "MATERIAL": {
+      "placeholder": "<MATERIAL>",
+      "uiGroup": "",
+      "replaceInsideTags": true,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "glass",
+          "label": "Glass",
+          "description": "",
+          "default": false
+        }
+      ]
+    },
+    "DETAIL": {
+      "placeholder": "<DETAIL>",
+      "uiGroup": "",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "crisp focus",
+          "label": "crisp focus",
+          "description": "",
+          "default": false
+        }
+      ]
+    }
+  }
+}

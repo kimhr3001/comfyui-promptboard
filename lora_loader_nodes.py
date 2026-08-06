@@ -1,4 +1,5 @@
 import json
+import os
 
 import comfy.sd
 import comfy.utils
@@ -69,6 +70,11 @@ def _parse_lora_config(lora_config):
     return entries
 
 
+def _file_signature(path):
+    stat = os.stat(path)
+    return (stat.st_size, stat.st_mtime_ns)
+
+
 class PromptBoardLoraLoader:
     def __init__(self):
         self.loaded_loras = {}
@@ -103,10 +109,12 @@ class PromptBoardLoraLoader:
             if not lora_path:
                 raise FileNotFoundError(f"LoRA not found: {lora_name}")
 
-            lora = self.loaded_loras.get(lora_path)
+            signature = _file_signature(lora_path)
+            cached = self.loaded_loras.get(lora_path)
+            lora = cached.get("lora") if isinstance(cached, dict) and cached.get("signature") == signature else None
             if lora is None:
                 lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
-                self.loaded_loras[lora_path] = lora
+                self.loaded_loras[lora_path] = {"signature": signature, "lora": lora}
 
             current_model, current_clip = comfy.sd.load_lora_for_models(
                 current_model,

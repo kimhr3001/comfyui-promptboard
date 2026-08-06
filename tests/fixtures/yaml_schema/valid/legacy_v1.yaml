@@ -1,0 +1,20 @@
+STYLE:
+  placeholder: <STYLE>
+  uiGroup: Look
+  tags:
+  - cinematic
+  - text: soft light
+    label: Soft Light
+    description: Gentle low-contrast lighting.
+    default: true
+
+MATERIAL:
+  placeholder: <MATERIAL>
+  replaceInsideTags: true
+  tags:
+  - value: glass
+    label: Glass
+
+DETAIL:
+  tags:
+  - crisp focus
