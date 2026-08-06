@@ -29,6 +29,9 @@ Main features:
 - board tag search with match count, current match highlight, automatic group expansion, and `Enter` / `Shift+Enter` navigation
 - board templates for saving, loading, and automatically restoring selected states
 - template save with `Cmd+S` / `Ctrl+S` from board-side controls, using the current Save mode
+- reusable `tagSets` for sharing the same tag metadata across categories
+- attribute boards for target-specific selections such as top color and bottom color
+- `migrateFrom` support for reading old template selections into new attribute state
 - automatic replacement preview output
 
 ### Prompt Board Replace
@@ -207,6 +210,92 @@ BOTTOM_COLOR:
 A category must use either `tags` or `tagSet`, not both. Unknown tag-set names,
 empty tag sets, and malformed tag entries are reported as YAML errors with their paths.
 
+### Attribute Boards
+
+Use `attributeBoards` when the same tag set should be selected separately for several targets.
+This is useful for repeated attributes such as top color, bottom color, outerwear color, and underwear color.
+
+```yaml
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      label: Colors
+      tags:
+      - text: black
+        label: Black
+      - text: white
+        label: White
+
+  attributeBoards:
+    clothingColors:
+      label: Clothing Colors
+      uiGroup: Color
+      targets:
+        top:
+          label: Top
+          placeholder: <TOP_COLOR>
+          compose:
+            separator: " "
+          attributes:
+            color:
+              label: Color
+              source: colors
+              mode: single
+              migrateFrom: TOP_COLOR
+        bottom:
+          label: Bottom
+          placeholder: <BOTTOM_COLOR>
+          attributes:
+            color:
+              label: Color
+              source: colors
+              mode: single
+              migrateFrom: BOTTOM_COLOR
+
+TOP:
+  placeholder: <CLOTHES>
+  uiGroup: Clothes
+  tags:
+  - text: <TOP_COLOR> shirt
+    label: Shirt
+
+BOTTOM:
+  placeholder: <CLOTHES>
+  uiGroup: Clothes
+  tags:
+  - text: <BOTTOM_COLOR> skirt
+    label: Skirt
+```
+
+Attribute state is stored under the reserved `$attributes` key in board templates and workflow widgets.
+It is not written as a normal category.
+
+```json
+{
+  "TOP": ["<TOP_COLOR> shirt"],
+  "$attributes": {
+    "clothingColors": {
+      "top": {
+        "color": ["black"]
+      }
+    }
+  }
+}
+```
+
+When the board builds `selection_json`, each target becomes an internal `$attribute:` entry.
+`Prompt Board Replace` uses the same replacement path as normal categories, so `<TOP_COLOR> shirt` becomes `black shirt`.
+
+`migrateFrom` is only a read-compatibility bridge. If a saved template still has `TOP_COLOR: ["black"]` but no `$attributes.clothingColors.top.color`, PromptBoard reads the old value into the new attribute. Once the template is saved again, the new `$attributes` state is preserved.
+
+Attribute modes:
+
+- `single`: selecting one tag clears the previous tag for that target and attribute
+- `multiple`: several tags can be selected and are composed in YAML tag order
+
+`compose.separator` controls how selected attributes are joined. Empty attributes are skipped, so extra separators are not generated.
+
 ### Nested Replacement
 
 Use `replaceInsideTags: true` when a category is meant to replace placeholders inside another selected tag.
@@ -237,6 +326,9 @@ MATERIAL:
 ```
 
 If `OBJECT` selects `<MATERIAL> sculpture` and `MATERIAL` selects `glass`, `Prompt Board Replace` resolves the selected object as `glass sculpture`.
+
+`replaceInsideTags` is still useful for ordinary categories that provide a nested placeholder value.
+`attributeBoards` are for target-specific UI state and reusable tag sets. Prefer `attributeBoards` when one shared candidate list needs separate selections for several targets.
 
 ## Installation
 

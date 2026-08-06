@@ -146,3 +146,38 @@ DETAIL:
   - text: atmospheric
     label: Atmospheric
     description: Mood-driven haze, depth, or environmental feeling.
+
+# Schema v2 example for reusable target attributes:
+#
+# _promptboard:
+#   schemaVersion: 2
+#   tagSets:
+#     colors:
+#       label: Colors
+#       tags:
+#       - text: black
+#         label: Black
+#       - text: white
+#         label: White
+#   attributeBoards:
+#     clothingColors:
+#       label: Clothing Colors
+#       uiGroup: Look
+#       targets:
+#         top:
+#           label: Top
+#           placeholder: <TOP_COLOR>
+#           compose:
+#             separator: " "
+#           attributes:
+#             color:
+#               label: Color
+#               source: colors
+#               mode: single
+#
+# TOP:
+#   placeholder: <CLOTHES>
+#   uiGroup: Content
+#   tags:
+#   - text: <TOP_COLOR> shirt
+#     label: Shirt
