@@ -60,16 +60,38 @@ _promptboard:
         - text: silver
           label: 은색
           description: 은빛이 도는 색상입니다.
-        - section: 소재/패턴
+    clothingMaterials:
+      label: 재질
+      tags:
+        - section: 기본 재질
         - text: leather
           label: 가죽
-          description: 기존 하의/외투 색상 카테고리에 있던 가죽 선택값입니다.
-        - text: jean
+          description: 가죽 소재입니다.
+        - text: latex
+          label: 라텍스
+          description: 광택 있는 라텍스 소재입니다.
+        - text: denim
           label: 데님
-          description: 기존 하의/외투 색상 카테고리에 있던 데님 선택값입니다.
+          description: 데님 소재입니다.
+        - text: lace
+          label: 레이스
+          description: 레이스 소재 또는 장식입니다.
+        - text: satin
+          label: 새틴
+          description: 매끄럽고 광택 있는 새틴 소재입니다.
+        - text: silk
+          label: 실크
+          description: 부드러운 실크 소재입니다.
+        - text: ribbed
+          label: 골지
+          description: 세로 골이 있는 니트/골지 질감입니다.
+    clothingPatterns:
+      label: 패턴
+      tags:
+        - section: 패턴
         - text: plaid
           label: 체크
-          description: 기존 상의/하의/외투 색상 카테고리의 체크 선택값을 보존합니다.
+          description: 격자무늬 체크 패턴입니다.
         - text: striped
           label: 스트라이프
           description: 줄무늬 패턴입니다.
@@ -82,50 +104,125 @@ _promptboard:
         - text: checkered
           label: 체커
           description: 바둑판처럼 반복되는 체크 패턴입니다.
-        - text: ribbed
-          label: 골지
-          description: 세로 골이 있는 니트/골지 질감입니다.
         - text: floral_print
           label: 플로럴
           description: 꽃무늬 패턴입니다.
   attributeBoards:
-    clothingColors:
-      label: 의상 색상
+    clothingAttributes:
+      label: 의상 속성
       uiGroup: 색상
       targets:
         top:
           label: 상의
           placeholder: <TCO>
           compose:
-            separator: ','
+            separator: ' '
           attributes:
             color:
               label: 색상
               source: colors
-              mode: multiple
+              mode: single
               migrateFrom: 상의색상
+            material:
+              label: 재질
+              source: clothingMaterials
+              mode: single
+            pattern:
+              label: 패턴
+              source: clothingPatterns
+              mode: single
         bottom:
           label: 하의
           placeholder: <BCO>
           compose:
-            separator: ','
+            separator: ' '
           attributes:
             color:
               label: 색상
               source: colors
-              mode: multiple
+              mode: single
               migrateFrom: 하의색상
+            material:
+              label: 재질
+              source: clothingMaterials
+              mode: single
+            pattern:
+              label: 패턴
+              source: clothingPatterns
+              mode: single
         outer:
-          label: 외투
+          label: 아우터
           placeholder: <OCO>
           compose:
-            separator: ','
+            separator: ' '
           attributes:
             color:
               label: 색상
               source: colors
-              mode: multiple
+              mode: single
               migrateFrom: 외투색상
+            material:
+              label: 재질
+              source: clothingMaterials
+              mode: single
+            pattern:
+              label: 패턴
+              source: clothingPatterns
+              mode: single
+        legwear:
+          label: 레그웨어
+          placeholder: <LWC>
+          compose:
+            separator: ' '
+          attributes:
+            color:
+              label: 색상
+              source: colors
+              mode: single
+            material:
+              label: 재질
+              source: clothingMaterials
+              mode: single
+            pattern:
+              label: 패턴
+              source: clothingPatterns
+              mode: single
+        accessory:
+          label: 악세사리
+          placeholder: <ACC>
+          compose:
+            separator: ' '
+          attributes:
+            color:
+              label: 색상
+              source: colors
+              mode: single
+            material:
+              label: 재질
+              source: clothingMaterials
+              mode: single
+            pattern:
+              label: 패턴
+              source: clothingPatterns
+              mode: single
+        sock:
+          label: 양말
+          placeholder: <SCC>
+          compose:
+            separator: ' '
+          attributes:
+            color:
+              label: 색상
+              source: colors
+              mode: single
+            material:
+              label: 재질
+              source: clothingMaterials
+              mode: single
+            pattern:
+              label: 패턴
+              source: clothingPatterns
+              mode: single
 일반:
   placeholder: <INTER>
   uiGroup: 구도
@@ -757,7 +854,7 @@ _promptboard:
     - text: dressing_room
       label: 탈의실
       description: 옷을 갈아입는 탈의실입니다.
-    - text: ceo office, skyscraper, upper floors, indoor, modern interior,  floor-to-ceiling window, large window, city view
+    - text: ceo office, skyscraper, upper floors, indoor, modern interior, floor-to-ceiling window, large window, city view
       label: CEO룸
       description: 회사 사장실입니다.
     - section: 학교/공공장소
@@ -974,56 +1071,59 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 기본 상의
-    - text: <TCO> <CDE> t-shirt
-      label: <TCO> 티셔츠
+    - text: <TCO> t-shirt
+      label: 티셔츠
       description: <TCO> 색상의 티셔츠를 착용한 상태
-    - text: <TCO> <CDE> tank_top
+    - text: <TCO> tank_top
       label: 탱크톱
       description: 민소매 형태의 상의입니다.
-    - text: <TCO> <CDE> sweater
+    - text: <TCO> sweater
       label: 스웨터
       description: 니트 소재의 상의입니다.
-    - text: <TCO> <CDE> hoodie
+    - text: <TCO> hoodie
       label: 후드티
       description: 색상이 적용된 후드 티셔츠입니다.
-    - text: <TCO> <CDE> cardigan
+    - text: <TCO> cardigan
       label: 가디건
       description: 색상이 적용된 가디건입니다.
-    - text: <TCO> <CDE> shirt
+    - text: <TCO> shirt
       label: 셔츠
       description: 색상이 적용된 셔츠입니다.
-    - text: <TCO> <CDE> collared_shirt
+    - text: <TCO> collared_shirt
       label: 셔츠
       description: 깃이 있는 셔츠 스타일입니다.
-    - text: <TCO> <CDE> polo_shirt
+    - text: <TCO> polo_shirt
       label: 폴로 셔츠
       description: 칼라가 달린 반소매 셔츠
     - section: 여성 상의
-    - text: <TCO> <CDE> crop_top
+    - text: <TCO> crop_top
       label: 크롭톱
       description: 길이가 짧은 상의입니다.
-    - text: <TCO> <CDE> sleeveless_shirt
+    - text: <TCO> sleeveless_shirt
       label: 민소매 셔츠
       description: 색상이 적용된 민소매 셔츠입니다.
-    - text: <TCO> <CDE> blouse
+    - text: <TCO> blouse
       label: 블라우스
       description: 색상이 적용된 블라우스 스타일입니다.
-    - text: <TCO> <CDE> lace_camisole
+    - text: <TCO> lace_camisole
       label: 레이스 캐미솔
       description: 레이스 장식이 된 캐미솔입니다.
-    - text: <TCO> <CDE> tube_top
+    - text: <TCO> tube_top
       label: 튜브 탑
       description: 어깨끈이 없는 소매 없는 상의
     - section: 원피스/특수
-    - text: <TCO> <CDE> bodysuit
+    - text: <TCO> bodysuit
       label: 바디수트
       description: 몸에 밀착되는 바디수트 스타일입니다.
-    - text: <TCO> <CDE> corset_top
+    - text: <TCO> corset_top
       label: 코르셋 탑
       description: 몸매를 강조하는 코르셋 스타일 상의
-    - text: <TCO> <CDE> dress
+    - text: <TCO> dress
       label: 드레스
       description: 원피스 형태의 의상
+    - text: <TCO> too_sweet_poplin_mini_dress, poplin_mini_dress, mini_dress
+      label: 투 스위트 포플린 미니 드레스
+      description: 색상, 재질, 패턴을 적용할 수 있는 포플린 소재의 미니 드레스입니다.
 상의상세:
   placeholder: <CLOTHES>
   uiGroup: 의상
@@ -1093,91 +1193,91 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 길이
-    - text: <BCO> <CDE> skirt
+    - text: <BCO> skirt
       label: 컬러 스커트
       description: 특정 색상의 스커트
-    - text: <CDE> micro_skirt
+    - text: micro_skirt
       label: 마이크로 스커트
       description: 매우 짧고 아슬아슬한 스커트
-    - text: <CDE> miniskirt
+    - text: miniskirt
       label: 미니스커트
       description: 짧은 길이의 스커트
-    - text: <CDE> short_skirt
+    - text: short_skirt
       label: 미니스커트
       description: 짧은 길이의 스커트입니다.
-    - text: <CDE> knee-length_skirt
+    - text: knee-length_skirt
       label: 무릎 길이 스커트
       description: 무릎까지 오는 길이의 스커트입니다.
-    - text: <CDE> midi_skirt
+    - text: midi_skirt
       label: 미디 스커트
       description: 종아리까지 오는 중간 길이의 스커트입니다.
-    - text: <CDE> long_skirt
+    - text: long_skirt
       label: 롱 스커트
       description: 발목까지 내려오는 긴 스커트입니다.
-    - text: <CDE> maxi_skirt
+    - text: maxi_skirt
       label: 맥시 스커트
       description: 발목까지 오는 긴 스커트입니다.
     - section: 실루엣
-    - text: <CDE> pleated_skirt
+    - text: pleated_skirt
       label: 주름 스커트
       description: 세로 주름이 잡힌 스커트입니다.
-    - text: <CDE> tennis_skirt
+    - text: tennis_skirt
       label: 테니스 스커트
       description: 짧고 넓게 퍼지는 주름 스커트입니다.
-    - text: <CDE> pencil_skirt
+    - text: pencil_skirt
       label: 펜슬 스커트
       description: 몸에 딱 붙는 슬림한 스커트입니다.
-    - text: <CDE> tight_skirt
+    - text: tight_skirt
       label: 타이트 스커트
       description: 몸에 밀착되는 스커트
-    - text: <CDE> flare_skirt
+    - text: flare_skirt
       label: 플레어 스커트
       description: 밑단이 넓게 퍼지는 스커트
-    - text: <CDE> a-line_skirt
+    - text: a-line_skirt
       label: A라인 스커트
       description: A자 실루엣의 스커트
-    - text: <CDE> tiered_skirt
+    - text: tiered_skirt
       label: 티어드 스커트
       description: 층층이 겹쳐진 디자인의 스커트
-    - text: <CDE> bubble_skirt
+    - text: bubble_skirt
       label: 벌룬 스커트
       description: 풍성하게 부풀어 오른 형태의 스커트입니다.
-    - text: <CDE> suspender_skirt
+    - text: suspender_skirt
       label: 서스펜더 스커트
       description: 어깨끈이 달린 형태의 스커트입니다.
-    - text: <CDE> high-waist_skirt
+    - text: high-waist_skirt
       label: 하이웨이스트 스커트
       description: 허리선이 높은 위치에 있는 스커트입니다.
-    - text: <CDE> wrap_skirt
+    - text: wrap_skirt
       label: 랩 스커트
       description: 허리에 감아서 입는 형태의 스커트입니다.
     - section: 소재/패턴
-    - text: <CDE> plaid_skirt
+    - text: plaid_skirt
       label: 체크 스커트
       description: 격자무늬 패턴의 스커트입니다.
-    - text: <CDE> tartan_skirt
+    - text: tartan_skirt
       label: 타탄 스커트
       description: 전통적인 타탄 체크 패턴의 스커트입니다.
-    - text: <CDE> denim_skirt
+    - text: denim_skirt
       label: 데님 스커트
       description: 청 데님 소재의 스커트입니다.
-    - text: <CDE> leather_skirt
+    - text: leather_skirt
       label: 레더 스커트
       description: 가죽 소재의 스커트입니다.
     - section: 디테일
-    - text: <CDE> frilled_skirt
+    - text: frilled_skirt
       label: 프릴 스커트
       description: 끝단에 주름 장식이 달린 스커트입니다.
-    - text: <CDE> ruffled_skirt
+    - text: ruffled_skirt
       label: 러플 스커트
       description: 물결 모양의 장식이 있는 스커트입니다.
-    - text: <CDE> slit_skirt, side_slit
+    - text: slit_skirt, side_slit
       label: 슬릿 스커트
       description: 옆면이 트여 있는 스커트입니다.
-    - text: <CDE> transparent_skirt, see-through
+    - text: transparent_skirt, see-through
       label: 시스루 스커트
       description: 안이 비치는 투명한 스커트입니다.
-    - text: <CDE> micro tight skirt
+    - text: micro tight skirt
       label: 마이크로 스커트
       description: 몸에 딱 붙는 아주 짧은 치마
 아우터:
@@ -1186,25 +1286,25 @@ _promptboard:
   tags:
     - section: 기본 아우터
     - text: <OCO> jacket
-      label: <OCO> 재킷
+      label: 재킷
       description: <OCO> 색상의 재킷
     - text: <OCO> coat
-      label: <OCO> 코트
+      label: 코트
       description: <OCO> 색상의 코트
     - text: <OCO> blazer
-      label: <OCO> 블레이저
+      label: 블레이저
       description: <OCO> 색상의 블레이저
     - text: <OCO> cardigan
-      label: <OCO> 카디건
+      label: 카디건
       description: 지정된 색상의 카디건입니다.
     - text: <OCO> trench_coat
-      label: <OCO> 트렌치코트
+      label: 트렌치코트
       description: 지정된 색상의 트렌치코트입니다.
     - text: <OCO> cape
-      label: <OCO> 케이프
+      label: 케이프
       description: 지정된 색상의 케이프입니다.
     - text: <OCO> parka
-      label: <OCO> 파카
+      label: 파카
       description: 지정된 색상의 파카입니다.
     - text: <OCO> windbreaker
       label: 바람막이
@@ -1236,74 +1336,74 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 반바지
-    - text: <BCO> <CDE> pants
-      label: <BCO> 바지
+    - text: <BCO> pants
+      label: 바지
       description: <BCO> 색상의 바지
-    - text: <CDE> denim_shorts
+    - text: denim_shorts
       label: 데님 쇼츠
       description: 데님 소재의 반바지입니다.
-    - text: <CDE> denim_hot_pants
+    - text: denim_hot_pants
       label: 데님 핫팬츠
       description: 매우 짧은 길이의 데님 팬츠입니다.
-    - text: <CDE> dolphin_shorts
+    - text: dolphin_shorts
       label: 돌핀 팬츠
       description: 옆트임이 있는 짧은 운동용 반바지입니다.
-    - text: <CDE> short_shorts
+    - text: short_shorts
       label: 숏 팬츠
       description: 길이가 아주 짧은 반바지입니다.
-    - text: <CDE> cargo_shorts
+    - text: cargo_shorts
       label: 카고 반바지
       description: 옆면에 큰 주머니가 달린 반바지
-    - text: <CDE> biker_shorts
+    - text: biker_shorts
       label: 바이커 쇼츠
       description: 몸에 딱 붙는 짧은 타이즈형 반바지
-    - text: <CDE> sweat_shorts
+    - text: sweat_shorts
       label: 스웨트 쇼츠
       description: 면 트레이닝 소재의 반바지
-    - text: <CDE> linen_shorts
+    - text: linen_shorts
       label: 리넨 반바지
       description: 얇고 시원한 리넨 소재의 반바지
-    - text: <CDE> leather_shorts
+    - text: leather_shorts
       label: 가죽 쇼츠
       description: 가죽 재질의 짧은 바지입니다.
     - section: 긴바지/진
-    - text: <CDE> tight_leggings
+    - text: tight_leggings
       label: 타이트 레깅스
       description: 몸에 딱 붙는 레깅스입니다.
-    - text: <CDE> skinny_jeans
+    - text: skinny_jeans
       label: 스키니진
       description: 다리 라인이 강조되는 붙는 청바지입니다.
-    - text: <CDE> wide_leg_trousers
+    - text: wide_leg_trousers
       label: 와이드 팬츠
       description: 통이 넓은 바지입니다.
-    - text: <CDE> baggy_jeans
+    - text: baggy_jeans
       label: 배기 진
       description: 골반부터 밑단까지 통이 넓고 넉넉한 바지
-    - text: <CDE> flare_jeans
+    - text: flare_jeans
       label: 부츠컷 진
       description: 무릎 아래로 갈수록 넓어지는 형태의 청바지
-    - text: <CDE> palazzo_pants
+    - text: palazzo_pants
       label: 팔라초 팬츠
       description: 통이 매우 넓어 치마처럼 보이는 와이드 팬츠
-    - text: <CDE> culottes
+    - text: culottes
       label: 큐로트
       description: 짧은 길이의 넓은 통을 가진 반바지 스타일
-    - text: <CDE> jogger_pants
+    - text: jogger_pants
       label: 조거 팬츠
       description: 발목에 시보리가 있는 조거 스타일의 바지
-    - text: <CDE> corduroy_pants
+    - text: corduroy_pants
       label: 코듀로이 팬츠
       description: 골이 있는 골덴 소재의 바지
-    - text: <CDE> tailored_trousers
+    - text: tailored_trousers
       label: 슬랙스
       description: 핏이 잡힌 정장 스타일의 바지
-    - text: <CDE> ripped_jeans
+    - text: ripped_jeans
       label: 찢어진 청바지
       description: 데미지가 들어간 데님 팬츠
-    - text: <CDE> denim_jeans
+    - text: denim_jeans
       label: 청바지
       description: 데님 소재의 청바지
-    - text: <CDE> slim_fit_pants
+    - text: slim_fit_pants
       label: 슬림 팬츠
       description: 몸에 붙는 슬림한 바지
 레그웨어:
@@ -1311,7 +1411,7 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 기본
-    - text: <ECO> legwear
+    - text: <LWC> legwear
       label: 컬러 레그웨어
       description: 색상이 지정된 레그웨어
     - section: 스타킹/삭스
@@ -1324,16 +1424,16 @@ _promptboard:
     - text: fishnet_stockings
       label: 망사 스타킹
       description: 그물 형태의 스타킹
-    - text: <ECO2> kneehighs
+    - text: <SCC> kneehighs
       label: 니하이삭스
       description: 무릎까지 오는 길이의 양말
-    - text: <ECO2> loose_socks
+    - text: <SCC> loose_socks
       label: 루즈 삭스
       description: 발목 부분이 늘어진 스타일의 양말
-    - text: <ECO2> ankle_socks
+    - text: <SCC> ankle_socks
       label: 발목 양말
       description: 발목까지만 오는 짧은 양말
-    - text: <ECO2> calf-high_socks
+    - text: <SCC> calf-high_socks
       label: 카프 삭스
       description: 종아리 중간까지 오는 길이의 양말
 신발:
@@ -1341,78 +1441,82 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 힐
-    - text: <CDE> high_heels
+    - text: high_heels
       label: 하이힐
       description: 굽이 높은 신발입니다.
-    - text: <CDE> stiletto_heels
+    - text: stiletto_heels
       label: 스틸레토 힐
       description: 끝이 뾰족하고 가는 굽의 신발입니다.
-    - text: <CDE> pumps
+    - text: pumps
       label: 펌프스
       description: 장식이 없는 깔끔한 형태의 구두입니다.
-    - text: <CDE> wedge_heels
+    - text: wedge_heels
       label: 웨지힐
       description: 굽이 두꺼운 통굽 형태의 힐
-    - text: <CDE> platform_heels
+    - text: platform_heels
       label: 통굽 힐
       description: 높은 굽이 있는 플랫폼 스타일의 신발
-    - text: <CDE> kitten_heels
+    - text: kitten_heels
       label: 키튼 힐
       description: 낮고 가느다란 굽의 힐
-    - text: <CDE> pointed_toe_heels
+    - text: pointed_toe_heels
       label: 뾰족 코 힐
       description: 앞코가 뾰족하게 디자인된 힐
-    - text: <CDE> block_heels
+    - text: block_heels
       label: 블록 힐
       description: 두툼하고 넓은 형태의 굽이 있는 하이힐입니다.
     - section: 부츠
-    - text: <CDE> ankle_boots
+    - text: ankle_boots
       label: 앵클 부츠
       description: 발목까지 오는 길이의 부츠입니다.
-    - text: <CDE> combat_boots
+    - text: combat_boots
       label: 컴뱃 부츠
       description: 튼튼한 전투용 부츠
     - text: lace-up_boots
       label: 레이스업 부츠
       description: 끈으로 발등을 조이는 형태의 부츠입니다.
-    - text: <CDE> platform_boots
+    - text: platform_boots
       label: 통굽 부츠
       description: 굽이 높은 플랫폼 형태의 부츠
     - section: 플랫/로퍼
-    - text: <CDE> loafers
+    - text: loafers
       label: 로퍼
       description: 단정한 슬립온 형태의 신발
-    - text: <CDE> ballet_flats
+    - text: ballet_flats
       label: 플랫 슈즈
       description: 굽이 거의 없는 발레풍 신발
-    - text: <CDE> flat_shoes
+    - text: flat_shoes
       label: 플랫 슈즈
       description: 굽이 없는 평평한 신발입니다.
-    - text: <CDE> mules
+    - text: mules
       label: 뮬
       description: 뒷축이 없는 슬리퍼 형태의 신발
     - section: 샌들/스니커즈
-    - text: <CDE> strappy_sandals
+    - text: strappy_sandals
       label: 스트랩 샌들
       description: 끈으로 발등을 감싸는 형태의 샌들
-    - text: <CDE> heeled_sandals
+    - text: heeled_sandals
       label: 힐 샌들
       description: 높은 굽이 있는 샌들
-    - text: <CDE> fashion_sneakers
+    - text: fashion_sneakers
       label: 패션 스니커즈
       description: 스타일리시한 디자인의 운동화입니다.
-    - text: <CDE> sneakers
+    - text: sneakers
       label: 스니커즈
       description: 캐주얼한 운동화
-    - text: <CDE> sandals
+    - text: sandals
       label: 샌들
       description: 발등이 노출된 형태의 신발입니다.
-    - text: <CDE> sports_shoes
+    - text: sports_shoes
       label: 운동화
       description: 스포츠용 운동화입니다.
-    - text: <CDE> high-top_sneakers
+    - text: high-top_sneakers
       label: 하이탑 스니커즈
       description: 발목까지 올라오는 스니커즈입니다.
+    - section: 전통 신발
+    - text: okobo
+      label: 오코보
+      description: 일본 전통 복식에 어울리는 높은 굽의 나막신입니다.
 수영복:
   placeholder: <CLOTHES>
   uiGroup: 의상
@@ -1975,12 +2079,16 @@ _promptboard:
     - text: loosened_tie
       label: 풀린 넥타이
       description: 매듭이 느슨하게 풀린 넥타이
-    - text: necktie
+    - text: <ACC> necktie
       label: 넥타이
       description: 목에 착용한 넥타이
     - text: choker
       label: 초커
       description: 목에 달라붙는 장식용 목걸이입니다.
+    - section: 헤어 액세서리
+    - text: scrunchie
+      label: 스크런치
+      description: 머리를 묶는 천으로 감싼 헤어 고무줄입니다.
     - section: 장신구
     - text: jewelry
       label: 장신구
@@ -2077,212 +2185,6 @@ _promptboard:
     - text: orange
       label: 주황색
       description: 머리카락 색상을 주황색으로 설정합니다.
-추가색상:
-  placeholder: <ECO>
-  uiGroup: 색상
-  replaceInsideTags: true
-  tags:
-    - section: 기본색
-    - text: white
-      label: 하얀색
-      description: 순백색의 색상입니다.
-    - text: black
-      label: 검정
-      description: 검은색 색상
-    - text: blue
-      label: 파랑
-      description: 파란색 색상
-    - text: pink
-      label: 분홍
-      description: 분홍색 색상
-    - text: gray
-      label: 회색
-      description: 회색 색상
-    - text: yellow
-      label: 노란색
-      description: 노란색을 띠는 요소
-    - text: red
-      label: 빨간색
-      description: 빨간색을 띠는 요소
-    - text: green
-      label: 초록색
-      description: 초록색을 띠는 요소
-    - text: orange
-      label: 주황색
-      description: 주황색을 띠는 요소
-    - text: purple
-      label: 보라색
-      description: 보라색을 띠는 색상입니다.
-    - section: 중성/고급색
-    - text: navy
-      label: 네이비
-      description: 짙은 남색 계열의 색상입니다.
-    - text: teal
-      label: 청록색
-      description: 청록색 계열의 색상입니다.
-    - text: burgundy
-      label: 버건디
-      description: 짙은 와인색 계열의 색상입니다.
-    - text: cream
-      label: 크림색
-      description: 부드러운 크림색 계열의 색상입니다.
-    - text: beige
-      label: 베이지
-      description: 연한 갈색빛의 베이지 계열 색상입니다.
-    - text: gold
-      label: 금색
-      description: 금빛을 띠는 색상입니다.
-    - text: silver
-      label: 은색
-      description: 은빛을 띠는 색상입니다.
-    - section: 소재/패턴
-    - text: leather
-      label: 가죽
-      description: 가죽 재질의 의상이나 소품입니다.
-    - text: jean
-      label: 데님
-      description: 데님 소재의 의상입니다.
-    - text: plaid
-      label: 격자무늬
-      description: 체크 패턴의 의상이나 배경 디자인
-    - text: striped
-      label: 스트라이프
-      description: 줄무늬 패턴입니다.
-    - text: polka_dot
-      label: 도트
-      description: 점무늬 패턴입니다.
-    - text: argyle
-      label: 아가일
-      description: 마름모 격자 형태의 아가일 패턴입니다.
-    - text: checkered
-      label: 체커
-      description: 바둑판처럼 반복되는 체크 패턴입니다.
-    - text: ribbed
-      label: 골지
-      description: 세로 골이 있는 니트/골지 질감입니다.
-    - text: floral_print
-      label: 플로럴
-      description: 꽃무늬 패턴입니다.
-추가색상2:
-  placeholder: <ECO2>
-  uiGroup: 색상
-  replaceInsideTags: true
-  tags:
-    - section: 기본색
-    - text: white
-      label: 흰색
-      description: 흰색 양말/레그웨어 색상입니다.
-    - text: black
-      label: 검정
-      description: 검은색 양말/레그웨어 색상입니다.
-    - text: gray
-      label: 회색
-      description: 회색 양말/레그웨어 색상입니다.
-    - text: navy
-      label: 네이비
-      description: 짙은 남색 양말/레그웨어 색상입니다.
-    - text: brown
-      label: 갈색
-      description: 갈색 양말/레그웨어 색상입니다.
-    - text: pink
-      label: 분홍색
-      description: 분홍색 양말/레그웨어 색상입니다.
-    - text: red
-      label: 빨간색
-      description: 빨간색 양말/레그웨어 색상입니다.
-    - section: 패턴
-    - text: striped
-      label: 스트라이프
-      description: 줄무늬 양말/레그웨어 패턴입니다.
-    - text: ribbed
-      label: 골지
-      description: 골지 양말/레그웨어 질감입니다.
-    - text: polka_dot
-      label: 도트
-      description: 점무늬 양말/레그웨어 패턴입니다.
-    - text: argyle
-      label: 아가일
-      description: 아가일 양말/레그웨어 패턴입니다.
-    - text: plaid
-      label: 체크
-      description: 체크 양말/레그웨어 패턴입니다.
-    - text: lace
-      label: 레이스
-      description: 레이스 장식의 양말/레그웨어입니다.
-    - text: sheer
-      label: 시스루
-      description: 비치는 얇은 양말/레그웨어입니다.
-    - section: 색상+패턴
-    - text: black striped
-      label: 검정 스트라이프
-      description: 검은색 줄무늬 양말/레그웨어입니다.
-    - text: white striped
-      label: 흰색 스트라이프
-      description: 흰색 줄무늬 양말/레그웨어입니다.
-    - text: pink striped
-      label: 분홍 스트라이프
-      description: 분홍색 줄무늬 양말/레그웨어입니다.
-    - text: black ribbed
-      label: 검정 골지
-      description: 검은색 골지 양말/레그웨어입니다.
-    - text: white ribbed
-      label: 흰색 골지
-      description: 흰색 골지 양말/레그웨어입니다.
-    - text: black lace
-      label: 검정 레이스
-      description: 검은색 레이스 양말/레그웨어입니다.
-    - text: white lace
-      label: 흰색 레이스
-      description: 흰색 레이스 양말/레그웨어입니다.
-    - text: red plaid
-      label: 빨간 체크
-      description: 빨간색 체크 양말/레그웨어입니다.
-    - text: navy argyle
-      label: 네이비 아가일
-      description: 네이비색 아가일 양말/레그웨어입니다.
-    - text: pastel striped
-      label: 파스텔 스트라이프
-      description: 파스텔 톤 줄무늬 양말/레그웨어입니다.
-    - text: multicolored striped
-      label: 다색 스트라이프
-      description: 여러 색이 들어간 줄무늬 양말/레그웨어입니다.
-추가디테일:
-  placeholder: <CDE>
-  uiGroup: 의상
-  replaceInsideTags: true
-  tags:
-    - section: 장식/구조
-    - text: lace-up
-      label: 레이스업
-      description: 끈으로 묶는 레이스업 디테일입니다.
-    - text: ribbon-trimmed
-      label: 리본 장식
-      description: 리본 장식이 들어간 의상 디테일입니다.
-    - text: frilled
-      label: 프릴
-      description: 프릴 장식이 들어간 의상 디테일입니다.
-    - text: ruffled
-      label: 러플
-      description: 러플 장식이 들어간 의상 디테일입니다.
-    - text: belted
-      label: 벨트 장식
-      description: 벨트가 포함된 의상 디테일입니다.
-    - text: zip-up
-      label: 집업
-      description: 지퍼 여밈이 있는 의상 디테일입니다.
-    - section: 절개/핏
-    - text: cutout
-      label: 컷아웃
-      description: 일부가 절개되어 피부가 드러나는 의상 디테일입니다.
-    - text: backless
-      label: 백리스
-      description: 등이 드러나는 의상 디테일입니다.
-    - text: off-shoulder
-      label: 오프숄더
-      description: 어깨가 드러나는 의상 디테일입니다.
-    - text: slit
-      label: 슬릿
-      description: 트임이 들어간 의상 디테일입니다.
 기타/소품:
   placeholder: <ETC>
   uiGroup: 기타

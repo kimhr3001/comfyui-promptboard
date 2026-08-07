@@ -11,6 +11,7 @@ from yaml_tag_nodes import (
     _get_board_template,
     _save_board_template,
     _select_tags_outputs,
+    _select_tags_with_prompt_preview,
 )
 
 
@@ -236,6 +237,42 @@ POSE:
             selected_text,
             "<TOP_ATTRS> sports bra,<BOTTOM_ATTRS> skirt,black leather denim,white",
         )
+
+    def test_prompt_preview_matches_replace_node_output(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
+        selected_state = {
+            "상의": ["<TOP_ATTRS> sports bra"],
+            "$attributes": {
+                "clothing": {
+                    "top": {
+                        "color": ["black"],
+                        "material": ["denim", "leather"],
+                    },
+                }
+            },
+        }
+
+        selection_json, _preview, _selected_text, prompt_preview, replace_report = _select_tags_with_prompt_preview(
+            yaml_text=source,
+            selected_state=json.dumps(selected_state, ensure_ascii=False),
+            source_text="outfit: <CLOTHES>",
+        )
+        replaced, report = PromptBoardReplace().replace_tags("outfit: <CLOTHES>", selection_json)
+
+        self.assertEqual(prompt_preview, replaced)
+        self.assertEqual(replace_report, report)
+        self.assertEqual(prompt_preview, "outfit: black leather denim sports bra")
+        self.assertEqual(replace_report, "")
+
+    def test_prompt_preview_is_empty_without_source_text(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "legacy_v1.yaml")
+        outputs = _select_tags_with_prompt_preview(
+            yaml_text=source,
+            selected_state=json.dumps({"STYLE": ["cinematic"]}, ensure_ascii=False),
+        )
+
+        self.assertEqual(outputs[3], "")
+        self.assertEqual(outputs[4], "")
 
     def test_attribute_preview_reports_state_warnings_with_paths(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")

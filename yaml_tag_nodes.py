@@ -615,6 +615,38 @@ def _replace_source_placeholders(source_text, replacements, empty_behavior):
     return text, used
 
 
+def _replace_source_with_selections(source_text, selections, empty_behavior="remove placeholder", cleanup=True):
+    text = str(source_text or "")
+    report = []
+
+    if not isinstance(selections, dict):
+        return (text, "Prompt Board Replace error: selection_json must be an object.")
+
+    replacements, resolve_report, inner_used = _resolve_selection_replacements(selections)
+    report.extend(resolve_report)
+    text, used = _replace_source_placeholders(text, replacements, empty_behavior)
+    used.update(inner_used)
+
+    reported_unused = set()
+    for category, item in selections.items():
+        if not isinstance(item, dict):
+            continue
+        placeholder = str(item.get("placeholder", f"<{category}>"))
+        selected = item.get("selected", [])
+        if selected and placeholder not in used and placeholder not in reported_unused:
+            report.append(f"unused: {placeholder}")
+            reported_unused.add(placeholder)
+
+    missing = sorted(set(_find_placeholders(text)))
+    if missing:
+        report.append("missing: " + ", ".join(missing))
+
+    if cleanup:
+        text = _cleanup_replaced_text(text)
+
+    return (text, "\n".join(report))
+
+
 def _select_tags_outputs(yaml_file=DEFAULT_YAML_FILE, yaml_text="", selected_state="{}"):
     try:
         source_yaml = yaml_text
@@ -645,6 +677,35 @@ def _select_tags_outputs(yaml_file=DEFAULT_YAML_FILE, yaml_text="", selected_sta
         return ("{}", message, "")
 
 
+def _select_tags_with_prompt_preview(
+    yaml_file=DEFAULT_YAML_FILE,
+    yaml_text="",
+    selected_state="{}",
+    source_text="",
+):
+    selection_json, preview_text, selected_text = _select_tags_outputs(
+        yaml_file,
+        yaml_text,
+        selected_state,
+    )
+    if not str(source_text or ""):
+        return (selection_json, preview_text, selected_text, "", "")
+
+    try:
+        selections = json.loads(selection_json or "{}")
+    except Exception as exc:
+        return (
+            selection_json,
+            preview_text,
+            selected_text,
+            str(source_text or ""),
+            f"Prompt Board Replace error: invalid selection_json: {exc}",
+        )
+
+    prompt_preview, replace_report = _replace_source_with_selections(source_text, selections)
+    return (selection_json, preview_text, selected_text, prompt_preview, replace_report)
+
+
 class PromptBoardReplace:
     @classmethod
     def INPUT_TYPES(cls):
@@ -665,39 +726,13 @@ class PromptBoardReplace:
 
     def replace_tags(self, source_text, selection_json, empty_behavior="remove placeholder", cleanup=True):
         text = str(source_text or "")
-        report = []
 
         try:
             selections = json.loads(selection_json or "{}")
         except Exception as exc:
             return (text, f"Prompt Board Replace error: invalid selection_json: {exc}")
 
-        if not isinstance(selections, dict):
-            return (text, "Prompt Board Replace error: selection_json must be an object.")
-
-        replacements, resolve_report, inner_used = _resolve_selection_replacements(selections)
-        report.extend(resolve_report)
-        text, used = _replace_source_placeholders(text, replacements, empty_behavior)
-        used.update(inner_used)
-
-        reported_unused = set()
-        for category, item in selections.items():
-            if not isinstance(item, dict):
-                continue
-            placeholder = str(item.get("placeholder", f"<{category}>"))
-            selected = item.get("selected", [])
-            if selected and placeholder not in used and placeholder not in reported_unused:
-                report.append(f"unused: {placeholder}")
-                reported_unused.add(placeholder)
-
-        missing = sorted(set(_find_placeholders(text)))
-        if missing:
-            report.append("missing: " + ", ".join(missing))
-
-        if cleanup:
-            text = _cleanup_replaced_text(text)
-
-        return (text, "\n".join(report))
+        return _replace_source_with_selections(source_text, selections, empty_behavior, cleanup)
 
 
 NODE_CLASS_MAPPINGS = {
