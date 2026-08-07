@@ -1,4 +1,9 @@
-from .yaml_tag_nodes import DEFAULT_YAML_FILE, _default_yaml_text, _select_tags_outputs, _yaml_file_options
+from .yaml_tag_nodes import (
+    DEFAULT_YAML_FILE,
+    _default_yaml_text,
+    _select_tags_with_prompt_preview,
+    _yaml_file_options,
+)
 
 
 class PromptBoard:
@@ -10,17 +15,25 @@ class PromptBoard:
                 "yaml_text": ("STRING", {"multiline": True, "default": _default_yaml_text()}),
                 "selected_state": ("STRING", {"multiline": True, "default": "{}"}),
             },
+            "optional": {
+                "source_text": ("STRING", {"forceInput": True, "default": ""}),
+            },
         }
 
-    RETURN_TYPES = ("STRING", "STRING")
-    RETURN_NAMES = ("selection_json", "preview_text")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("selection_json", "preview_text", "prompt_preview", "replace_report")
     FUNCTION = "select_tags"
     CATEGORY = "promptboard"
     DESCRIPTION = "Build prompt tag selections from YAML-managed boards."
 
-    def select_tags(self, yaml_file=DEFAULT_YAML_FILE, yaml_text="", selected_state="{}"):
-        selection_json, preview_text, _selected_text = _select_tags_outputs(yaml_file, yaml_text, selected_state)
-        return (selection_json, preview_text)
+    def select_tags(self, yaml_file=DEFAULT_YAML_FILE, yaml_text="", selected_state="{}", source_text=""):
+        selection_json, preview_text, _selected_text, prompt_preview, replace_report = _select_tags_with_prompt_preview(
+            yaml_file,
+            yaml_text,
+            selected_state,
+            source_text,
+        )
+        return (selection_json, preview_text, prompt_preview, replace_report)
 
 
 NODE_CLASS_MAPPINGS = {
