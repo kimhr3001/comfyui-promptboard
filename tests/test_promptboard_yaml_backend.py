@@ -16,6 +16,7 @@ from yaml_tag_nodes import (
     _validate_yaml_text,
     _yaml_validation_error,
 )
+from yaml_editor_nodes import PromptBoardYamlEditor
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -268,6 +269,38 @@ STYLE:
             self.assertEqual(result["backup_file"], "custom.yaml.bak-20260809-123456-1")
             self.assertEqual((tags_root / result["backup_file"]).read_text(encoding="utf-8"), source.read_text(encoding="utf-8"))
             self.assertEqual(existing.read_text(encoding="utf-8"), "existing")
+
+    def test_yaml_editor_node_returns_validation_report(self):
+        yaml_file, validation_report, save_report = PromptBoardYamlEditor().inspect_yaml(
+            "custom.yaml",
+            "STYLE:\n  tags:\n  - cinematic\n",
+        )
+
+        self.assertEqual(yaml_file, "custom.yaml")
+        self.assertEqual(save_report, "")
+        self.assertEqual(
+            json.loads(validation_report),
+            {
+                "ok": True,
+                "schemaVersion": 1,
+                "categoryCount": 1,
+                "tagCount": 1,
+                "tagSetCount": 0,
+                "attributeBoardCount": 0,
+            },
+        )
+
+    def test_yaml_editor_node_returns_structured_validation_error(self):
+        _yaml_file, validation_report, save_report = PromptBoardYamlEditor().inspect_yaml(
+            "custom.yaml",
+            "_promptboard:\n  typoField: true\n",
+        )
+        report = json.loads(validation_report)
+
+        self.assertEqual(save_report, "")
+        self.assertEqual(report["ok"], False)
+        self.assertEqual(report["code"], "unknown_schema_field")
+        self.assertEqual(report["path"], "_promptboard.typoField")
 
     def test_attribute_payload_uses_existing_replace_path(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")

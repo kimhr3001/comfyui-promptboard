@@ -417,13 +417,17 @@ MVP 안정화 후 별도 migration으로 검토한다.
   - 결과: `/promptboard/yaml/validate`, `/promptboard/yaml/backup` API와 helper를 추가했다.
   - 검증: `tests/test_promptboard_yaml_backend.py`, `tests/test_promptboard_cache.py`, JS syntax/test, Python compile, `git diff --check`
   - 다음 작업: Phase 1 / Step 2 - `PromptBoard YAML Editor` 노드 skeleton 추가
+- 완료: Phase 1 / Step 2 - `PromptBoard YAML Editor` 노드 skeleton 추가
+  - 결과: validation report와 save report 출력을 가진 최소 노드를 등록했다.
+  - 검증: `tests/test_promptboard_yaml_backend.py`, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 3 - Editor YAML 선택/로드 구현
 
 ## 단계별 구현 순서
 
 ### Phase 1: MVP 기반
 
 1. [완료] YAML backup/validate backend helper 추가
-2. `PromptBoard YAML Editor` 노드 skeleton 추가
+2. [완료] `PromptBoard YAML Editor` 노드 skeleton 추가
 3. Editor YAML 선택/로드 구현
 4. Editor 저장/백업/검증 구현
 5. 섹션/태그 추가 팝업 구현
