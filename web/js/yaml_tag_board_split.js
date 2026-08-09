@@ -1607,7 +1607,7 @@ function ensureStyles() {
 
 	    .promptboard-yaml-content {
 	      display: grid;
-	      grid-template-rows: auto auto 1fr auto auto;
+	      grid-template-rows: auto minmax(0, 1fr) auto auto;
 	      gap: 6px;
 	      min-width: 0;
 	      min-height: 0;
@@ -1623,7 +1623,14 @@ function ensureStyles() {
 
     .promptboard-toolbar {
       display: grid;
-      grid-template-rows: auto auto;
+      grid-template-rows: auto auto auto;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .promptboard-toolbar-yaml-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: 4px;
       min-width: 0;
     }
@@ -3427,6 +3434,7 @@ function createSplitElement(node) {
   const save = document.createElement("button");
   const status = document.createElement("div");
   const toolbar = document.createElement("div");
+  const toolbarYamlRow = document.createElement("div");
   const templateSelect = document.createElement("select");
   const toolbarTemplateRow = document.createElement("div");
   const toolbarSearchRow = document.createElement("div");
@@ -3458,6 +3466,7 @@ function createSplitElement(node) {
   save.className = "promptboard-button";
   status.className = "promptboard-status";
   toolbar.className = "promptboard-toolbar";
+  toolbarYamlRow.className = "promptboard-toolbar-yaml-row";
   toolbarTemplateRow.className = "promptboard-toolbar-template-row";
   toolbarSearchRow.className = "promptboard-toolbar-search-row";
   boardSearchRow.className = "promptboard-search-row";
@@ -3671,13 +3680,14 @@ function createSplitElement(node) {
 
   yamlSearchRow.append(yamlSearch, yamlSearchCount);
   editor.append(editorHost, textarea);
-  yamlContent.append(select, yamlSearchRow, editor, save, status);
+  yamlContent.append(yamlSearchRow, editor, save, status);
   left.append(yamlContent);
+  toolbarYamlRow.append(select);
   templateSaveCombo.append(templateSave, templateSaveMode);
   toolbarTemplateRow.append(templateSelect, templateInput, templateSaveCombo, templateDelete);
   boardSearchRow.append(boardSearch, boardSearchCount);
   toolbarSearchRow.append(boardSearchRow, createResetButton(node));
-  toolbar.append(toolbarTemplateRow, toolbarSearchRow);
+  toolbar.append(toolbarYamlRow, toolbarTemplateRow, toolbarSearchRow);
   right.append(toolbar, templateStatus, groupFilter, navigatorRailHost, scroll);
   root.append(right, yamlToggle, left);
 
