@@ -22,6 +22,7 @@ const TEMPLATE_SAVE_MODE_NEW = "new";
 const DEFAULT_YAML_FILE = "default.yaml";
 const INLINE_YAML_OPTION = "inline";
 const HIDDEN_MARK = "__promptboardHiddenWidget";
+const YAML_SOURCE_PANEL_ENABLED = false;
 const MIN_NODE_WIDTH = 600;
 const MIN_NODE_HEIGHT = 360;
 const MIN_LAYOUT_HEIGHT = 260;
@@ -888,11 +889,19 @@ function visibleCategoryEntries(node) {
   return Object.entries(config).filter(([, item]) => categoryMatchesActiveUiGroup(node, item));
 }
 
+function allCategoryEntries(node) {
+  return Object.entries(node.promptboardConfig ?? {});
+}
+
 function visibleAttributeBoardEntries(node) {
   const active = activeUiGroup(node);
   return Object.entries(node.promptboardYamlModel?.attributeBoards ?? {}).filter(([, board]) =>
     active === GROUP_ALL || attributeBoardUiGroup(board) === active,
   );
+}
+
+function allAttributeBoardEntries(node) {
+  return Object.entries(node.promptboardYamlModel?.attributeBoards ?? {});
 }
 
 function navigatorItemId(item) {
@@ -1119,7 +1128,7 @@ function compileSearchRegex(input) {
 
 function collectBoardSearchMatches(node, regex) {
   const matches = [];
-  for (const [category, item] of visibleCategoryEntries(node)) {
+  for (const [category, item] of allCategoryEntries(node)) {
     const uiGroup = categoryUiGroup(item);
     const label = categoryLabel(category, item);
     if (regex.test(category) || regex.test(label)) {
@@ -1140,7 +1149,7 @@ function collectBoardSearchMatches(node, regex) {
       }
     }
   }
-  for (const [boardId, board] of visibleAttributeBoardEntries(node)) {
+  for (const [boardId, board] of allAttributeBoardEntries(node)) {
     const uiGroup = attributeBoardUiGroup(board);
     for (const [targetId, target] of Object.entries(board.targets ?? {})) {
       for (const [attributeId, attribute] of Object.entries(target.attributes ?? {})) {
@@ -1391,6 +1400,9 @@ function navigateToBoardSearchMatch(node, index) {
 
   state.index = (index + state.matches.length) % state.matches.length;
   const match = state.matches[state.index];
+  if (match?.uiGroup) {
+    node.promptboardActiveUiGroup = match.uiGroup;
+  }
   setActiveNavigatorItem(node, navigatorItemFromMatch(match));
   setBoardSearchCount(node, state.index + 1, state.matches.length);
   renderCards(node);
@@ -1552,6 +1564,10 @@ function ensureStyles() {
       font: 11px Arial, sans-serif;
     }
 
+    .promptboard.is-yaml-source-disabled {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
 	    .promptboard-panel {
 	      box-sizing: border-box;
 	      min-width: 0;
@@ -1607,7 +1623,7 @@ function ensureStyles() {
 
 	    .promptboard-yaml-content {
 	      display: grid;
-	      grid-template-rows: auto auto 1fr auto auto;
+	      grid-template-rows: auto minmax(0, 1fr) auto auto;
 	      gap: 6px;
 	      min-width: 0;
 	      min-height: 0;
@@ -1623,7 +1639,14 @@ function ensureStyles() {
 
     .promptboard-toolbar {
       display: grid;
-      grid-template-rows: auto auto;
+      grid-template-rows: auto auto auto;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .promptboard-toolbar-yaml-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(84px, 96px);
       gap: 4px;
       min-width: 0;
     }
@@ -2408,27 +2431,32 @@ function createResetButton(node) {
 }
 
 function setYamlPanelOpen(node, open) {
-  node.promptboardYamlPanelOpen = !!open;
+  const isOpen = YAML_SOURCE_PANEL_ENABLED && !!open;
+  node.promptboardYamlPanelOpen = isOpen;
   const panel = node.promptboardYamlPanel;
   const button = node.promptboardYamlToggleButton;
   const root = node.promptboardElement;
   if (root) {
-    root.style.setProperty("--promptboard-yaml-width", open ? `${EDITOR_PANEL_WIDTH}px` : "0px");
+    root.style.setProperty("--promptboard-yaml-width", isOpen ? `${EDITOR_PANEL_WIDTH}px` : "0px");
   }
   if (panel) {
-    panel.classList.toggle("is-collapsed", !open);
+    panel.classList.toggle("is-collapsed", !isOpen);
   }
   if (button) {
-    button.textContent = open ? "›" : "‹";
-    button.title = open ? "YAML 닫기" : "YAML 열기";
+    button.style.display = YAML_SOURCE_PANEL_ENABLED ? "" : "none";
+    button.textContent = isOpen ? "›" : "‹";
+    button.title = isOpen ? "YAML 닫기" : "YAML 열기";
     button.setAttribute("aria-label", button.title);
-    button.setAttribute("aria-expanded", String(open));
+    button.setAttribute("aria-expanded", String(isOpen));
   }
   node.promptboardCodeMirror?.requestMeasure?.();
   scheduleLayoutSizeSync(node);
 }
 
 function isYamlPanelOpen(node) {
+  if (!YAML_SOURCE_PANEL_ENABLED) {
+    return false;
+  }
   const panel = node.promptboardYamlPanel;
   if (panel) {
     return !panel.classList.contains("is-collapsed");
@@ -2991,16 +3019,33 @@ function renderCards(node) {
   renderNavigator(node, scroll, state);
 }
 
+function promptboardNoticeText(node) {
+  return [node.promptboardTemplateStatus, node.promptboardStatus]
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function updatePromptboardNotice(node) {
+  const sharedStatus = node.promptboardTemplateStatusElement;
+  if (sharedStatus) {
+    sharedStatus.textContent = promptboardNoticeText(node);
+    sharedStatus.style.display = "";
+  }
+
+  const yamlStatus = node.promptboardStatusElement;
+  if (yamlStatus && yamlStatus !== sharedStatus) {
+    yamlStatus.textContent = node.promptboardStatus ?? "";
+  }
+}
+
 function setStatus(node, text) {
   if (node.promptboardStatusTimer) {
     clearTimeout(node.promptboardStatusTimer);
     node.promptboardStatusTimer = null;
   }
   node.promptboardStatus = text;
-  const status = node.promptboardStatusElement;
-  if (status) {
-    status.textContent = text;
-  }
+  updatePromptboardNotice(node);
 }
 
 function setTemporaryStatus(node, text) {
@@ -3008,10 +3053,7 @@ function setTemporaryStatus(node, text) {
   node.promptboardStatusTimer = setTimeout(() => {
     node.promptboardStatus = "";
     node.promptboardStatusTimer = null;
-    const status = node.promptboardStatusElement;
-    if (status) {
-      status.textContent = "";
-    }
+    updatePromptboardNotice(node);
   }, 2000);
 }
 
@@ -3078,8 +3120,7 @@ function updateTemplateControls(node) {
   }
 
   if (status) {
-    status.textContent = node.promptboardTemplateStatus ?? "";
-    status.style.display = "";
+    updatePromptboardNotice(node);
   }
 }
 
@@ -3365,7 +3406,7 @@ async function loadSelectedYaml(node, options = {}) {
   const resetState = options.resetState !== false;
   const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
   if (!yamlFile || yamlFile === INLINE_YAML_OPTION) {
-    return;
+    return false;
   }
 
   try {
@@ -3377,8 +3418,17 @@ async function loadSelectedYaml(node, options = {}) {
     setYamlEditorText(node, data.text ?? "");
     renderFromYaml(node, resetState);
     setStatus(node, "");
+    return true;
   } catch (error) {
     setStatus(node, `Load error: ${error.message}`);
+    return false;
+  }
+}
+
+async function reloadSelectedYaml(node) {
+  const loaded = await loadSelectedYaml(node, { resetState: false });
+  if (loaded) {
+    setTemporaryStatus(node, "Reloaded YAML");
   }
 }
 
@@ -3427,6 +3477,8 @@ function createSplitElement(node) {
   const save = document.createElement("button");
   const status = document.createElement("div");
   const toolbar = document.createElement("div");
+  const toolbarYamlRow = document.createElement("div");
+  const reloadYaml = document.createElement("button");
   const templateSelect = document.createElement("select");
   const toolbarTemplateRow = document.createElement("div");
   const toolbarSearchRow = document.createElement("div");
@@ -3445,6 +3497,7 @@ function createSplitElement(node) {
   const scroll = document.createElement("div");
 
   root.className = "promptboard";
+  root.classList.toggle("is-yaml-source-disabled", !YAML_SOURCE_PANEL_ENABLED);
   left.className = "promptboard-panel promptboard-yaml-panel";
   right.className = "promptboard-panel promptboard-right";
   yamlContent.className = "promptboard-yaml-content";
@@ -3458,6 +3511,8 @@ function createSplitElement(node) {
   save.className = "promptboard-button";
   status.className = "promptboard-status";
   toolbar.className = "promptboard-toolbar";
+  toolbarYamlRow.className = "promptboard-toolbar-yaml-row";
+  reloadYaml.className = "promptboard-button";
   toolbarTemplateRow.className = "promptboard-toolbar-template-row";
   toolbarSearchRow.className = "promptboard-toolbar-search-row";
   boardSearchRow.className = "promptboard-search-row";
@@ -3491,6 +3546,8 @@ function createSplitElement(node) {
   boardSearchMenu.setAttribute("role", "listbox");
   boardSearch.setAttribute("aria-controls", boardSearchMenu.id);
   boardSearchCount.textContent = "";
+  reloadYaml.type = "button";
+  reloadYaml.textContent = "Reload YAML";
   templateInput.type = "text";
   templateInput.placeholder = "template name";
   templateInput.value = node.promptboardTemplateName ?? "";
@@ -3515,6 +3572,7 @@ function createSplitElement(node) {
   templateStatus.textContent = node.promptboardTemplateStatus ?? "";
 
   stopCanvasEvents(select);
+  stopCanvasEvents(reloadYaml);
   stopCanvasEvents(yamlSearch);
   stopCanvasEvents(textarea);
   stopCanvasEvents(templateSelect);
@@ -3536,6 +3594,11 @@ function createSplitElement(node) {
     writeStoredTemplateState(node);
     updateTemplateControls(node);
     loadSelectedYaml(node);
+  });
+  reloadYaml.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    reloadSelectedYaml(node);
   });
   yamlSearch.addEventListener("input", () => {
     node.promptboardYamlSearchState = null;
@@ -3669,17 +3732,21 @@ function createSplitElement(node) {
     handleTemplateSaveShortcut(event, node);
   });
 
-  yamlSearchRow.append(yamlSearch, yamlSearchCount);
-  editor.append(editorHost, textarea);
-  yamlContent.append(select, yamlSearchRow, editor, save, status);
-  left.append(yamlContent);
+  toolbarYamlRow.append(select, reloadYaml);
   templateSaveCombo.append(templateSave, templateSaveMode);
   toolbarTemplateRow.append(templateSelect, templateInput, templateSaveCombo, templateDelete);
   boardSearchRow.append(boardSearch, boardSearchCount);
   toolbarSearchRow.append(boardSearchRow, createResetButton(node));
-  toolbar.append(toolbarTemplateRow, toolbarSearchRow);
+  toolbar.append(toolbarYamlRow, toolbarTemplateRow, toolbarSearchRow);
   right.append(toolbar, templateStatus, groupFilter, navigatorRailHost, scroll);
-  root.append(right, yamlToggle, left);
+  root.append(right);
+  if (YAML_SOURCE_PANEL_ENABLED) {
+    yamlSearchRow.append(yamlSearch, yamlSearchCount);
+    editor.append(editorHost, textarea);
+    yamlContent.append(yamlSearchRow, editor, save, status);
+    left.append(yamlContent);
+    root.append(yamlToggle, left);
+  }
 
   node.promptboardElement = root;
   node.promptboardYamlPanel = left;
@@ -3690,7 +3757,7 @@ function createSplitElement(node) {
   node.promptboardEditor = editor;
   node.promptboardEditorHost = editorHost;
   node.promptboardTextarea = textarea;
-  node.promptboardStatusElement = status;
+  node.promptboardStatusElement = YAML_SOURCE_PANEL_ENABLED ? status : templateStatus;
   node.promptboardTemplateSelect = templateSelect;
   node.promptboardBoardSearchInput = boardSearch;
   node.promptboardBoardSearchCount = boardSearchCount;
@@ -3706,7 +3773,9 @@ function createSplitElement(node) {
   node.promptboardScroll = scroll;
   setYamlPanelOpen(node, !!node.promptboardYamlPanelOpen);
   renderFromYaml(node);
-  createCodeMirrorEditor(node, editorHost, textarea);
+  if (YAML_SOURCE_PANEL_ENABLED) {
+    createCodeMirrorEditor(node, editorHost, textarea);
+  }
   updateTemplateControls(node);
   refreshYamlFileOptions(node);
 

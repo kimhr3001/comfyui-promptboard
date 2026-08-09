@@ -145,8 +145,6 @@ PromptBoard YAML Editor
 초기 출력:
 
 - `yaml_file`
-- `validation_report`
-- `save_report`
 
 초기 UI:
 
@@ -411,20 +409,63 @@ MVP 안정화 후 별도 migration으로 검토한다.
 - MVP에서는 제거하지 않는다.
 - 제거한다면 별도 major 변경으로 취급한다.
 
+## 진행 상태
+
+- 완료: Phase 1 / Step 1 - YAML backup/validate backend helper 추가
+  - 결과: `/promptboard/yaml/validate`, `/promptboard/yaml/backup` API와 helper를 추가했다.
+  - 검증: `tests/test_promptboard_yaml_backend.py`, `tests/test_promptboard_cache.py`, JS syntax/test, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 2 - `PromptBoard YAML Editor` 노드 skeleton 추가
+- 완료: Phase 1 / Step 2 - `PromptBoard YAML Editor` 노드 skeleton 추가
+  - 결과: validation report와 save report 출력을 가진 최소 노드를 등록했다.
+  - 검증: `tests/test_promptboard_yaml_backend.py`, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 3 - Editor YAML 선택/로드 구현
+- 완료: Phase 1 / Step 3 - Editor YAML 선택/로드 구현
+  - 결과: Editor 노드 전용 DOM UI에서 YAML 파일 선택, 서버 원문 로드, hidden `yaml_text` 동기화를 구현했다.
+  - 검증: JS syntax, backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 4 - Editor 저장/백업/검증 구현
+- 완료: Phase 1 / Step 4 - Editor 저장/백업/검증 구현
+  - 결과: Editor UI에 validate/save 동작을 추가하고 저장 전 backup을 강제했다.
+  - 검증: JS syntax, backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 5 - 섹션/태그 추가 팝업 구현
+- 완료: Phase 1 / Step 5 - 섹션/태그 추가 팝업 구현
+  - 결과: Editor UI에 `+ Section`, `+ Tag` 팝업을 추가하고 현재 YAML textarea에 section/tag를 삽입하도록 구현했다.
+  - 검증: JS syntax, YAML editor mutation tests, existing JS/backend tests, `git diff --check`
+  - 다음 작업: Phase 1 / Step 6 - PromptBoard YAML 선택창을 보드 컨트롤 영역으로 이동
+- 완료: Phase 1 / Step 6 - PromptBoard YAML 선택창을 보드 컨트롤 영역으로 이동
+  - 결과: PromptBoard의 YAML 선택창을 오른쪽 보드 컨트롤 toolbar 상단으로 이동하고 기존 YAML 로드 동작을 유지했다.
+  - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 7 - PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
+- 완료: Phase 1 / Step 7 - PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
+  - 결과: PromptBoard 본체의 YAML 원문 검색/편집/저장 패널을 비활성화하고 상태 메시지는 보드 컨트롤 영역에 유지했다.
+  - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 8 - `Reload YAML` 추가
+- 완료: Phase 1 / Step 8 - `Reload YAML` 추가
+  - 결과: PromptBoard toolbar에 `Reload YAML` 버튼을 추가하고 현재 선택 상태를 보존한 채 선택 YAML을 다시 읽도록 구현했다.
+  - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 9 - 템플릿 회귀 테스트
+- 완료: Phase 1 / Step 9 - 템플릿 회귀 테스트
+  - 결과: 템플릿 저장 계약이 `name`, `yaml_file`, `selected_state`만 유지하고 YAML 원문을 저장하지 않음을 테스트로 고정했다.
+  - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 10 - README 업데이트
+- 완료: Phase 1 / Step 10 - README 업데이트
+  - 결과: PromptBoard와 `PromptBoard YAML Editor` 역할 분리, reload, editor save/backup, 검색 설명을 현재 MVP 구조에 맞게 갱신했다.
+  - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 전체 리뷰 및 PR 준비
+
 ## 단계별 구현 순서
 
 ### Phase 1: MVP 기반
 
-1. YAML backup/validate backend helper 추가
-2. `PromptBoard YAML Editor` 노드 skeleton 추가
-3. Editor YAML 선택/로드 구현
-4. Editor 저장/백업/검증 구현
-5. 섹션/태그 추가 팝업 구현
-6. PromptBoard YAML 선택창을 보드 컨트롤 영역으로 이동
-7. PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
-8. `Reload YAML` 추가
-9. 템플릿 회귀 테스트
-10. README 업데이트
+1. [완료] YAML backup/validate backend helper 추가
+2. [완료] `PromptBoard YAML Editor` 노드 skeleton 추가
+3. [완료] Editor YAML 선택/로드 구현
+4. [완료] Editor 저장/백업/검증 구현
+5. [완료] 섹션/태그 추가 팝업 구현
+6. [완료] PromptBoard YAML 선택창을 보드 컨트롤 영역으로 이동
+7. [완료] PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
+8. [완료] `Reload YAML` 추가
+9. [완료] 템플릿 회귀 테스트
+10. [완료] README 업데이트
 
 ### Phase 2: 관리 기능 확장
 

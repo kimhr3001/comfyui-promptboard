@@ -1,5 +1,6 @@
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 
 try:
@@ -111,6 +112,64 @@ def _write_yaml_file(yaml_file, text):
         raise ValueError("Select a YAML file before saving.")
     normalize_yaml_document(text)
     path.write_text(str(text or ""), encoding="utf-8")
+
+
+def _validate_yaml_text(text):
+    model = normalize_yaml_document(text)
+    categories = model.get("categories") or {}
+    attribute_boards = model.get("attributeBoards") or {}
+    tag_sets = model.get("tagSets") or {}
+    tag_count = sum(len(category.get("tags") or []) for category in categories.values())
+    return {
+        "ok": True,
+        "schemaVersion": model.get("schemaVersion"),
+        "categoryCount": len(categories),
+        "tagCount": tag_count,
+        "tagSetCount": len(tag_sets),
+        "attributeBoardCount": len(attribute_boards),
+    }
+
+
+def _yaml_validation_error(error):
+    if isinstance(error, PromptBoardYamlError):
+        return {
+            "ok": False,
+            "code": error.code,
+            "path": error.path,
+            "message": str(error),
+            "error": _format_yaml_error(error),
+        }
+    return {
+        "ok": False,
+        "code": "validation_error",
+        "path": "$",
+        "message": str(error),
+        "error": str(error),
+    }
+
+
+def _backup_yaml_file(yaml_file, timestamp=None):
+    path = _safe_yaml_path(yaml_file)
+    if path is None:
+        raise ValueError("Select a YAML file before backing up.")
+
+    stamp = str(timestamp or datetime.now().strftime("%Y%m%d-%H%M%S"))
+    backup_path = path.with_name(f"{path.name}.bak-{stamp}")
+    if backup_path.exists():
+        index = 1
+        while True:
+            candidate = path.with_name(f"{path.name}.bak-{stamp}-{index}")
+            if not candidate.exists():
+                backup_path = candidate
+                break
+            index += 1
+
+    backup_path.write_bytes(path.read_bytes())
+    return {
+        "ok": True,
+        "yaml_file": str(yaml_file or DEFAULT_YAML_FILE),
+        "backup_file": backup_path.name,
+    }
 
 
 def _format_yaml_error(error):
@@ -234,6 +293,24 @@ def _register_api_routes():
             return web.json_response({"ok": True})
         except PromptBoardYamlError as exc:
             return web.json_response({"error": _format_yaml_error(exc)}, status=400)
+        except Exception as exc:
+            return web.json_response({"error": str(exc)}, status=400)
+
+    @PromptServer.instance.routes.post("/promptboard/yaml/validate")
+    async def validate_yaml_file(request):
+        try:
+            data = await request.json()
+            return web.json_response(_validate_yaml_text(data.get("text", "")))
+        except PromptBoardYamlError as exc:
+            return web.json_response(_yaml_validation_error(exc))
+        except Exception as exc:
+            return web.json_response(_yaml_validation_error(exc), status=400)
+
+    @PromptServer.instance.routes.post("/promptboard/yaml/backup")
+    async def backup_yaml_file(request):
+        try:
+            data = await request.json()
+            return web.json_response(_backup_yaml_file(data.get("name", "")))
         except Exception as exc:
             return web.json_response({"error": str(exc)}, status=400)
 
