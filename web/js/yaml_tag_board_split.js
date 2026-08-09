@@ -22,6 +22,7 @@ const TEMPLATE_SAVE_MODE_NEW = "new";
 const DEFAULT_YAML_FILE = "default.yaml";
 const INLINE_YAML_OPTION = "inline";
 const HIDDEN_MARK = "__promptboardHiddenWidget";
+const YAML_SOURCE_PANEL_ENABLED = false;
 const MIN_NODE_WIDTH = 600;
 const MIN_NODE_HEIGHT = 360;
 const MIN_LAYOUT_HEIGHT = 260;
@@ -1552,6 +1553,10 @@ function ensureStyles() {
       font: 11px Arial, sans-serif;
     }
 
+    .promptboard.is-yaml-source-disabled {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
 	    .promptboard-panel {
 	      box-sizing: border-box;
 	      min-width: 0;
@@ -1618,7 +1623,7 @@ function ensureStyles() {
 	    }
 
 	    .promptboard-right {
-	      grid-template-rows: auto auto auto auto minmax(0, 1fr);
+	      grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
 	    }
 
     .promptboard-toolbar {
@@ -2415,27 +2420,32 @@ function createResetButton(node) {
 }
 
 function setYamlPanelOpen(node, open) {
-  node.promptboardYamlPanelOpen = !!open;
+  const isOpen = YAML_SOURCE_PANEL_ENABLED && !!open;
+  node.promptboardYamlPanelOpen = isOpen;
   const panel = node.promptboardYamlPanel;
   const button = node.promptboardYamlToggleButton;
   const root = node.promptboardElement;
   if (root) {
-    root.style.setProperty("--promptboard-yaml-width", open ? `${EDITOR_PANEL_WIDTH}px` : "0px");
+    root.style.setProperty("--promptboard-yaml-width", isOpen ? `${EDITOR_PANEL_WIDTH}px` : "0px");
   }
   if (panel) {
-    panel.classList.toggle("is-collapsed", !open);
+    panel.classList.toggle("is-collapsed", !isOpen);
   }
   if (button) {
-    button.textContent = open ? "›" : "‹";
-    button.title = open ? "YAML 닫기" : "YAML 열기";
+    button.style.display = YAML_SOURCE_PANEL_ENABLED ? "" : "none";
+    button.textContent = isOpen ? "›" : "‹";
+    button.title = isOpen ? "YAML 닫기" : "YAML 열기";
     button.setAttribute("aria-label", button.title);
-    button.setAttribute("aria-expanded", String(open));
+    button.setAttribute("aria-expanded", String(isOpen));
   }
   node.promptboardCodeMirror?.requestMeasure?.();
   scheduleLayoutSizeSync(node);
 }
 
 function isYamlPanelOpen(node) {
+  if (!YAML_SOURCE_PANEL_ENABLED) {
+    return false;
+  }
   const panel = node.promptboardYamlPanel;
   if (panel) {
     return !panel.classList.contains("is-collapsed");
@@ -3453,6 +3463,7 @@ function createSplitElement(node) {
   const scroll = document.createElement("div");
 
   root.className = "promptboard";
+  root.classList.toggle("is-yaml-source-disabled", !YAML_SOURCE_PANEL_ENABLED);
   left.className = "promptboard-panel promptboard-yaml-panel";
   right.className = "promptboard-panel promptboard-right";
   yamlContent.className = "promptboard-yaml-content";
@@ -3678,18 +3689,21 @@ function createSplitElement(node) {
     handleTemplateSaveShortcut(event, node);
   });
 
-  yamlSearchRow.append(yamlSearch, yamlSearchCount);
-  editor.append(editorHost, textarea);
-  yamlContent.append(yamlSearchRow, editor, save, status);
-  left.append(yamlContent);
   toolbarYamlRow.append(select);
   templateSaveCombo.append(templateSave, templateSaveMode);
   toolbarTemplateRow.append(templateSelect, templateInput, templateSaveCombo, templateDelete);
   boardSearchRow.append(boardSearch, boardSearchCount);
   toolbarSearchRow.append(boardSearchRow, createResetButton(node));
   toolbar.append(toolbarYamlRow, toolbarTemplateRow, toolbarSearchRow);
-  right.append(toolbar, templateStatus, groupFilter, navigatorRailHost, scroll);
-  root.append(right, yamlToggle, left);
+  right.append(toolbar, templateStatus, status, groupFilter, navigatorRailHost, scroll);
+  root.append(right);
+  if (YAML_SOURCE_PANEL_ENABLED) {
+    yamlSearchRow.append(yamlSearch, yamlSearchCount);
+    editor.append(editorHost, textarea);
+    yamlContent.append(yamlSearchRow, editor, save, status);
+    left.append(yamlContent);
+    root.append(yamlToggle, left);
+  }
 
   node.promptboardElement = root;
   node.promptboardYamlPanel = left;
@@ -3716,7 +3730,9 @@ function createSplitElement(node) {
   node.promptboardScroll = scroll;
   setYamlPanelOpen(node, !!node.promptboardYamlPanelOpen);
   renderFromYaml(node);
-  createCodeMirrorEditor(node, editorHost, textarea);
+  if (YAML_SOURCE_PANEL_ENABLED) {
+    createCodeMirrorEditor(node, editorHost, textarea);
+  }
   updateTemplateControls(node);
   refreshYamlFileOptions(node);
 

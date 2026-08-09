@@ -437,6 +437,10 @@ MVP 안정화 후 별도 migration으로 검토한다.
   - 결과: PromptBoard의 YAML 선택창을 오른쪽 보드 컨트롤 toolbar 상단으로 이동하고 기존 YAML 로드 동작을 유지했다.
   - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
   - 다음 작업: Phase 1 / Step 7 - PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
+- 완료: Phase 1 / Step 7 - PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
+  - 결과: PromptBoard 본체의 YAML 원문 검색/편집/저장 패널을 비활성화하고 상태 메시지는 보드 컨트롤 영역에 유지했다.
+  - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 8 - `Reload YAML` 추가
 
 ## 단계별 구현 순서
 
@@ -448,7 +452,7 @@ MVP 안정화 후 별도 migration으로 검토한다.
 4. [완료] Editor 저장/백업/검증 구현
 5. [완료] 섹션/태그 추가 팝업 구현
 6. [완료] PromptBoard YAML 선택창을 보드 컨트롤 영역으로 이동
-7. PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
+7. [완료] PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
 8. `Reload YAML` 추가
 9. 템플릿 회귀 테스트
 10. README 업데이트
