@@ -411,11 +411,18 @@ MVP 안정화 후 별도 migration으로 검토한다.
 - MVP에서는 제거하지 않는다.
 - 제거한다면 별도 major 변경으로 취급한다.
 
+## 진행 상태
+
+- 완료: Phase 1 / Step 1 - YAML backup/validate backend helper 추가
+  - 결과: `/promptboard/yaml/validate`, `/promptboard/yaml/backup` API와 helper를 추가했다.
+  - 검증: `tests/test_promptboard_yaml_backend.py`, `tests/test_promptboard_cache.py`, JS syntax/test, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 2 - `PromptBoard YAML Editor` 노드 skeleton 추가
+
 ## 단계별 구현 순서
 
 ### Phase 1: MVP 기반
 
-1. YAML backup/validate backend helper 추가
+1. [완료] YAML backup/validate backend helper 추가
 2. `PromptBoard YAML Editor` 노드 skeleton 추가
 3. Editor YAML 선택/로드 구현
 4. Editor 저장/백업/검증 구현

@@ -7,11 +7,14 @@ from unittest.mock import patch
 from promptboard_yaml import PromptBoardYamlError, normalize_yaml_document
 from yaml_tag_nodes import (
     PromptBoardReplace,
+    _backup_yaml_file,
     _compose_attribute_targets,
     _get_board_template,
     _save_board_template,
     _select_tags_outputs,
     _select_tags_with_prompt_preview,
+    _validate_yaml_text,
+    _yaml_validation_error,
 )
 
 
@@ -199,6 +202,72 @@ POSE:
                     _save_board_template("new-template", "default.yaml", {"STYLE": ["cinematic"]})
 
             self.assertEqual(template_file.read_text(encoding="utf-8"), "{broken")
+
+    def test_yaml_editor_validation_reports_summary(self):
+        report = _validate_yaml_text(
+            """
+STYLE:
+  placeholder: <STYLE>
+  tags:
+  - cinematic
+  - text: soft light
+    label: Soft
+"""
+        )
+
+        self.assertEqual(
+            report,
+            {
+                "ok": True,
+                "schemaVersion": 1,
+                "categoryCount": 1,
+                "tagCount": 2,
+                "tagSetCount": 0,
+                "attributeBoardCount": 0,
+            },
+        )
+
+    def test_yaml_editor_validation_error_is_structured(self):
+        with self.assertRaises(PromptBoardYamlError) as raised:
+            _validate_yaml_text("_promptboard:\n  typoField: true\n")
+
+        error = _yaml_validation_error(raised.exception)
+        self.assertEqual(error["ok"], False)
+        self.assertEqual(error["code"], "unknown_schema_field")
+        self.assertEqual(error["path"], "_promptboard.typoField")
+        self.assertIn("[unknown_schema_field] at _promptboard.typoField", error["error"])
+
+    def test_yaml_editor_backup_copies_selected_yaml(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tags_root = Path(directory) / "tags"
+            tags_root.mkdir()
+            source = tags_root / "custom.yaml"
+            source.write_text("STYLE:\n  tags:\n  - cinematic\n", encoding="utf-8")
+
+            with patch("yaml_tag_nodes.YAML_FILE_ROOTS", (("tags", tags_root),)):
+                result = _backup_yaml_file("custom.yaml", timestamp="20260809-123456")
+
+            backup = tags_root / result["backup_file"]
+            self.assertEqual(result["ok"], True)
+            self.assertEqual(result["yaml_file"], "custom.yaml")
+            self.assertEqual(result["backup_file"], "custom.yaml.bak-20260809-123456")
+            self.assertEqual(backup.read_text(encoding="utf-8"), source.read_text(encoding="utf-8"))
+
+    def test_yaml_editor_backup_avoids_overwriting_existing_backup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tags_root = Path(directory) / "tags"
+            tags_root.mkdir()
+            source = tags_root / "custom.yaml"
+            source.write_text("STYLE:\n  tags:\n  - cinematic\n", encoding="utf-8")
+            existing = tags_root / "custom.yaml.bak-20260809-123456"
+            existing.write_text("existing", encoding="utf-8")
+
+            with patch("yaml_tag_nodes.YAML_FILE_ROOTS", (("tags", tags_root),)):
+                result = _backup_yaml_file("custom.yaml", timestamp="20260809-123456")
+
+            self.assertEqual(result["backup_file"], "custom.yaml.bak-20260809-123456-1")
+            self.assertEqual((tags_root / result["backup_file"]).read_text(encoding="utf-8"), source.read_text(encoding="utf-8"))
+            self.assertEqual(existing.read_text(encoding="utf-8"), "existing")
 
     def test_attribute_payload_uses_existing_replace_path(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
