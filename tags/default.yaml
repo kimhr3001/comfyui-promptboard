@@ -60,6 +60,44 @@ _promptboard:
         - text: silver
           label: 은색
           description: 은빛이 도는 색상입니다.
+        - section: 세부 색상
+        - text: ivory
+          label: 아이보리
+          description: 따뜻한 흰색에 가까운 아이보리 색상입니다.
+        - text: charcoal
+          label: 차콜
+          description: 검정에 가까운 짙은 회색 계열 색상입니다.
+        - text: khaki
+          label: 카키
+          description: 군복이나 캐주얼 의상에 자주 쓰이는 카키 색상입니다.
+        - text: olive
+          label: 올리브
+          description: 녹색과 갈색이 섞인 올리브 계열 색상입니다.
+        - text: lavender
+          label: 라벤더
+          description: 연보라빛이 도는 부드러운 라벤더 색상입니다.
+        - section: 복합/효과색
+        - text: two-tone
+          label: 투톤
+          description: 두 가지 색이 배색된 색상 효과입니다.
+        - text: colorful
+          label: 컬러풀
+          description: 여러 색이 밝고 화려하게 섞인 색상 효과입니다.
+        - text: multicolored
+          label: 다색
+          description: 여러 색상이 함께 섞인 색상 효과입니다.
+        - text: gradient
+          label: 그라데이션
+          description: 색상이 자연스럽게 이어지며 변하는 색상 효과입니다.
+        - text: transparent
+          label: 투명
+          description: 투명하거나 비쳐 보이는 색상/표면 효과입니다.
+        - text: holographic
+          label: 홀로그래픽
+          description: 빛 각도에 따라 여러 색이 반사되는 홀로그래픽 효과입니다.
+        - text: iridescent
+          label: 이리데슨트
+          description: 무지갯빛으로 은은하게 변하는 광택 효과입니다.
     clothingMaterials:
       label: 재질
       tags:
@@ -85,6 +123,43 @@ _promptboard:
         - text: ribbed
           label: 골지
           description: 세로 골이 있는 니트/골지 질감입니다.
+        - section: 일반 소재
+        - text: cotton
+          label: 면
+          description: 가볍고 자연스러운 면 소재입니다.
+        - text: wool
+          label: 울
+          description: 따뜻한 울 소재입니다.
+        - text: knit
+          label: 니트
+          description: 짜임이 보이는 니트 소재입니다.
+        - text: mesh
+          label: 메시
+          description: 망사처럼 구멍이 있는 메시 소재입니다.
+        - text: chiffon
+          label: 시폰
+          description: 얇고 가벼운 시폰 소재입니다.
+        - text: tulle
+          label: 튤
+          description: 얇은 망사 느낌의 튤 소재입니다.
+        - text: velvet
+          label: 벨벳
+          description: 부드러운 광택이 있는 벨벳 소재입니다.
+        - text: vinyl
+          label: 비닐
+          description: 광택 있고 매끈한 비닐 소재입니다.
+        - text: suede
+          label: 스웨이드
+          description: 부드럽고 매트한 스웨이드 소재입니다.
+        - text: linen
+          label: 리넨
+          description: 가볍고 시원한 리넨 소재입니다.
+        - text: corduroy
+          label: 코듀로이
+          description: 골이 있는 코듀로이 소재입니다.
+        - text: sequin
+          label: 스팽글
+          description: 반짝이는 스팽글 장식 소재입니다.
     clothingPatterns:
       label: 패턴
       tags:
@@ -107,6 +182,31 @@ _promptboard:
         - text: floral_print
           label: 플로럴
           description: 꽃무늬 패턴입니다.
+        - section: 프린트/직조
+        - text: pinstripe
+          label: 핀스트라이프
+          description: 얇은 세로 줄무늬 패턴입니다.
+        - text: camouflage
+          label: 카모플라주
+          description: 위장무늬 패턴입니다.
+        - text: leopard_print
+          label: 레오파드
+          description: 표범무늬 프린트입니다.
+        - text: heart_pattern
+          label: 하트 패턴
+          description: 하트 모양이 반복되는 패턴입니다.
+        - text: star_pattern
+          label: 별 패턴
+          description: 별 모양이 반복되는 패턴입니다.
+        - text: graphic_print
+          label: 그래픽 프린트
+          description: 그래픽 이미지나 문양이 인쇄된 패턴입니다.
+        - text: embroidered
+          label: 자수
+          description: 실로 수놓은 자수 장식 패턴입니다.
+        - text: jacquard
+          label: 자카드
+          description: 직조로 무늬를 만든 자카드 패턴입니다.
   attributeBoards:
     clothingAttributes:
       label: 의상 속성
@@ -121,7 +221,7 @@ _promptboard:
             color:
               label: 색상
               source: colors
-              mode: single
+              mode: multiple
               migrateFrom: 상의색상
             material:
               label: 재질
@@ -140,7 +240,7 @@ _promptboard:
             color:
               label: 색상
               source: colors
-              mode: single
+              mode: multiple
               migrateFrom: 하의색상
             material:
               label: 재질
@@ -159,7 +259,7 @@ _promptboard:
             color:
               label: 색상
               source: colors
-              mode: single
+              mode: multiple
               migrateFrom: 외투색상
             material:
               label: 재질
@@ -178,7 +278,7 @@ _promptboard:
             color:
               label: 색상
               source: colors
-              mode: single
+              mode: multiple
             material:
               label: 재질
               source: clothingMaterials
@@ -196,7 +296,7 @@ _promptboard:
             color:
               label: 색상
               source: colors
-              mode: single
+              mode: multiple
             material:
               label: 재질
               source: clothingMaterials
@@ -214,7 +314,25 @@ _promptboard:
             color:
               label: 색상
               source: colors
+              mode: multiple
+            material:
+              label: 재질
+              source: clothingMaterials
               mode: single
+            pattern:
+              label: 패턴
+              source: clothingPatterns
+              mode: single
+        shoes:
+          label: 신발
+          placeholder: <SHC>
+          compose:
+            separator: ' '
+          attributes:
+            color:
+              label: 색상
+              source: colors
+              mode: multiple
             material:
               label: 재질
               source: clothingMaterials
@@ -228,7 +346,7 @@ _promptboard:
   uiGroup: 구도
   tags:
     - section: 인원
-    - text: solo, solo_focus
+    - text: solo_focus
       label: 솔로
       description: 한 명의 캐릭터가 화면에 등장합니다.
     - section: 기본 자세
@@ -831,7 +949,7 @@ _promptboard:
       label: 도서관
       description: 책이 가득한 정숙한 도서관
     - text: cubicle
-      label: 큐비클
+      label: 칸막이
       description: 칸막이로 분리된 작은 공간
     - text: cafeteria
       label: 구내식당
@@ -1053,6 +1171,9 @@ _promptboard:
     - text: skindentation
       label: 살 눌림
       description: 의상에 의해 살이 눌린 모습입니다.
+    - text: lowrise
+      label: 로우라이즈
+      description: 허리선이 낮게 내려간 하의 착용 스타일입니다.
     - section: 노출 디테일
     - text: bare_shoulder
       label: 어깨 노출
@@ -1124,6 +1245,9 @@ _promptboard:
     - text: <TCO> too_sweet_poplin_mini_dress, poplin_mini_dress, mini_dress
       label: 투 스위트 포플린 미니 드레스
       description: 색상, 재질, 패턴을 적용할 수 있는 포플린 소재의 미니 드레스입니다.
+    - text: <TCO> laced-up_mini_denim_dress, lace-up_dress, denim_dress, mini_dress
+      label: 레이스업 미니 데님 드레스
+      description: 끈 장식이 있는 짧은 데님 원피스입니다.
 상의상세:
   placeholder: <CLOTHES>
   uiGroup: 의상
@@ -1441,80 +1565,80 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 힐
-    - text: high_heels
+    - text: <SHC> high_heels
       label: 하이힐
       description: 굽이 높은 신발입니다.
-    - text: stiletto_heels
+    - text: <SHC> stiletto_heels
       label: 스틸레토 힐
       description: 끝이 뾰족하고 가는 굽의 신발입니다.
-    - text: pumps
+    - text: <SHC> pumps
       label: 펌프스
       description: 장식이 없는 깔끔한 형태의 구두입니다.
-    - text: wedge_heels
+    - text: <SHC> wedge_heels
       label: 웨지힐
       description: 굽이 두꺼운 통굽 형태의 힐
-    - text: platform_heels
+    - text: <SHC> platform_heels
       label: 통굽 힐
       description: 높은 굽이 있는 플랫폼 스타일의 신발
-    - text: kitten_heels
+    - text: <SHC> kitten_heels
       label: 키튼 힐
       description: 낮고 가느다란 굽의 힐
-    - text: pointed_toe_heels
+    - text: <SHC> pointed_toe_heels
       label: 뾰족 코 힐
       description: 앞코가 뾰족하게 디자인된 힐
-    - text: block_heels
+    - text: <SHC> block_heels
       label: 블록 힐
       description: 두툼하고 넓은 형태의 굽이 있는 하이힐입니다.
     - section: 부츠
-    - text: ankle_boots
+    - text: <SHC> ankle_boots
       label: 앵클 부츠
       description: 발목까지 오는 길이의 부츠입니다.
-    - text: combat_boots
+    - text: <SHC> combat_boots
       label: 컴뱃 부츠
       description: 튼튼한 전투용 부츠
-    - text: lace-up_boots
+    - text: <SHC> lace-up_boots
       label: 레이스업 부츠
       description: 끈으로 발등을 조이는 형태의 부츠입니다.
-    - text: platform_boots
+    - text: <SHC> platform_boots
       label: 통굽 부츠
       description: 굽이 높은 플랫폼 형태의 부츠
     - section: 플랫/로퍼
-    - text: loafers
+    - text: <SHC> loafers
       label: 로퍼
       description: 단정한 슬립온 형태의 신발
-    - text: ballet_flats
+    - text: <SHC> ballet_flats
       label: 플랫 슈즈
       description: 굽이 거의 없는 발레풍 신발
-    - text: flat_shoes
+    - text: <SHC> flat_shoes
       label: 플랫 슈즈
       description: 굽이 없는 평평한 신발입니다.
-    - text: mules
+    - text: <SHC> mules
       label: 뮬
       description: 뒷축이 없는 슬리퍼 형태의 신발
     - section: 샌들/스니커즈
-    - text: strappy_sandals
+    - text: <SHC> strappy_sandals
       label: 스트랩 샌들
       description: 끈으로 발등을 감싸는 형태의 샌들
-    - text: heeled_sandals
+    - text: <SHC> heeled_sandals
       label: 힐 샌들
       description: 높은 굽이 있는 샌들
-    - text: fashion_sneakers
+    - text: <SHC> fashion_sneakers
       label: 패션 스니커즈
       description: 스타일리시한 디자인의 운동화입니다.
-    - text: sneakers
+    - text: <SHC> sneakers
       label: 스니커즈
       description: 캐주얼한 운동화
-    - text: sandals
+    - text: <SHC> sandals
       label: 샌들
       description: 발등이 노출된 형태의 신발입니다.
-    - text: sports_shoes
+    - text: <SHC> sports_shoes
       label: 운동화
       description: 스포츠용 운동화입니다.
-    - text: high-top_sneakers
+    - text: <SHC> high-top_sneakers
       label: 하이탑 스니커즈
       description: 발목까지 올라오는 스니커즈입니다.
     - section: 전통 신발
-    - text: okobo
+    - text: <SHC> okobo
       label: 오코보
       description: 일본 전통 복식에 어울리는 높은 굽의 나막신입니다.
 수영복:
@@ -1528,9 +1652,18 @@ _promptboard:
     - text: <TCO> bikini_top
       label: 비키니 상의
       description: 비키니의 상의만 착용한 상태입니다.
+    - text: <TCO> front-tie_bikini_top
+      label: 앞매듭 비키니 상의
+      description: 앞쪽에 묶는 매듭 장식이 있는 비키니 상의입니다.
     - text: <BCO> bikini_bottom
       label: 비키니 하의
       description: 비키니의 하의만 착용한 상태입니다.
+    - text: <BCO> side-tie_bikini_bottom
+      label: 사이드타이 비키니 하의
+      description: 옆끈을 묶는 형태의 비키니 하의입니다.
+    - text: bikini_under_clothes
+      label: 옷 안 비키니
+      description: 일반 의상 안에 비키니를 받쳐 입은 상태입니다.
     - text: string_bikini
       label: 스트링 비키니
       description: 끈으로 연결된 섹시한 비키니
@@ -1918,6 +2051,9 @@ _promptboard:
     - text: modern_qipao, qipao, side_slit, mandarin_collar, silk_fabric, embroidered_pattern, high_heels
       label: 모던 치파오
       description: 차이나 칼라와 사이드 슬릿, 실크 소재, 자수 패턴이 있는 현대적인 치파오입니다.
+    - text: see-through_floral_short_qipao, short_qipao, qipao, see-through, floral_print
+      label: 시스루 플로럴 숏 치파오
+      description: 비치는 소재와 꽃무늬가 들어간 짧은 치파오 스타일입니다.
     - text: modern_hanbok, hanbok, jeogori, chima, sheer_sleeves, embroidered_pattern, ribbon, soft_pastel
       label: 모던 한복
       description: 저고리와 치마 실루엣에 시어 소매와 자수 포인트를 더한 현대식 한복 스타일입니다.

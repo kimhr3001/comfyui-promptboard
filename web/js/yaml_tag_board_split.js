@@ -13,7 +13,7 @@ import { normalizeYamlDocument } from "./promptboard_yaml.mjs";
 
 const NODE_NAME = "PromptBoard";
 const LAYOUT_WIDGET = "split_layout";
-const RESET_BUTTON = "Reset";
+const RESET_BUTTON = "선택 초기화";
 const SAVE_TEMPLATE_BUTTON = "Save";
 const SAVE_TEMPLATE_NEW_BUTTON = "Save (New)";
 const DELETE_TEMPLATE_BUTTON = "Delete";
@@ -22,7 +22,7 @@ const TEMPLATE_SAVE_MODE_NEW = "new";
 const DEFAULT_YAML_FILE = "default.yaml";
 const INLINE_YAML_OPTION = "inline";
 const HIDDEN_MARK = "__promptboardHiddenWidget";
-const MIN_NODE_WIDTH = 720;
+const MIN_NODE_WIDTH = 600;
 const MIN_NODE_HEIGHT = 360;
 const MIN_LAYOUT_HEIGHT = 260;
 const EDITOR_PANEL_WIDTH = 320;
@@ -36,6 +36,31 @@ const TEMPLATE_STORAGE_PREFIX = "promptboard:template:v1";
 const SEARCH_DEBOUNCE_MS = 150;
 const GROUP_ALL = "전체";
 const DEFAULT_UI_GROUP = "기타";
+const UI_GROUP_ACCENTS = {
+  [GROUP_ALL]: "#8c98a4",
+  "구도": "#5a8fd8",
+  "포즈": "#8da66a",
+  "몸": "#6aa66a",
+  "얼굴": "#6aa66a",
+  "헤어": "#6aa66a",
+  "캐릭터": "#6aa66a",
+  "파트너": "#7d9f79",
+  "화면": "#5a8fd8",
+  "장소": "#38a6b9",
+  "화면/장소": "#38a6b9",
+  "조명": "#d6b84a",
+  "의상": "#9b7ad0",
+  "세트의상": "#ad78a7",
+  "색상": "#d6a94a",
+  "기타": "#8c98a4",
+  "상황": "#c77b7b",
+};
+const NAVIGATOR_LABEL_ACCENTS = {
+  "화면": "#5a8fd8",
+  "장소": "#38a6b9",
+  "조명": "#d6b84a",
+};
+const FALLBACK_ACCENTS = ["#5a8fd8", "#38a6b9", "#6aa66a", "#9b7ad0", "#d6a94a", "#c77b7b", "#8c98a4"];
 const PLACEHOLDER_UI_GROUPS = {
   "<PHOTOSHOT>": "구도",
   "<INTER>": "구도",
@@ -53,6 +78,7 @@ const PLACEHOLDER_UI_GROUPS = {
   "<OCO>": "색상",
   "<ECO>": "색상",
   "<HCO>": "색상",
+  "<SHC>": "색상",
 };
 
 let codeMirrorModulePromise = null;
@@ -776,6 +802,28 @@ function normalizeUiGroup(value) {
   return String(value ?? "").trim();
 }
 
+function hashText(value) {
+  const text = String(value ?? "");
+  let hash = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = Math.imul(hash, 31) + text.charCodeAt(index);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function accentForLabel(label) {
+  const normalized = normalizeUiGroup(label) || DEFAULT_UI_GROUP;
+  if (UI_GROUP_ACCENTS[normalized]) {
+    return UI_GROUP_ACCENTS[normalized];
+  }
+  return FALLBACK_ACCENTS[hashText(normalized) % FALLBACK_ACCENTS.length];
+}
+
+function setAccent(element, accent) {
+  element?.style?.setProperty("--promptboard-accent", accent || accentForLabel(DEFAULT_UI_GROUP));
+}
+
 function inferUiGroup(item) {
   const placeholder = String(item?.placeholder ?? "").trim();
   return PLACEHOLDER_UI_GROUPS[placeholder] || DEFAULT_UI_GROUP;
@@ -796,6 +844,17 @@ function categoryLabel(category, item) {
 
 function attributeBoardUiGroup(board) {
   return normalizeUiGroup(board?.uiGroup) || DEFAULT_UI_GROUP;
+}
+
+function navigatorItemAccent(item) {
+  if (!item) {
+    return accentForLabel(DEFAULT_UI_GROUP);
+  }
+  const labelAccent = NAVIGATOR_LABEL_ACCENTS[item.label];
+  if (labelAccent) {
+    return labelAccent;
+  }
+  return accentForLabel(item.uiGroup || item.context);
 }
 
 function availableUiGroups(config, attributeBoards = {}) {
@@ -861,6 +920,19 @@ function tagDisplayLabel(tag) {
   return sourceLabel && sourceLabel !== tagText ? `[${sourceLabel}] ${tagText}` : tagText;
 }
 
+function tagButtonDisplayLabel(tag) {
+  return String(tag?.label || tag?.text || "");
+}
+
+function tagButtonTitle(tag, displayLabel) {
+  const description = String(tag?.description ?? "").trim();
+  const tagText = String(tag?.text ?? "").trim();
+  if (description && tagText) {
+    return `${description}\n태그: ${tagText}`;
+  }
+  return description || tagText || displayLabel;
+}
+
 function tagItemsForTags(tags = [], tagItems = null) {
   return Array.isArray(tagItems) && tagItems.length
     ? tagItems
@@ -878,16 +950,19 @@ function tagItemsForTagSet(tagSet) {
 function navigatorItems(node) {
   const items = [];
   for (const [category, item] of visibleCategoryEntries(node)) {
+    const uiGroup = categoryUiGroup(item);
     items.push({
       kind: "category",
       category,
       label: categoryLabel(category, item),
-      context: categoryUiGroup(item),
+      context: uiGroup,
+      uiGroup,
       tags: item.tags ?? [],
       tagItems: tagItemsForCategory(item),
     });
   }
   for (const [boardId, board] of visibleAttributeBoardEntries(node)) {
+    const uiGroup = attributeBoardUiGroup(board);
     for (const [targetId, target] of Object.entries(board.targets ?? {})) {
       items.push({
         kind: "attributeTarget",
@@ -895,6 +970,7 @@ function navigatorItems(node) {
         targetId,
         label: target.label || targetId,
         context: board.label || boardId,
+        uiGroup,
         attributes: target.attributes ?? {},
       });
     }
@@ -1464,9 +1540,10 @@ function ensureStyles() {
   style.id = "promptboard-styles";
   style.textContent = `
 	    .promptboard {
+	      --promptboard-accent: #8c98a4;
 	      box-sizing: border-box;
 	      display: grid;
-	      grid-template-columns: minmax(260px, 1fr) 22px var(--promptboard-yaml-width, 0px);
+		      grid-template-columns: minmax(0, 1fr) 22px minmax(0, var(--promptboard-yaml-width, 0px));
 	      column-gap: 0;
 	      width: 100%;
 	      height: 100%;
@@ -1488,11 +1565,12 @@ function ensureStyles() {
 	      overflow: hidden;
 	    }
 
-	    .promptboard-yaml-panel {
-	      grid-template-rows: minmax(0, 1fr);
-	      width: var(--promptboard-yaml-width, 0px);
-	      transition: width 120ms ease;
-	    }
+		    .promptboard-yaml-panel {
+		      grid-template-rows: minmax(0, 1fr);
+		      width: var(--promptboard-yaml-width, 0px);
+		      max-width: 100%;
+		      transition: width 120ms ease;
+		    }
 
 	    .promptboard-yaml-panel.is-collapsed {
 	      border-width: 0;
@@ -1545,22 +1623,21 @@ function ensureStyles() {
 
     .promptboard-toolbar {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
-      gap: 4px;
-      min-width: 0;
-    }
-
-    .promptboard-toolbar-left,
-    .promptboard-toolbar-right {
-      display: grid;
       grid-template-rows: auto auto;
       gap: 4px;
       min-width: 0;
     }
 
-    .promptboard-toolbar-left-top {
+    .promptboard-toolbar-template-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(48px, auto);
+      grid-template-columns: minmax(104px, 0.95fr) minmax(118px, 1.35fr) minmax(70px, 88px) minmax(58px, 76px);
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .promptboard-toolbar-search-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(96px, 128px);
       gap: 4px;
       min-width: 0;
     }
@@ -1712,6 +1789,7 @@ function ensureStyles() {
 
     .promptboard-group-button {
       box-sizing: border-box;
+      position: relative;
       display: inline-flex;
       align-items: center;
       gap: 5px;
@@ -1725,6 +1803,16 @@ function ensureStyles() {
       font: 10px Arial, sans-serif;
       cursor: pointer;
       white-space: nowrap;
+    }
+
+    .promptboard-group-button::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 3px;
+      height: 12px;
+      border-radius: 2px;
+      background: color-mix(in srgb, var(--promptboard-accent) 72%, #202020);
+      opacity: 0.68;
     }
 
     .promptboard-group-label {
@@ -1747,18 +1835,23 @@ function ensureStyles() {
     }
 
     .promptboard-group-button:hover {
-      border-color: #888;
-      background: rgba(48, 48, 48, 0.96);
+      border-color: color-mix(in srgb, var(--promptboard-accent) 52%, #888);
+      background: color-mix(in srgb, var(--promptboard-accent) 14%, rgba(48, 48, 48, 0.96));
     }
 
     .promptboard-group-button.is-active {
-      border-color: rgba(86, 148, 209, 0.95);
-      background: rgba(39, 82, 124, 0.92);
+      border-color: color-mix(in srgb, var(--promptboard-accent) 78%, #d7ecff);
+      background: color-mix(in srgb, var(--promptboard-accent) 42%, rgba(32, 32, 32, 0.96));
       color: #f5fbff;
     }
 
+    .promptboard-group-button.is-active::before {
+      background: color-mix(in srgb, var(--promptboard-accent) 88%, #ffffff);
+      opacity: 1;
+    }
+
 	    .promptboard-group-button.is-active .promptboard-group-count {
-	      background: rgba(154, 196, 236, 0.32);
+	      background: color-mix(in srgb, var(--promptboard-accent) 36%, rgba(154, 196, 236, 0.32));
 	      color: #ffffff;
 	    }
 
@@ -1772,6 +1865,19 @@ function ensureStyles() {
     .promptboard-button:hover {
       border-color: #888;
       background: rgba(48, 48, 48, 0.96);
+    }
+
+    .promptboard-clear-selection {
+      border-color: rgba(138, 102, 102, 0.9);
+      background: rgba(58, 41, 41, 0.92);
+      color: #f0d8d8;
+      font-weight: 700;
+    }
+
+    .promptboard-clear-selection:hover {
+      border-color: rgba(190, 128, 128, 0.95);
+      background: rgba(78, 48, 48, 0.96);
+      color: #fff1f1;
     }
 
     .promptboard-button.is-done {
@@ -1798,13 +1904,6 @@ function ensureStyles() {
       white-space: nowrap;
       color: #cfcfcf;
       font-size: 10px;
-    }
-
-    .promptboard-template-save-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(36px, auto);
-      gap: 4px;
-      min-width: 0;
     }
 
     .promptboard-save-combo {
@@ -1854,23 +1953,25 @@ function ensureStyles() {
       background: rgba(48, 48, 48, 0.96);
     }
 
-    .promptboard-editor {
-      box-sizing: border-box;
-      min-height: 0;
-      height: 100%;
-      overflow: hidden;
+	    .promptboard-editor {
+	      box-sizing: border-box;
+	      min-width: 0;
+	      min-height: 0;
+	      height: 100%;
+	      overflow: hidden;
       border: 1px solid rgba(120, 120, 120, 0.78);
       border-radius: 3px;
       background: rgba(22, 22, 22, 0.98);
     }
 
-    .promptboard-codemirror {
-      box-sizing: border-box;
-      display: none;
-      width: 100%;
-      height: 100%;
-      min-height: 0;
-    }
+	    .promptboard-codemirror {
+	      box-sizing: border-box;
+	      display: none;
+	      width: 100%;
+	      min-width: 0;
+	      height: 100%;
+	      min-height: 0;
+	    }
 
     .promptboard-textarea {
       box-sizing: border-box;
@@ -1933,9 +2034,9 @@ function ensureStyles() {
 	    .promptboard-selected-summary {
 	      box-sizing: border-box;
 	      min-width: 0;
-	      border: 1px solid rgba(111, 137, 154, 0.46);
+	      border: 1px solid color-mix(in srgb, var(--promptboard-accent) 42%, rgba(111, 137, 154, 0.46));
 	      border-radius: 4px;
-	      background: rgba(38, 43, 47, 0.72);
+	      background: color-mix(in srgb, var(--promptboard-accent) 8%, rgba(38, 43, 47, 0.72));
 	      padding: 6px;
 	    }
 
@@ -1943,6 +2044,7 @@ function ensureStyles() {
 	      display: flex;
 	      flex-direction: column;
 	      gap: 8px;
+	      box-shadow: inset 3px 0 0 color-mix(in srgb, var(--promptboard-accent) 64%, rgba(255, 255, 255, 0.08));
 	    }
 
 	    .promptboard-navigator-content {
@@ -1961,6 +2063,7 @@ function ensureStyles() {
 
 	    .promptboard-navigator-category {
 	      box-sizing: border-box;
+	      position: relative;
 	      display: inline-flex;
 	      align-items: center;
 	      gap: 5px;
@@ -1977,15 +2080,30 @@ function ensureStyles() {
 	      cursor: pointer;
 	    }
 
+	    .promptboard-navigator-category::before {
+	      content: "";
+	      flex: 0 0 auto;
+	      width: 3px;
+	      height: 13px;
+	      border-radius: 2px;
+	      background: color-mix(in srgb, var(--promptboard-accent) 72%, #202020);
+	      opacity: 0.66;
+	    }
+
 	    .promptboard-navigator-category:hover {
-	      border-color: #888;
-	      background: rgba(48, 48, 48, 0.96);
+	      border-color: color-mix(in srgb, var(--promptboard-accent) 56%, #888);
+	      background: color-mix(in srgb, var(--promptboard-accent) 14%, rgba(48, 48, 48, 0.96));
 	    }
 
 	    .promptboard-navigator-category.is-active {
-	      border-color: rgba(86, 148, 209, 0.95);
-	      background: rgba(39, 82, 124, 0.92);
+	      border-color: color-mix(in srgb, var(--promptboard-accent) 78%, #d7ecff);
+	      background: color-mix(in srgb, var(--promptboard-accent) 42%, rgba(32, 32, 32, 0.96));
 	      color: #f5fbff;
+	    }
+
+	    .promptboard-navigator-category.is-active::before {
+	      background: color-mix(in srgb, var(--promptboard-accent) 88%, #ffffff);
+	      opacity: 1;
 	    }
 
 	    .promptboard-navigator-category-label {
@@ -2010,7 +2128,7 @@ function ensureStyles() {
 	    }
 
 	    .promptboard-navigator-category.is-active .promptboard-navigator-category-count {
-	      background: rgba(154, 196, 236, 0.32);
+	      background: color-mix(in srgb, var(--promptboard-accent) 36%, rgba(154, 196, 236, 0.32));
 	      color: #ffffff;
 	    }
 
@@ -2104,7 +2222,7 @@ function ensureStyles() {
 	      align-items: center;
 	      gap: 5px;
 	      width: auto;
-	      max-width: 190px;
+	      max-width: 270px;
 	      min-height: 20px;
 	      padding: 2px 5px;
 	      border: 1px solid rgba(120, 120, 120, 0.72);
@@ -2116,9 +2234,19 @@ function ensureStyles() {
 	      cursor: pointer;
 	    }
 
+	    .promptboard-selected-chip::before {
+	      content: "";
+	      flex: 0 0 auto;
+	      align-self: stretch;
+	      width: 4px;
+	      min-height: 16px;
+	      border-radius: 3px;
+	      background: color-mix(in srgb, var(--promptboard-accent) 82%, #ffffff);
+	    }
+
 	    .promptboard-selected-chip:hover {
-	      border-color: #888;
-	      background: rgba(47, 68, 84, 0.9);
+	      border-color: color-mix(in srgb, var(--promptboard-accent) 58%, #888);
+	      background: color-mix(in srgb, var(--promptboard-accent) 16%, rgba(47, 68, 84, 0.9));
 	    }
 
 	    .promptboard-selected-chip-label {
@@ -2159,13 +2287,17 @@ function ensureStyles() {
     }
 
     .promptboard-tag:hover {
-      border-color: #777;
-      background: #414141;
+      border-color: color-mix(in srgb, var(--promptboard-accent) 34%, #777);
+      background: color-mix(in srgb, var(--promptboard-accent) 10%, #414141);
     }
 
     .promptboard-tag.is-on {
-      border-color: #2d74be;
-      background: #24496e;
+      border-color: color-mix(in srgb, var(--promptboard-accent) 78%, #d7ecff);
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--promptboard-accent) 52%, #202426),
+        color-mix(in srgb, var(--promptboard-accent) 34%, #24496e)
+      );
       color: #fff;
     }
 
@@ -2178,7 +2310,11 @@ function ensureStyles() {
     .promptboard-tag.is-on.is-search-match {
       border-color: rgba(232, 197, 100, 0.95);
       box-shadow: inset 0 0 0 1px rgba(232, 197, 100, 0.58);
-      background: #345778;
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--promptboard-accent) 42%, #574726),
+        #345778
+      );
     }
 
     .promptboard-tag-label {
@@ -2203,7 +2339,7 @@ function ensureStyles() {
       width: 100%;
       min-width: 0;
       margin: 9px 0 2px;
-      color: #b9d6ee;
+      color: color-mix(in srgb, var(--promptboard-accent) 72%, #d8edf8);
       font-size: 10px;
       font-weight: 700;
       line-height: 1.2;
@@ -2215,7 +2351,7 @@ function ensureStyles() {
       flex: 1 1 auto;
       height: 1px;
       min-width: 18px;
-      background: rgba(137, 176, 209, 0.38);
+      background: color-mix(in srgb, var(--promptboard-accent) 42%, rgba(137, 176, 209, 0.24));
     }
 
     .promptboard-tag-section:first-child {
@@ -2264,9 +2400,11 @@ function createButton(text, title, onClick) {
 }
 
 function createResetButton(node) {
-  return createButton(RESET_BUTTON, "Unselect all tags", () => {
+  const button = createButton(RESET_BUTTON, "선택된 태그 모두 해제", () => {
     resetSelection(node);
   });
+  button.classList.add("promptboard-clear-selection");
+  return button;
 }
 
 function setYamlPanelOpen(node, open) {
@@ -2318,6 +2456,7 @@ function createGroupFilterButton(node, label, active, count) {
 
   button.type = "button";
   button.className = `promptboard-group-button${active ? " is-active" : ""}`;
+  setAccent(button, accentForLabel(label));
   button.title =
     label === GROUP_ALL ? `Show all groups (${count} selected)` : `Show ${label} group (${count} selected)`;
   button.dataset.group = label;
@@ -2385,19 +2524,17 @@ function updateGroupFilterCounts(node) {
   }
 }
 
-function createTagButton(node, state, category, tag) {
+function createTagButton(node, state, category, tag, accent = null) {
   const selected = Array.isArray(state[category]) && state[category].includes(tag.text);
   const button = document.createElement("button");
   const label = document.createElement("span");
   const stateLabel = document.createElement("span");
-  const sourceLabel = String(tag.label || tag.text);
-  const tagText = String(tag.text ?? "");
-  const displayLabel = sourceLabel && sourceLabel !== tagText ? `[${sourceLabel}] ${tagText}` : tagText;
-  const description = String(tag.description ?? "").trim();
+  const displayLabel = tagButtonDisplayLabel(tag);
 
   button.type = "button";
   button.className = `promptboard-tag${selected ? " is-on" : ""}`;
-  button.title = description || displayLabel;
+  setAccent(button, accent);
+  button.title = tagButtonTitle(tag, displayLabel);
   button.dataset.category = category;
   button.dataset.tagText = tag.text;
   button.classList.toggle("is-search-match", isCurrentBoardSearchMatch(node, category, tag.text));
@@ -2430,19 +2567,18 @@ function attributeCountForTarget(state, boardId, targetId, target) {
   );
 }
 
-function createAttributeTagButton(node, state, boardId, targetId, attributeId, tag) {
+function createAttributeTagButton(node, state, boardId, targetId, attributeId, tag, accent = null) {
   const selected = attributeSelectedTexts(state, boardId, targetId, attributeId).includes(tag.text);
   const button = document.createElement("button");
   const label = document.createElement("span");
   const stateLabel = document.createElement("span");
-  const sourceLabel = String(tag.label || tag.text);
   const tagText = String(tag.text ?? "");
-  const displayLabel = sourceLabel && sourceLabel !== tagText ? `[${sourceLabel}] ${tagText}` : tagText;
-  const description = String(tag.description ?? "").trim();
+  const displayLabel = tagButtonDisplayLabel(tag);
 
   button.type = "button";
   button.className = `promptboard-tag${selected ? " is-on" : ""}`;
-  button.title = description || displayLabel;
+  setAccent(button, accent);
+  button.title = tagButtonTitle(tag, displayLabel);
   button.dataset.boardId = boardId;
   button.dataset.targetId = targetId;
   button.dataset.attributeId = attributeId;
@@ -2491,36 +2627,38 @@ function createTagSection(label) {
 }
 
 function appendCategoryTagItems(container, node, state, category, item) {
+  const accent = accentForLabel(categoryUiGroup(item));
   for (const tagItem of tagItemsForCategory(item)) {
     if (tagItem.kind === "section") {
       container.append(createTagSection(tagItem.label));
       continue;
     }
     if (tagItem.kind === "tag" && tagItem.tag) {
-      container.append(createTagButton(node, state, category, tagItem.tag));
+      container.append(createTagButton(node, state, category, tagItem.tag, accent));
     }
   }
 }
 
-function appendAttributeTagItems(container, node, state, boardId, targetId, attributeId, tagSet) {
+function appendAttributeTagItems(container, node, state, boardId, targetId, attributeId, tagSet, accent = null) {
   for (const tagItem of tagItemsForTagSet(tagSet)) {
     if (tagItem.kind === "section") {
       container.append(createTagSection(tagItem.label));
       continue;
     }
     if (tagItem.kind === "tag" && tagItem.tag) {
-      container.append(createAttributeTagButton(node, state, boardId, targetId, attributeId, tagItem.tag));
+      container.append(createAttributeTagButton(node, state, boardId, targetId, attributeId, tagItem.tag, accent));
     }
   }
 }
 
 function appendNavigatorTagItems(container, node, state, item) {
+  const accent = navigatorItemAccent(item);
   if (item?.kind === "attributeTarget") {
     const target = node.promptboardYamlModel?.attributeBoards?.[item.boardId]?.targets?.[item.targetId];
     for (const [attributeId, attribute] of Object.entries(target?.attributes ?? {})) {
       const tagSet = node.promptboardYamlModel?.tagSets?.[attribute.source];
       container.append(createTagSection(attribute.label || attributeId));
-      appendAttributeTagItems(container, node, state, item.boardId, item.targetId, attributeId, tagSet);
+      appendAttributeTagItems(container, node, state, item.boardId, item.targetId, attributeId, tagSet, accent);
     }
     return;
   }
@@ -2530,7 +2668,7 @@ function appendNavigatorTagItems(container, node, state, item) {
       continue;
     }
     if (tagItem.kind === "tag" && tagItem.tag) {
-      container.append(createNavigatorTagButton(node, state, item, tagItem.tag));
+      container.append(createNavigatorTagButton(node, state, item, tagItem.tag, accent));
     }
   }
 }
@@ -2606,11 +2744,11 @@ function clearNavigatorItemSelection(node, item) {
   renderCards(node);
 }
 
-function createNavigatorTagButton(node, state, item, tag) {
+function createNavigatorTagButton(node, state, item, tag, accent = null) {
   if (item.kind === "attribute") {
-    return createAttributeTagButton(node, state, item.boardId, item.targetId, item.attributeId, tag);
+    return createAttributeTagButton(node, state, item.boardId, item.targetId, item.attributeId, tag, accent);
   }
-  return createTagButton(node, state, item.category, tag);
+  return createTagButton(node, state, item.category, tag, accent);
 }
 
 function createNavigatorCategoryButton(node, item, active) {
@@ -2621,6 +2759,7 @@ function createNavigatorCategoryButton(node, item, active) {
 
   button.type = "button";
   button.className = `promptboard-navigator-category${active ? " is-active" : ""}`;
+  setAccent(button, navigatorItemAccent(item));
   if (item.kind === "category") {
     button.dataset.category = item.category;
   } else if (item.kind === "attributeTarget") {
@@ -2667,6 +2806,7 @@ function createSelectedSummaryButton(node, state, entry) {
 
   button.type = "button";
   button.className = "promptboard-selected-chip";
+  setAccent(button, entry.accent);
   button.title = `${entry.context}: ${entry.text}`;
   label.className = "promptboard-selected-chip-label";
   label.textContent = `${entry.label}: ${entry.display}`;
@@ -2713,6 +2853,7 @@ function selectedSummaryEntries(node, state) {
         category,
         label: categoryLabel(category, item),
         context: categoryUiGroup(item),
+        accent: accentForLabel(categoryUiGroup(item)),
         text,
         display: tagDisplayLabel(tag),
       });
@@ -2731,6 +2872,7 @@ function selectedSummaryEntries(node, state) {
             attributeId,
             label: target.label || targetId,
             context: `${board.label || boardId} / ${attribute.label || attributeId}`,
+            accent: accentForLabel(attributeBoardUiGroup(board)),
             text,
             display: tagDisplayLabel(tag),
           });
@@ -2785,6 +2927,11 @@ function renderNavigator(node, scroll, state) {
   if (active?.kind === "attributeTarget") {
     main.classList.add("is-attribute-target");
   }
+  const activeAccent = navigatorItemAccent(active);
+  setAccent(shell, activeAccent);
+  setAccent(main, activeAccent);
+  setAccent(railHost, activeAccent);
+  setAccent(tags, activeAccent);
   railHost?.replaceChildren();
   railHost?.classList.toggle("is-empty", !active);
 
@@ -3281,16 +3428,14 @@ function createSplitElement(node) {
   const status = document.createElement("div");
   const toolbar = document.createElement("div");
   const templateSelect = document.createElement("select");
-  const toolbarLeft = document.createElement("div");
-  const toolbarLeftTop = document.createElement("div");
-  const toolbarRight = document.createElement("div");
+  const toolbarTemplateRow = document.createElement("div");
+  const toolbarSearchRow = document.createElement("div");
   const boardSearchRow = document.createElement("div");
   const boardSearch = document.createElement("input");
   const boardSearchCount = document.createElement("div");
   const boardSearchMenu = document.createElement("div");
   const groupFilter = document.createElement("div");
   const templateInput = document.createElement("input");
-  const templateSaveRow = document.createElement("div");
   const templateSaveCombo = document.createElement("div");
   const templateSave = document.createElement("button");
   const templateSaveMode = document.createElement("select");
@@ -3313,9 +3458,8 @@ function createSplitElement(node) {
   save.className = "promptboard-button";
   status.className = "promptboard-status";
   toolbar.className = "promptboard-toolbar";
-  toolbarLeft.className = "promptboard-toolbar-left";
-  toolbarLeftTop.className = "promptboard-toolbar-left-top";
-  toolbarRight.className = "promptboard-toolbar-right";
+  toolbarTemplateRow.className = "promptboard-toolbar-template-row";
+  toolbarSearchRow.className = "promptboard-toolbar-search-row";
   boardSearchRow.className = "promptboard-search-row";
   groupFilter.className = "promptboard-group-filter";
   templateSelect.className = "promptboard-select";
@@ -3323,7 +3467,6 @@ function createSplitElement(node) {
   boardSearchCount.className = "promptboard-search-count";
   boardSearchMenu.className = "promptboard-search-menu";
   templateInput.className = "promptboard-input";
-  templateSaveRow.className = "promptboard-template-save-row";
   templateSaveCombo.className = "promptboard-save-combo";
   templateSave.className = "promptboard-button";
   templateSaveMode.className = "promptboard-save-mode";
@@ -3531,12 +3674,10 @@ function createSplitElement(node) {
   yamlContent.append(select, yamlSearchRow, editor, save, status);
   left.append(yamlContent);
   templateSaveCombo.append(templateSave, templateSaveMode);
-  templateSaveRow.append(templateSaveCombo, templateDelete);
-  toolbarLeftTop.append(templateSelect, createResetButton(node));
+  toolbarTemplateRow.append(templateSelect, templateInput, templateSaveCombo, templateDelete);
   boardSearchRow.append(boardSearch, boardSearchCount);
-  toolbarLeft.append(toolbarLeftTop, boardSearchRow);
-  toolbarRight.append(templateInput, templateSaveRow);
-  toolbar.append(toolbarLeft, toolbarRight);
+  toolbarSearchRow.append(boardSearchRow, createResetButton(node));
+  toolbar.append(toolbarTemplateRow, toolbarSearchRow);
   right.append(toolbar, templateStatus, groupFilter, navigatorRailHost, scroll);
   root.append(right, yamlToggle, left);
 

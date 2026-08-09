@@ -1,4 +1,5 @@
 import importlib
+import json
 import sys
 import tempfile
 import types
@@ -67,6 +68,45 @@ class PromptBoardCacheTests(unittest.TestCase):
                 info = model_info._civitai_response("loras", str(model_path))
 
         self.assertEqual(info["trainedWords"], ["new"])
+        self.assertEqual(fetch.call_count, 1)
+
+    def test_local_preview_does_not_defer_civitai_lookup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            model_path = Path(directory) / "model.safetensors"
+            model_path.write_bytes(b"model")
+            preview_path = Path(directory) / "model.jpg"
+            preview_path.write_bytes(b"preview")
+
+            with patch("model_info._fetch_civitai_info", return_value={"modelId": 1, "images": [], "trainedWords": ["tag"]}) as fetch:
+                info = model_info._civitai_response("loras", str(model_path))
+
+        self.assertEqual(info["modelId"], 1)
+        self.assertEqual(info["trainedWords"], ["tag"])
+        self.assertNotIn("promptboardCivitaiDeferred", info)
+        self.assertEqual(fetch.call_count, 1)
+
+    def test_deferred_civitai_cache_is_retried(self):
+        with tempfile.TemporaryDirectory() as directory:
+            model_path = Path(directory) / "model.safetensors"
+            model_path.write_bytes(b"model")
+            hash_value = model_info._sha256(str(model_path))
+            cache_path = Path(model_info._civitai_cache_path(str(model_path)))
+            cache_path.write_text(
+                json.dumps({
+                    "promptboard.sha256": hash_value,
+                    "promptboardCivitaiDeferred": True,
+                    "images": [],
+                    "trainedWords": [],
+                }),
+                encoding="utf-8",
+            )
+
+            with patch("model_info._fetch_civitai_info", return_value={"modelId": 2, "images": [], "trainedWords": ["fresh"]}) as fetch:
+                info = model_info._civitai_response("loras", str(model_path))
+
+        self.assertEqual(info["modelId"], 2)
+        self.assertEqual(info["trainedWords"], ["fresh"])
+        self.assertNotIn("promptboardCivitaiDeferred", info)
         self.assertEqual(fetch.call_count, 1)
 
     def test_lora_loader_reloads_when_file_signature_changes(self):

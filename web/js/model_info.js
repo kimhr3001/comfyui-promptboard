@@ -7,10 +7,18 @@ const LORA_TYPE = "loras";
 const CHECKPOINT_WIDGETS = {
   CheckpointLoader: ["ckpt_name"],
   CheckpointLoaderSimple: ["ckpt_name"],
-  "CheckpointLoader|pysssss": ["ckpt_name", ""],
-  "Efficient Loader": [""],
-  "Eff. Loader SDXL": [""],
+  "CheckpointLoader|pysssss": ["ckpt_name"],
+  "Checkpoint Loader with Name (Image Saver)": ["ckpt_name"],
+  "Efficient Loader": ["ckpt_name"],
+  "Eff. Loader SDXL": ["ckpt_name", "refiner_ckpt_name"],
+  "easy comfyLoader": ["ckpt_name"],
 };
+const LORA_WIDGETS = {
+  LoraLoader: ["lora_name"],
+  LoraLoaderModelOnly: ["lora_name"],
+};
+const CHECKPOINT_WIDGET_PATTERNS = [/^ckpt_name(?:_\d+)?$/, /^ckpt_[A-Z]_name$/, /^refiner_ckpt_name$/];
+const LORA_WIDGET_PATTERNS = [/^lora_name(?:_\d+)?$/, /^lora_\d+_name$/];
 const GALLERY_IMAGE_WIDTH = 768;
 
 function ensureStyles() {
@@ -856,14 +864,149 @@ function getWidgetValue(node, widgetName) {
   if (!node?.widgets?.length) {
     return "";
   }
-  const widget = widgetName
-    ? node.widgets.find((item) => item.name === widgetName)
-    : node.widgets[0];
-  let value = widget?.value;
+  const index = widgetName
+    ? node.widgets.findIndex((item) => item.name === widgetName)
+    : 0;
+  const widget = index >= 0 ? node.widgets[index] : null;
+  let value = widget?.value ?? node.widgets_values?.[index];
   if (value?.content) {
     value = value.content;
   }
   return value && value !== "None" ? String(value) : "";
+}
+
+function getWidgetModelValue(node, widget) {
+  if (!node?.widgets?.length || !widget) {
+    return "";
+  }
+  const index = node.widgets.indexOf(widget);
+  let value = widget.value ?? node.widgets_values?.[index];
+  if (value?.content) {
+    value = value.content;
+  }
+  return value && value !== "None" ? String(value) : "";
+}
+
+function widgetNameMatches(name, exactNames, patterns) {
+  if (!name) {
+    return false;
+  }
+  return exactNames.includes(name) || patterns.some((pattern) => pattern.test(name));
+}
+
+function promptboardLoraConfigNames(value) {
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value || "[]") : value;
+    const rows = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.loras) ? parsed.loras : [];
+    return rows
+      .map((row) => String(row?.lora_name ?? row?.name ?? "").trim())
+      .filter((name) => name && name !== "None");
+  } catch {
+    return [];
+  }
+}
+
+function collectModelEntries(node, modelType, exactWidgetMap, widgetPatterns) {
+  const nodeType = getNodeType(node);
+  const exactNames = exactWidgetMap[nodeType] || [];
+  const entries = [];
+  const seen = new Set();
+
+  for (const widgetName of exactNames) {
+    const value = getWidgetValue(node, widgetName);
+    if (!value || seen.has(value)) {
+      continue;
+    }
+    seen.add(value);
+    entries.push({ type: modelType, value });
+  }
+
+  for (const widget of node?.widgets || []) {
+    const value = getWidgetModelValue(node, widget);
+    if (!value || seen.has(value)) {
+      continue;
+    }
+    if (widgetNameMatches(widget.name, exactNames, widgetPatterns)) {
+      seen.add(value);
+      entries.push({ type: modelType, value });
+    }
+  }
+
+  return entries;
+}
+
+function collectPromptboardLoraEntries(node) {
+  const entries = [];
+  const seen = new Set();
+  for (const widget of node?.widgets || []) {
+    if (widget?.name !== "lora_config" && widget?.type !== "PROMPTBOARD_LORA_CONFIG") {
+      continue;
+    }
+    for (const value of promptboardLoraConfigNames(getWidgetModelValue(node, widget))) {
+      if (seen.has(value)) {
+        continue;
+      }
+      seen.add(value);
+      entries.push({ type: LORA_TYPE, value });
+    }
+  }
+  return entries;
+}
+
+function createModelInfoMenuItem(title, entries, node) {
+  const options = entries.map((entry) => ({
+    content: titleFromPath(entry.value),
+    callback: () => {
+      showModelInfo(entry.type, entry.value, node);
+    },
+  }));
+
+  if (!options.length) {
+    return null;
+  }
+
+  if (options.length === 1) {
+    return {
+      content: title,
+      callback: options[0].callback,
+    };
+  }
+
+  return {
+    content: title,
+    has_submenu: true,
+    submenu: { options },
+  };
+}
+
+function uniqueModelEntries(entries) {
+  const seen = new Set();
+  return entries.filter((entry) => {
+    const key = `${entry.type}\0${entry.value}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function modelInfoMenuItems(node) {
+  const checkpointEntries = collectModelEntries(
+    node,
+    CHECKPOINT_TYPE,
+    CHECKPOINT_WIDGETS,
+    CHECKPOINT_WIDGET_PATTERNS,
+  );
+  const loraEntries = uniqueModelEntries([
+    ...collectModelEntries(node, LORA_TYPE, LORA_WIDGETS, LORA_WIDGET_PATTERNS),
+    ...collectPromptboardLoraEntries(node),
+  ]);
+  const menuItems = [
+    createModelInfoMenuItem("View Checkpoint Info...", checkpointEntries, node),
+    createModelInfoMenuItem("View LoRA Info...", loraEntries, node),
+  ];
+  return menuItems.filter(Boolean);
 }
 
 function titleFromPath(value) {
@@ -1989,41 +2132,10 @@ class CheckpointInfoDialog extends LoraInfoDialog {
 }
 
 function addInfoOption(node, options) {
-  const nodeType = getNodeType(node);
-  const widgetNames = CHECKPOINT_WIDGETS[nodeType];
-  if (!widgetNames) {
-    return;
+  const menuItems = modelInfoMenuItems(node);
+  if (menuItems.length) {
+    options.unshift(...menuItems);
   }
-
-  const entries = [];
-  for (const widgetName of widgetNames) {
-    const value = getWidgetValue(node, widgetName);
-    if (!value) {
-      continue;
-    }
-    entries.push({
-      content: titleFromPath(value),
-      callback: () => {
-        new CheckpointInfoDialog(value, node).show(CHECKPOINT_TYPE, value);
-      },
-    });
-  }
-
-  if (!entries.length) {
-    return;
-  }
-
-  if (entries.length === 1) {
-    entries[0].content = "View Checkpoint Info...";
-    options.unshift(entries[0]);
-    return;
-  }
-
-  options.unshift({
-    title: "View Checkpoint Info...",
-    has_submenu: true,
-    submenu: { options: entries },
-  });
 }
 
 function showModelInfo(type, value, node = null) {
@@ -2043,10 +2155,11 @@ app.registerExtension({
   beforeRegisterNodeDef(nodeType) {
     const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
     nodeType.prototype.getExtraMenuOptions = function (_, options) {
+      const result = getExtraMenuOptions?.apply(this, arguments);
       if (this.widgets) {
         addInfoOption(this, options);
       }
-      return getExtraMenuOptions?.apply(this, arguments);
+      return result;
     };
   },
 });

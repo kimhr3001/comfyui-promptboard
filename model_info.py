@@ -130,6 +130,16 @@ def _load_civitai_cache(path):
         return json.load(file)
 
 
+def _is_civitai_cache_usable(cached, hash_value):
+    if cached is None or cached.get("promptboard.sha256") != hash_value:
+        return False
+    if cached.get("promptboardCivitaiDeferred"):
+        return False
+    if cached.get("promptboardCivitaiError") and not cached.get("modelId"):
+        return False
+    return True
+
+
 def _preview_extension(url, content_type):
     parsed_ext = os.path.splitext(urllib.parse.urlparse(url).path)[1].lower()
     if parsed_ext in {".png", ".jpg", ".jpeg", ".webp"}:
@@ -289,26 +299,19 @@ def _civitai_response(model_type, model_name, refresh=False):
     hash_value = _sha256(path)
     if not refresh:
         cached = _load_civitai_cache(path)
-        if cached is not None and cached.get("promptboard.sha256") == hash_value:
+        if _is_civitai_cache_usable(cached, hash_value):
             cached = _fill_civitai_model_description(cached)
             info = _prepare_civitai_preview_info(path, cached)
             info["promptboard.sha256"] = hash_value
             with open(_civitai_cache_path(path), "wt", encoding="utf-8") as file:
                 json.dump(info, file, ensure_ascii=False, indent=2)
             return info
-        if _representative_preview_path(path):
-            return _prepare_civitai_preview_info(path, {
-                "images": [],
-                "trainedWords": [],
-                "promptboardCivitaiDeferred": True,
-                "promptboard.sha256": hash_value,
-            })
 
     try:
         info = _fetch_civitai_info(hash_value)
     except Exception as exc:
         cached = _load_civitai_cache(path)
-        if cached is not None:
+        if cached is not None and not cached.get("promptboardCivitaiDeferred"):
             info = cached
         elif _representative_preview_path(path):
             info = {"images": [], "trainedWords": []}
