@@ -8,6 +8,9 @@ import {
 const NODE_NAME = "PromptBoardYamlEditor";
 const EDITOR_WIDGET = "yaml_editor_layout";
 const DEFAULT_YAML_FILE = "default.yaml";
+const LOAD_YAML_BUTTON = "Load YAML";
+const VALIDATE_BUTTON = "Validate";
+const SAVE_YAML_BUTTON = "Save YAML";
 const HIDDEN_MARK = "__promptboardYamlEditorHiddenWidget";
 const MIN_NODE_WIDTH = 520;
 const MIN_NODE_HEIGHT = 420;
@@ -15,6 +18,7 @@ const MIN_EDITOR_HEIGHT = 280;
 const PANEL_GUTTER = 18;
 const NODE_BOTTOM_PADDING = 18;
 const SEARCH_DEBOUNCE_MS = 150;
+const ACTION_STATE_MS = 2000;
 const CODEMIRROR_MODULE = "../vendor/codemirror/promptboard-codemirror.bundle.js";
 const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", import.meta.url).href;
 
@@ -307,6 +311,24 @@ function ensureStyles() {
       background: #242424;
     }
 
+    .promptboard-yaml-editor-button.is-busy {
+      border-color: rgba(103, 151, 205, 0.9);
+      background: rgba(42, 76, 118, 0.92);
+      color: #eef6ff;
+    }
+
+    .promptboard-yaml-editor-button.is-done {
+      border-color: rgba(92, 173, 112, 0.95);
+      background: rgba(45, 112, 65, 0.92);
+      color: #f2fff4;
+    }
+
+    .promptboard-yaml-editor-button.is-error {
+      border-color: rgba(202, 92, 92, 0.95);
+      background: rgba(122, 44, 44, 0.92);
+      color: #fff2f2;
+    }
+
     .promptboard-yaml-editor-editor {
       box-sizing: border-box;
       min-width: 0;
@@ -437,6 +459,53 @@ function setStatus(node, message) {
 
 function setSaveReport(node, message) {
   setStatus(node, message);
+}
+
+function yamlEditorActionInfo(action) {
+  if (action === "load") {
+    return { buttonProperty: "promptboardYamlEditorLoadButton", label: LOAD_YAML_BUTTON };
+  }
+  if (action === "validate") {
+    return { buttonProperty: "promptboardYamlEditorValidateButton", label: VALIDATE_BUTTON };
+  }
+  if (action === "save") {
+    return { buttonProperty: "promptboardYamlEditorSaveButton", label: SAVE_YAML_BUTTON };
+  }
+  return null;
+}
+
+function setYamlEditorActionState(node, action, state) {
+  const info = yamlEditorActionInfo(action);
+  const button = info ? node[info.buttonProperty] : null;
+  if (!button) {
+    return;
+  }
+
+  const timerKey = `promptboardYamlEditor${action[0].toUpperCase()}${action.slice(1)}StateTimer`;
+  if (node[timerKey]) {
+    clearTimeout(node[timerKey]);
+    node[timerKey] = null;
+  }
+
+  button.classList.toggle("is-busy", state === "busy");
+  button.classList.toggle("is-done", state === "done");
+  button.classList.toggle("is-error", state === "error");
+  button.disabled = state === "busy";
+  button.textContent =
+    state === "busy"
+      ? "처리 중"
+      : state === "done"
+        ? "완료"
+        : state === "error"
+          ? "오류"
+          : info.label;
+
+  if (state === "done" || state === "error") {
+    node[timerKey] = setTimeout(() => {
+      node[timerKey] = null;
+      setYamlEditorActionState(node, action, "");
+    }, ACTION_STATE_MS);
+  }
 }
 
 function setYamlEditorSearchInvalid(node, invalid) {
@@ -657,33 +726,44 @@ async function loadSelectedYaml(node) {
   const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
   if (!yamlFile) {
     setStatus(node, "Select a YAML file.");
+    setYamlEditorActionState(node, "load", "error");
     return;
   }
 
+  setYamlEditorActionState(node, "load", "busy");
   try {
     const data = await fetchJson(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`);
     const text = String(data.text ?? "");
     setYamlText(node, text, `Loaded: ${yamlFile}`);
+    setYamlEditorActionState(node, "load", "done");
   } catch (error) {
     setSaveReport(node, `Load error: ${error.message}`);
+    setYamlEditorActionState(node, "load", "error");
   }
 }
 
 async function validateYaml(node) {
   const text = widgetValue(node, "yaml_text", "");
-  const report = await fetchJson("/promptboard/yaml/validate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
-  });
-  if (!report.ok) {
-    throw new Error(report.error || report.message || "YAML validation failed.");
+  setYamlEditorActionState(node, "validate", "busy");
+  try {
+    const report = await fetchJson("/promptboard/yaml/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!report.ok) {
+      throw new Error(report.error || report.message || "YAML validation failed.");
+    }
+    setStatus(
+      node,
+      `Valid: ${report.categoryCount} categories, ${report.tagCount} tags`,
+    );
+    setYamlEditorActionState(node, "validate", "done");
+    return report;
+  } catch (error) {
+    setYamlEditorActionState(node, "validate", "error");
+    throw error;
   }
-  setStatus(
-    node,
-    `Valid: ${report.categoryCount} categories, ${report.tagCount} tags`,
-  );
-  return report;
 }
 
 async function saveYaml(node) {
@@ -691,9 +771,11 @@ async function saveYaml(node) {
   const text = widgetValue(node, "yaml_text", "");
   if (!yamlFile) {
     setSaveReport(node, "Save error: select a YAML file.");
+    setYamlEditorActionState(node, "save", "error");
     return;
   }
 
+  setYamlEditorActionState(node, "save", "busy");
   try {
     await validateYaml(node);
     const backup = await fetchJson("/promptboard/yaml/backup", {
@@ -707,9 +789,11 @@ async function saveYaml(node) {
       body: JSON.stringify({ name: yamlFile, text }),
     });
     setSaveReport(node, `Saved: ${yamlFile} (backup: ${backup.backup_file})`);
+    setYamlEditorActionState(node, "save", "done");
     app.canvas?.setDirty(true, true);
   } catch (error) {
     setSaveReport(node, `Save error: ${error.message}`);
+    setYamlEditorActionState(node, "save", "error");
   }
 }
 
@@ -1043,11 +1127,11 @@ function createEditorElement(node) {
   status.className = "promptboard-yaml-editor-status";
 
   loadButton.type = "button";
-  loadButton.textContent = "Load YAML";
+  loadButton.textContent = LOAD_YAML_BUTTON;
   validateButton.type = "button";
-  validateButton.textContent = "Validate";
+  validateButton.textContent = VALIDATE_BUTTON;
   saveButton.type = "button";
-  saveButton.textContent = "Save YAML";
+  saveButton.textContent = SAVE_YAML_BUTTON;
   sectionButton.type = "button";
   sectionButton.textContent = "+ Section";
   tagButton.type = "button";
@@ -1136,6 +1220,9 @@ function createEditorElement(node) {
 
   node.promptboardYamlEditorElement = root;
   node.promptboardYamlEditorSelect = select;
+  node.promptboardYamlEditorLoadButton = loadButton;
+  node.promptboardYamlEditorValidateButton = validateButton;
+  node.promptboardYamlEditorSaveButton = saveButton;
   node.promptboardYamlEditorSearchInput = searchInput;
   node.promptboardYamlEditorSearchCount = searchCount;
   node.promptboardYamlEditorEditorHost = editorHost;
