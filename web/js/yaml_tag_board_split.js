@@ -1635,7 +1635,7 @@ function ensureStyles() {
 
     .promptboard-toolbar-yaml-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(84px, 96px);
       gap: 4px;
       min-width: 0;
     }
@@ -3382,7 +3382,7 @@ async function loadSelectedYaml(node, options = {}) {
   const resetState = options.resetState !== false;
   const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
   if (!yamlFile || yamlFile === INLINE_YAML_OPTION) {
-    return;
+    return false;
   }
 
   try {
@@ -3394,8 +3394,17 @@ async function loadSelectedYaml(node, options = {}) {
     setYamlEditorText(node, data.text ?? "");
     renderFromYaml(node, resetState);
     setStatus(node, "");
+    return true;
   } catch (error) {
     setStatus(node, `Load error: ${error.message}`);
+    return false;
+  }
+}
+
+async function reloadSelectedYaml(node) {
+  const loaded = await loadSelectedYaml(node, { resetState: false });
+  if (loaded) {
+    setTemporaryStatus(node, "Reloaded YAML");
   }
 }
 
@@ -3445,6 +3454,7 @@ function createSplitElement(node) {
   const status = document.createElement("div");
   const toolbar = document.createElement("div");
   const toolbarYamlRow = document.createElement("div");
+  const reloadYaml = document.createElement("button");
   const templateSelect = document.createElement("select");
   const toolbarTemplateRow = document.createElement("div");
   const toolbarSearchRow = document.createElement("div");
@@ -3478,6 +3488,7 @@ function createSplitElement(node) {
   status.className = "promptboard-status";
   toolbar.className = "promptboard-toolbar";
   toolbarYamlRow.className = "promptboard-toolbar-yaml-row";
+  reloadYaml.className = "promptboard-button";
   toolbarTemplateRow.className = "promptboard-toolbar-template-row";
   toolbarSearchRow.className = "promptboard-toolbar-search-row";
   boardSearchRow.className = "promptboard-search-row";
@@ -3511,6 +3522,8 @@ function createSplitElement(node) {
   boardSearchMenu.setAttribute("role", "listbox");
   boardSearch.setAttribute("aria-controls", boardSearchMenu.id);
   boardSearchCount.textContent = "";
+  reloadYaml.type = "button";
+  reloadYaml.textContent = "Reload YAML";
   templateInput.type = "text";
   templateInput.placeholder = "template name";
   templateInput.value = node.promptboardTemplateName ?? "";
@@ -3535,6 +3548,7 @@ function createSplitElement(node) {
   templateStatus.textContent = node.promptboardTemplateStatus ?? "";
 
   stopCanvasEvents(select);
+  stopCanvasEvents(reloadYaml);
   stopCanvasEvents(yamlSearch);
   stopCanvasEvents(textarea);
   stopCanvasEvents(templateSelect);
@@ -3556,6 +3570,11 @@ function createSplitElement(node) {
     writeStoredTemplateState(node);
     updateTemplateControls(node);
     loadSelectedYaml(node);
+  });
+  reloadYaml.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    reloadSelectedYaml(node);
   });
   yamlSearch.addEventListener("input", () => {
     node.promptboardYamlSearchState = null;
@@ -3689,7 +3708,7 @@ function createSplitElement(node) {
     handleTemplateSaveShortcut(event, node);
   });
 
-  toolbarYamlRow.append(select);
+  toolbarYamlRow.append(select, reloadYaml);
   templateSaveCombo.append(templateSave, templateSaveMode);
   toolbarTemplateRow.append(templateSelect, templateInput, templateSaveCombo, templateDelete);
   boardSearchRow.append(boardSearch, boardSearchCount);
