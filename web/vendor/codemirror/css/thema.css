@@ -48,6 +48,7 @@
 }
 
 .promptboard-codemirror .cm-editor {
+  min-width: 0;
   height: 100%;
   background: var(--pb-cm-background);
   color: var(--pb-cm-foreground);
@@ -58,6 +59,7 @@
 }
 
 .promptboard-codemirror .cm-scroller {
+  min-width: 0;
   background: var(--pb-cm-background);
 }
 
