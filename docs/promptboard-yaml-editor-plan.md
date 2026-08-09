@@ -145,8 +145,6 @@ PromptBoard YAML Editor
 초기 출력:
 
 - `yaml_file`
-- `validation_report`
-- `save_report`
 
 초기 UI:
 

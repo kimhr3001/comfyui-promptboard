@@ -40,8 +40,6 @@ Main features:
 Outputs:
 
 - `yaml_file`: selected YAML file name
-- `validation_report`: schema validation summary or structured error
-- `save_report`: latest load, edit, validation, or save status
 
 Main features:
 

@@ -138,7 +138,6 @@ function hideWidget(item, hidden) {
 function hideSourceWidgets(node) {
   hideWidget(widget(node, "yaml_file"), true);
   hideWidget(widget(node, "yaml_text"), true);
-  hideWidget(widget(node, "save_report"), true);
 }
 
 function ensureStyles() {
@@ -327,7 +326,6 @@ function setStatus(node, message) {
 }
 
 function setSaveReport(node, message) {
-  setWidgetValue(node, "save_report", message || "");
   setStatus(node, message);
 }
 

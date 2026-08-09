@@ -296,17 +296,33 @@ STYLE:
             self.assertEqual((tags_root / result["backup_file"]).read_text(encoding="utf-8"), source.read_text(encoding="utf-8"))
             self.assertEqual(existing.read_text(encoding="utf-8"), "existing")
 
-    def test_yaml_editor_node_returns_validation_report(self):
-        yaml_file, validation_report, save_report = PromptBoardYamlEditor().inspect_yaml(
-            "custom.yaml",
-            "STYLE:\n  tags:\n  - cinematic\n",
-            "Saved",
+    def test_yaml_editor_node_returns_selected_yaml_file_only(self):
+        self.assertEqual(PromptBoardYamlEditor.RETURN_TYPES, ("STRING",))
+        self.assertEqual(PromptBoardYamlEditor.RETURN_NAMES, ("yaml_file",))
+        self.assertEqual(
+            PromptBoardYamlEditor().inspect_yaml(
+                "custom.yaml",
+                "STYLE:\n  tags:\n  - cinematic\n",
+            ),
+            ("custom.yaml",),
         )
 
-        self.assertEqual(yaml_file, "custom.yaml")
-        self.assertEqual(save_report, "Saved")
+    def test_yaml_editor_node_falls_back_to_default_yaml_file_output(self):
         self.assertEqual(
-            json.loads(validation_report),
+            PromptBoardYamlEditor().inspect_yaml(
+                "",
+                "STYLE:\n  tags:\n  - cinematic\n",
+            ),
+            ("default.yaml",),
+        )
+
+    def test_yaml_editor_validation_helpers_remain_available_for_ui(self):
+        report = _validate_yaml_text(
+            "STYLE:\n  tags:\n  - cinematic\n",
+        )
+
+        self.assertEqual(
+            report,
             {
                 "ok": True,
                 "schemaVersion": 1,
@@ -317,14 +333,14 @@ STYLE:
             },
         )
 
-    def test_yaml_editor_node_returns_structured_validation_error(self):
-        _yaml_file, validation_report, save_report = PromptBoardYamlEditor().inspect_yaml(
-            "custom.yaml",
-            "_promptboard:\n  typoField: true\n",
-        )
-        report = json.loads(validation_report)
+    def test_yaml_editor_validation_helper_returns_structured_error(self):
+        with self.assertRaises(PromptBoardYamlError) as raised:
+            _validate_yaml_text(
+                "_promptboard:\n  typoField: true\n",
+            )
 
-        self.assertEqual(save_report, "")
+        report = _yaml_validation_error(raised.exception)
+
         self.assertEqual(report["ok"], False)
         self.assertEqual(report["code"], "unknown_schema_field")
         self.assertEqual(report["path"], "_promptboard.typoField")
