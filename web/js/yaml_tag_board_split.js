@@ -889,11 +889,19 @@ function visibleCategoryEntries(node) {
   return Object.entries(config).filter(([, item]) => categoryMatchesActiveUiGroup(node, item));
 }
 
+function allCategoryEntries(node) {
+  return Object.entries(node.promptboardConfig ?? {});
+}
+
 function visibleAttributeBoardEntries(node) {
   const active = activeUiGroup(node);
   return Object.entries(node.promptboardYamlModel?.attributeBoards ?? {}).filter(([, board]) =>
     active === GROUP_ALL || attributeBoardUiGroup(board) === active,
   );
+}
+
+function allAttributeBoardEntries(node) {
+  return Object.entries(node.promptboardYamlModel?.attributeBoards ?? {});
 }
 
 function navigatorItemId(item) {
@@ -1120,7 +1128,7 @@ function compileSearchRegex(input) {
 
 function collectBoardSearchMatches(node, regex) {
   const matches = [];
-  for (const [category, item] of visibleCategoryEntries(node)) {
+  for (const [category, item] of allCategoryEntries(node)) {
     const uiGroup = categoryUiGroup(item);
     const label = categoryLabel(category, item);
     if (regex.test(category) || regex.test(label)) {
@@ -1141,7 +1149,7 @@ function collectBoardSearchMatches(node, regex) {
       }
     }
   }
-  for (const [boardId, board] of visibleAttributeBoardEntries(node)) {
+  for (const [boardId, board] of allAttributeBoardEntries(node)) {
     const uiGroup = attributeBoardUiGroup(board);
     for (const [targetId, target] of Object.entries(board.targets ?? {})) {
       for (const [attributeId, attribute] of Object.entries(target.attributes ?? {})) {
@@ -1392,6 +1400,9 @@ function navigateToBoardSearchMatch(node, index) {
 
   state.index = (index + state.matches.length) % state.matches.length;
   const match = state.matches[state.index];
+  if (match?.uiGroup) {
+    node.promptboardActiveUiGroup = match.uiGroup;
+  }
   setActiveNavigatorItem(node, navigatorItemFromMatch(match));
   setBoardSearchCount(node, state.index + 1, state.matches.length);
   renderCards(node);
