@@ -449,6 +449,10 @@ MVP 안정화 후 별도 migration으로 검토한다.
   - 결과: 템플릿 저장 계약이 `name`, `yaml_file`, `selected_state`만 유지하고 YAML 원문을 저장하지 않음을 테스트로 고정했다.
   - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
   - 다음 작업: Phase 1 / Step 10 - README 업데이트
+- 완료: Phase 1 / Step 10 - README 업데이트
+  - 결과: PromptBoard와 `PromptBoard YAML Editor` 역할 분리, reload, editor save/backup, 검색 설명을 현재 MVP 구조에 맞게 갱신했다.
+  - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 전체 리뷰 및 PR 준비
 
 ## 단계별 구현 순서
 
@@ -463,7 +467,7 @@ MVP 안정화 후 별도 migration으로 검토한다.
 7. [완료] PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
 8. [완료] `Reload YAML` 추가
 9. [완료] 템플릿 회귀 테스트
-10. README 업데이트
+10. [완료] README 업데이트
 
 ### Phase 2: 관리 기능 확장
 

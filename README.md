@@ -2,7 +2,7 @@
 
 ComfyUI PromptBoard is a small custom node package for building prompt text from YAML-managed tag boards.
 
-It keeps prompt fragments in editable YAML files, lets you select tags from a board-style UI, and replaces placeholders in source prompt text.
+It keeps prompt fragments in YAML files, lets you select tags from a board-style UI, and replaces placeholders in source prompt text.
 
 It also includes a multi-LoRA loader and a shared checkpoint/LoRA model info dialog for local metadata, notes, Civitai data, and preview images.
 
@@ -16,14 +16,13 @@ Outputs:
 
 - `selection_json`: structured selection data for downstream replacement
 - `preview_text`: a readable preview of selected placeholders and values
+- `prompt_preview`: source prompt text after applying the current selection
+- `replace_report`: replacement warnings such as unknown placeholders or cycles
 
 Main features:
 
 - YAML file selector
-- CodeMirror-based YAML editor with syntax highlighting
-- persisted YAML editor fold state across browser refreshes
-- YAML save with `Cmd+S` / `Ctrl+S`
-- YAML editor regex search with match count, current-line highlight, and `Enter` / `Shift+Enter` navigation
+- `Reload YAML` for reading the selected YAML file after external or editor-node changes
 - collapsible tag groups
 - group-level select/clear
 - board tag search with match count, current match highlight, automatic group expansion, and `Enter` / `Shift+Enter` navigation
@@ -33,6 +32,28 @@ Main features:
 - attribute boards for target-specific selections such as top color and bottom color
 - `migrateFrom` support for reading old template selections into new attribute state
 - automatic replacement preview output
+
+### PromptBoard YAML Editor
+
+`PromptBoard YAML Editor` is a separate management node for editing YAML files.
+
+Outputs:
+
+- `yaml_file`: selected YAML file name
+- `validation_report`: schema validation summary or structured error
+- `save_report`: latest load, edit, validation, or save status
+
+Main features:
+
+- YAML file selector independent from `Prompt Board`
+- YAML source load and edit
+- schema validation
+- automatic backup before saving
+- YAML save
+- `+ Section` and `+ Tag` dialogs for appending entries to a category or section
+- duplicate tag text blocking and duplicate label warning
+
+Saving in `PromptBoard YAML Editor` does not automatically change an existing `Prompt Board` node. Use `Reload YAML` on `Prompt Board` when you want the board to read the saved file again.
 
 ### Prompt Board Replace
 
@@ -349,11 +370,9 @@ Additional YAML files and saved board templates are user data and are ignored by
 
 ## Editor Theme
 
-The board uses a bundled CodeMirror 6 editor for YAML editing.
+`PromptBoard YAML Editor` uses the browser's textarea editor for YAML editing.
 
-Folded YAML sections are restored per workflow, node, and YAML file after a browser refresh. Fold state is kept in browser `localStorage` and is ignored when the YAML text changes.
-
-Editor colors are controlled by:
+The legacy CodeMirror bundle is still kept in the repository for compatibility, and its colors are controlled by:
 
 ```text
 web/vendor/codemirror/css/thema.css
@@ -378,12 +397,11 @@ Use `Cmd+S` on macOS or `Ctrl+S` on Windows/Linux while focus is in the board-si
 
 ## Search
 
-PromptBoard has two regex search fields:
+PromptBoard has one board search field:
 
-- YAML editor search: searches YAML lines, scrolls the editor to the current match, and highlights the current line.
 - Board search: searches category names, tag labels, and tag values, expands a collapsed group when needed, scrolls to the current match, and highlights the matched group or tag.
 
-Both search fields show match position as `current/total`. Press `Enter` for the next match and `Shift+Enter` for the previous match.
+The search field shows match position as `current/total`. Press `Enter` for the next match and `Shift+Enter` for the previous match.
 
 ## Model Info
 
@@ -425,7 +443,7 @@ Supported checkpoint widgets:
 Validate the Python files:
 
 ```bash
-python -m py_compile __init__.py yaml_tag_nodes.py yaml_tag_board_split_nodes.py lora_loader_nodes.py model_info.py
+python -m py_compile __init__.py yaml_tag_nodes.py yaml_tag_board_split_nodes.py yaml_editor_nodes.py lora_loader_nodes.py model_info.py
 ```
 
 Validate the browser extension script:
