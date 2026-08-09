@@ -429,6 +429,10 @@ MVP 안정화 후 별도 migration으로 검토한다.
   - 결과: Editor UI에 validate/save 동작을 추가하고 저장 전 backup을 강제했다.
   - 검증: JS syntax, backend tests, Python compile, `git diff --check`
   - 다음 작업: Phase 1 / Step 5 - 섹션/태그 추가 팝업 구현
+- 완료: Phase 1 / Step 5 - 섹션/태그 추가 팝업 구현
+  - 결과: Editor UI에 `+ Section`, `+ Tag` 팝업을 추가하고 현재 YAML textarea에 section/tag를 삽입하도록 구현했다.
+  - 검증: JS syntax, YAML editor mutation tests, existing JS/backend tests, `git diff --check`
+  - 다음 작업: Phase 1 / Step 6 - PromptBoard YAML 선택창을 보드 컨트롤 영역으로 이동
 
 ## 단계별 구현 순서
 
@@ -438,7 +442,7 @@ MVP 안정화 후 별도 migration으로 검토한다.
 2. [완료] `PromptBoard YAML Editor` 노드 skeleton 추가
 3. [완료] Editor YAML 선택/로드 구현
 4. [완료] Editor 저장/백업/검증 구현
-5. 섹션/태그 추가 팝업 구현
+5. [완료] 섹션/태그 추가 팝업 구현
 6. PromptBoard YAML 선택창을 보드 컨트롤 영역으로 이동
 7. PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
 8. `Reload YAML` 추가

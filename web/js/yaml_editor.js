@@ -1,4 +1,9 @@
 import { app } from "../../../scripts/app.js";
+import {
+  CATEGORY_BOTTOM,
+  getYamlEditorCategories,
+  insertYamlEditorItem,
+} from "./yaml_editor_mutation.mjs";
 
 const NODE_NAME = "PromptBoardYamlEditor";
 const EDITOR_WIDGET = "yaml_editor_layout";
@@ -24,7 +29,7 @@ function setWidgetValue(node, name, value) {
 }
 
 function stopCanvasEvents(element) {
-  for (const eventName of ["pointerdown", "mousedown", "dblclick", "wheel", "contextmenu"]) {
+  for (const eventName of ["pointerdown", "mousedown", "dblclick", "wheel", "contextmenu", "keydown", "keyup"]) {
     element.addEventListener(eventName, (event) => event.stopPropagation());
   }
 }
@@ -82,8 +87,8 @@ function ensureStyles() {
     }
 
     .promptboard-yaml-editor-toolbar {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(76px, auto) minmax(76px, auto) minmax(88px, auto);
+      display: flex;
+      flex-wrap: wrap;
       gap: 6px;
       min-width: 0;
     }
@@ -102,6 +107,10 @@ function ensureStyles() {
     .promptboard-yaml-editor-button {
       height: 28px;
       min-width: 0;
+    }
+
+    .promptboard-yaml-editor-select {
+      flex: 1 1 150px;
     }
 
     .promptboard-yaml-editor-button {
@@ -132,6 +141,83 @@ function ensureStyles() {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .promptboard-yaml-editor-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      box-sizing: border-box;
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    .promptboard-yaml-editor-modal-surface {
+      box-sizing: border-box;
+      width: min(420px, 100%);
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #202327;
+      color: rgba(255, 255, 255, 0.88);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.42);
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+
+    .promptboard-yaml-editor-modal-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .promptboard-yaml-editor-field {
+      display: grid;
+      gap: 4px;
+    }
+
+    .promptboard-yaml-editor-field label {
+      color: rgba(255, 255, 255, 0.68);
+    }
+
+    .promptboard-yaml-editor-field input,
+    .promptboard-yaml-editor-field select,
+    .promptboard-yaml-editor-field textarea {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: #171717;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 12px;
+      padding: 7px 8px;
+    }
+
+    .promptboard-yaml-editor-field textarea {
+      min-height: 72px;
+      resize: vertical;
+    }
+
+    .promptboard-yaml-editor-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .promptboard-yaml-editor-checkbox input {
+      width: auto;
+    }
+
+    .promptboard-yaml-editor-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
     }
   `;
   document.head.append(style);
@@ -263,6 +349,147 @@ async function saveYaml(node) {
   }
 }
 
+function field(labelText, control) {
+  const container = document.createElement("div");
+  const label = document.createElement("label");
+  container.className = "promptboard-yaml-editor-field";
+  label.textContent = labelText;
+  container.append(label, control);
+  return container;
+}
+
+function button(text) {
+  const control = document.createElement("button");
+  control.type = "button";
+  control.className = "promptboard-yaml-editor-button";
+  control.textContent = text;
+  return control;
+}
+
+function option(value, text) {
+  const control = document.createElement("option");
+  control.value = value;
+  control.textContent = text;
+  return control;
+}
+
+function setYamlText(node, text, status) {
+  setWidgetValue(node, "yaml_text", text);
+  if (node.promptboardYamlEditorTextarea) {
+    node.promptboardYamlEditorTextarea.value = text;
+  }
+  setSaveReport(node, status);
+  app.canvas?.setDirty(true, true);
+}
+
+function openInsertDialog(node, type) {
+  let categories = [];
+  try {
+    categories = getYamlEditorCategories(widgetValue(node, "yaml_text", ""));
+  } catch (error) {
+    setStatus(node, `Insert error: ${error.message}`);
+    return;
+  }
+  if (categories.length === 0) {
+    setStatus(node, "Insert error: no category found.");
+    return;
+  }
+
+  const modal = document.createElement("div");
+  const surface = document.createElement("form");
+  const title = document.createElement("h2");
+  const categorySelect = document.createElement("select");
+  const positionSelect = document.createElement("select");
+  const sectionInput = document.createElement("input");
+  const textInput = document.createElement("input");
+  const labelInput = document.createElement("input");
+  const descriptionInput = document.createElement("textarea");
+  const defaultInput = document.createElement("input");
+  const actions = document.createElement("div");
+  const cancelButton = button("Cancel");
+  const addButton = button("Add");
+  addButton.type = "submit";
+
+  modal.className = "promptboard-yaml-editor-modal";
+  surface.className = "promptboard-yaml-editor-modal-surface";
+  title.className = "promptboard-yaml-editor-modal-title";
+  actions.className = "promptboard-yaml-editor-modal-actions";
+  title.textContent = type === "section" ? "Add Section" : "Add Tag";
+  defaultInput.type = "checkbox";
+
+  for (const category of categories) {
+    categorySelect.append(option(category.id, `${category.label} (${category.id})`));
+  }
+
+  function refreshPositions() {
+    const category = categories.find((item) => item.id === categorySelect.value) ?? categories[0];
+    positionSelect.replaceChildren(option(CATEGORY_BOTTOM, "Category bottom"));
+    for (const section of category.sections) {
+      positionSelect.append(option(section, `After section: ${section}`));
+    }
+  }
+
+  categorySelect.addEventListener("change", refreshPositions);
+  refreshPositions();
+
+  actions.append(cancelButton, addButton);
+  surface.append(
+    title,
+    field("Category", categorySelect),
+    field("Position", positionSelect),
+  );
+
+  if (type === "section") {
+    surface.append(field("Section label", sectionInput));
+  } else {
+    surface.append(
+      field("Text", textInput),
+      field("Label", labelInput),
+      field("Description", descriptionInput),
+    );
+    const defaultField = document.createElement("label");
+    defaultField.className = "promptboard-yaml-editor-checkbox";
+    defaultField.append(defaultInput, document.createTextNode("Default"));
+    surface.append(defaultField);
+  }
+  surface.append(actions);
+  modal.append(surface);
+
+  stopCanvasEvents(modal);
+  stopCanvasEvents(surface);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      modal.remove();
+    }
+  });
+  cancelButton.addEventListener("click", () => modal.remove());
+  surface.addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      const result = insertYamlEditorItem(widgetValue(node, "yaml_text", ""), {
+        type,
+        category: categorySelect.value,
+        afterSection: positionSelect.value,
+        section: sectionInput.value,
+        text: textInput.value,
+        label: labelInput.value,
+        description: descriptionInput.value,
+        default: defaultInput.checked,
+      });
+      const sharedSuffix = result.sharedSource ? ` via tagSet ${result.sharedSource}` : "";
+      const warningSuffix = result.warning ? ` Warning: ${result.warning}` : "";
+      setYamlText(node, result.text, `Inserted ${type}${sharedSuffix}.${warningSuffix}`);
+      modal.remove();
+    } catch (error) {
+      setStatus(node, `Insert error: ${error.message}`);
+    }
+  });
+
+  document.body.append(modal);
+  const firstInput = type === "section" ? sectionInput : textInput;
+  firstInput.focus();
+}
+
 function createEditorElement(node) {
   ensureStyles();
 
@@ -272,6 +499,8 @@ function createEditorElement(node) {
   const loadButton = document.createElement("button");
   const validateButton = document.createElement("button");
   const saveButton = document.createElement("button");
+  const sectionButton = document.createElement("button");
+  const tagButton = document.createElement("button");
   const textarea = document.createElement("textarea");
   const status = document.createElement("div");
 
@@ -281,6 +510,8 @@ function createEditorElement(node) {
   loadButton.className = "promptboard-yaml-editor-button";
   validateButton.className = "promptboard-yaml-editor-button";
   saveButton.className = "promptboard-yaml-editor-button";
+  sectionButton.className = "promptboard-yaml-editor-button";
+  tagButton.className = "promptboard-yaml-editor-button";
   textarea.className = "promptboard-yaml-editor-textarea";
   status.className = "promptboard-yaml-editor-status";
 
@@ -290,6 +521,10 @@ function createEditorElement(node) {
   validateButton.textContent = "Validate";
   saveButton.type = "button";
   saveButton.textContent = "Save YAML";
+  sectionButton.type = "button";
+  sectionButton.textContent = "+ Section";
+  tagButton.type = "button";
+  tagButton.textContent = "+ Tag";
   textarea.spellcheck = false;
   textarea.value = widgetValue(node, "yaml_text", "");
   status.textContent = node.promptboardYamlEditorStatus ?? "";
@@ -299,6 +534,8 @@ function createEditorElement(node) {
   stopCanvasEvents(loadButton);
   stopCanvasEvents(validateButton);
   stopCanvasEvents(saveButton);
+  stopCanvasEvents(sectionButton);
+  stopCanvasEvents(tagButton);
   stopCanvasEvents(textarea);
 
   select.addEventListener("change", () => {
@@ -324,13 +561,23 @@ function createEditorElement(node) {
     event.stopPropagation();
     saveYaml(node);
   });
+  sectionButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openInsertDialog(node, "section");
+  });
+  tagButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openInsertDialog(node, "tag");
+  });
   textarea.addEventListener("input", () => {
     setWidgetValue(node, "yaml_text", textarea.value);
     setSaveReport(node, "Edited");
     app.canvas?.setDirty(true, true);
   });
 
-  toolbar.append(select, loadButton, validateButton, saveButton);
+  toolbar.append(select, loadButton, validateButton, saveButton, sectionButton, tagButton);
   root.append(toolbar, textarea, status);
 
   node.promptboardYamlEditorElement = root;
