@@ -274,10 +274,11 @@ STYLE:
         yaml_file, validation_report, save_report = PromptBoardYamlEditor().inspect_yaml(
             "custom.yaml",
             "STYLE:\n  tags:\n  - cinematic\n",
+            "Saved",
         )
 
         self.assertEqual(yaml_file, "custom.yaml")
-        self.assertEqual(save_report, "")
+        self.assertEqual(save_report, "Saved")
         self.assertEqual(
             json.loads(validation_report),
             {

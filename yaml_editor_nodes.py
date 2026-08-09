@@ -25,6 +25,7 @@ class PromptBoardYamlEditor:
             "required": {
                 "yaml_file": (_yaml_file_options(), {"default": DEFAULT_YAML_FILE}),
                 "yaml_text": ("STRING", {"multiline": True, "default": _default_yaml_text()}),
+                "save_report": ("STRING", {"multiline": True, "default": ""}),
             },
         }
 
@@ -34,12 +35,12 @@ class PromptBoardYamlEditor:
     CATEGORY = "promptboard"
     DESCRIPTION = "Validate PromptBoard YAML before editing and saving."
 
-    def inspect_yaml(self, yaml_file=DEFAULT_YAML_FILE, yaml_text=""):
+    def inspect_yaml(self, yaml_file=DEFAULT_YAML_FILE, yaml_text="", save_report=""):
         try:
             validation = _validate_yaml_text(yaml_text)
         except Exception as exc:
             validation = _yaml_validation_error(exc)
-        return (str(yaml_file or DEFAULT_YAML_FILE), json.dumps(validation, ensure_ascii=False), "")
+        return (str(yaml_file or DEFAULT_YAML_FILE), json.dumps(validation, ensure_ascii=False), str(save_report or ""))
 
 
 NODE_CLASS_MAPPINGS = {

@@ -57,6 +57,7 @@ function hideWidget(item, hidden) {
 function hideSourceWidgets(node) {
   hideWidget(widget(node, "yaml_file"), true);
   hideWidget(widget(node, "yaml_text"), true);
+  hideWidget(widget(node, "save_report"), true);
 }
 
 function ensureStyles() {
@@ -82,7 +83,7 @@ function ensureStyles() {
 
     .promptboard-yaml-editor-toolbar {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(82px, auto);
+      grid-template-columns: minmax(0, 1fr) minmax(76px, auto) minmax(76px, auto) minmax(88px, auto);
       gap: 6px;
       min-width: 0;
     }
@@ -143,6 +144,11 @@ function setStatus(node, message) {
   }
 }
 
+function setSaveReport(node, message) {
+  setWidgetValue(node, "save_report", message || "");
+  setStatus(node, message);
+}
+
 function syncEditorFromWidgets(node) {
   if (node.promptboardYamlEditorSelect) {
     const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
@@ -156,6 +162,15 @@ function syncEditorFromWidgets(node) {
   }
 }
 
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, options);
+  const data = await response.json();
+  if (!response.ok || data?.error) {
+    throw new Error(data?.error || `HTTP ${response.status}`);
+  }
+  return data;
+}
+
 async function refreshYamlFileOptions(node) {
   const select = node.promptboardYamlEditorSelect;
   if (!select) {
@@ -163,10 +178,9 @@ async function refreshYamlFileOptions(node) {
   }
 
   try {
-    const response = await fetch("/promptboard/yaml/files");
-    const values = await response.json();
-    if (!response.ok || !Array.isArray(values)) {
-      throw new Error(values?.error || `HTTP ${response.status}`);
+    const values = await fetchJson("/promptboard/yaml/files");
+    if (!Array.isArray(values)) {
+      throw new Error("Invalid YAML file list response.");
     }
 
     const current = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
@@ -192,20 +206,60 @@ async function loadSelectedYaml(node) {
   }
 
   try {
-    const response = await fetch(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`);
-    const data = await response.json();
-    if (!response.ok || data.error) {
-      throw new Error(data.error || `HTTP ${response.status}`);
-    }
+    const data = await fetchJson(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`);
     const text = String(data.text ?? "");
     setWidgetValue(node, "yaml_text", text);
     if (node.promptboardYamlEditorTextarea) {
       node.promptboardYamlEditorTextarea.value = text;
     }
-    setStatus(node, `Loaded: ${yamlFile}`);
+    setSaveReport(node, `Loaded: ${yamlFile}`);
     app.canvas?.setDirty(true, true);
   } catch (error) {
-    setStatus(node, `Load error: ${error.message}`);
+    setSaveReport(node, `Load error: ${error.message}`);
+  }
+}
+
+async function validateYaml(node) {
+  const text = widgetValue(node, "yaml_text", "");
+  const report = await fetchJson("/promptboard/yaml/validate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!report.ok) {
+    throw new Error(report.error || report.message || "YAML validation failed.");
+  }
+  setStatus(
+    node,
+    `Valid: ${report.categoryCount} categories, ${report.tagCount} tags`,
+  );
+  return report;
+}
+
+async function saveYaml(node) {
+  const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
+  const text = widgetValue(node, "yaml_text", "");
+  if (!yamlFile) {
+    setSaveReport(node, "Save error: select a YAML file.");
+    return;
+  }
+
+  try {
+    await validateYaml(node);
+    const backup = await fetchJson("/promptboard/yaml/backup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: yamlFile }),
+    });
+    await fetchJson("/promptboard/yaml/file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: yamlFile, text }),
+    });
+    setSaveReport(node, `Saved: ${yamlFile} (backup: ${backup.backup_file})`);
+    app.canvas?.setDirty(true, true);
+  } catch (error) {
+    setSaveReport(node, `Save error: ${error.message}`);
   }
 }
 
@@ -216,6 +270,8 @@ function createEditorElement(node) {
   const toolbar = document.createElement("div");
   const select = document.createElement("select");
   const loadButton = document.createElement("button");
+  const validateButton = document.createElement("button");
+  const saveButton = document.createElement("button");
   const textarea = document.createElement("textarea");
   const status = document.createElement("div");
 
@@ -223,11 +279,17 @@ function createEditorElement(node) {
   toolbar.className = "promptboard-yaml-editor-toolbar";
   select.className = "promptboard-yaml-editor-select";
   loadButton.className = "promptboard-yaml-editor-button";
+  validateButton.className = "promptboard-yaml-editor-button";
+  saveButton.className = "promptboard-yaml-editor-button";
   textarea.className = "promptboard-yaml-editor-textarea";
   status.className = "promptboard-yaml-editor-status";
 
   loadButton.type = "button";
   loadButton.textContent = "Load YAML";
+  validateButton.type = "button";
+  validateButton.textContent = "Validate";
+  saveButton.type = "button";
+  saveButton.textContent = "Save YAML";
   textarea.spellcheck = false;
   textarea.value = widgetValue(node, "yaml_text", "");
   status.textContent = node.promptboardYamlEditorStatus ?? "";
@@ -235,6 +297,8 @@ function createEditorElement(node) {
   stopCanvasEvents(root);
   stopCanvasEvents(select);
   stopCanvasEvents(loadButton);
+  stopCanvasEvents(validateButton);
+  stopCanvasEvents(saveButton);
   stopCanvasEvents(textarea);
 
   select.addEventListener("change", () => {
@@ -246,13 +310,27 @@ function createEditorElement(node) {
     event.stopPropagation();
     loadSelectedYaml(node);
   });
+  validateButton.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+      await validateYaml(node);
+    } catch (error) {
+      setStatus(node, `Validation error: ${error.message}`);
+    }
+  });
+  saveButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    saveYaml(node);
+  });
   textarea.addEventListener("input", () => {
     setWidgetValue(node, "yaml_text", textarea.value);
-    setStatus(node, "Edited");
+    setSaveReport(node, "Edited");
     app.canvas?.setDirty(true, true);
   });
 
-  toolbar.append(select, loadButton);
+  toolbar.append(select, loadButton, validateButton, saveButton);
   root.append(toolbar, textarea, status);
 
   node.promptboardYamlEditorElement = root;
