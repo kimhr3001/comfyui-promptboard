@@ -8,9 +8,9 @@ import {
 const NODE_NAME = "PromptBoardYamlEditor";
 const EDITOR_WIDGET = "yaml_editor_layout";
 const DEFAULT_YAML_FILE = "default.yaml";
-const LOAD_YAML_BUTTON = "Load YAML";
+const LOAD_YAML_BUTTON = "Load";
 const VALIDATE_BUTTON = "Validate";
-const SAVE_YAML_BUTTON = "Save YAML";
+const SAVE_YAML_BUTTON = "Save";
 const HIDDEN_MARK = "__promptboardYamlEditorHiddenWidget";
 const MIN_NODE_WIDTH = 520;
 const MIN_NODE_HEIGHT = 420;
@@ -305,6 +305,16 @@ function ensureStyles() {
     .promptboard-yaml-editor-button {
       padding: 0 10px;
       cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .promptboard-yaml-editor-action-button {
+      flex: 0 0 76px;
+      width: 76px;
+      padding: 0 8px;
+      text-align: center;
     }
 
     .promptboard-yaml-editor-button:hover {
@@ -1113,9 +1123,9 @@ function createEditorElement(node) {
   root.className = "promptboard-yaml-editor";
   toolbar.className = "promptboard-yaml-editor-toolbar";
   select.className = "promptboard-yaml-editor-select";
-  loadButton.className = "promptboard-yaml-editor-button";
-  validateButton.className = "promptboard-yaml-editor-button";
-  saveButton.className = "promptboard-yaml-editor-button";
+  loadButton.className = "promptboard-yaml-editor-button promptboard-yaml-editor-action-button";
+  validateButton.className = "promptboard-yaml-editor-button promptboard-yaml-editor-action-button";
+  saveButton.className = "promptboard-yaml-editor-button promptboard-yaml-editor-action-button";
   sectionButton.className = "promptboard-yaml-editor-button";
   tagButton.className = "promptboard-yaml-editor-button";
   searchRow.className = "promptboard-yaml-editor-search-row";
