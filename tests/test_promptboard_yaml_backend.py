@@ -193,6 +193,32 @@ POSE:
             },
         )
 
+    def test_template_contract_stores_yaml_file_and_selected_state_only(self):
+        selected_state = {"STYLE": ["cinematic"]}
+        with tempfile.TemporaryDirectory() as directory:
+            tags_root = Path(directory) / "tags"
+            tags_root.mkdir()
+            (tags_root / "custom.yaml").write_text("STYLE:\n  tags:\n  - cinematic\n", encoding="utf-8")
+            template_file = Path(directory) / "tag_board_templates.json"
+            with (
+                patch("yaml_tag_nodes.TEMPLATE_FILE", template_file),
+                patch("yaml_tag_nodes.YAML_FILE_ROOTS", (("tags", tags_root),)),
+            ):
+                saved = _save_board_template("contract", "custom.yaml", selected_state)
+                loaded = _get_board_template("contract")
+                raw_templates = json.loads(template_file.read_text(encoding="utf-8"))
+
+        self.assertEqual(set(saved), {"name", "yaml_file", "selected_state"})
+        self.assertEqual(set(loaded), {"name", "yaml_file", "selected_state"})
+        self.assertEqual(saved["yaml_file"], "custom.yaml")
+        self.assertEqual(loaded["selected_state"], selected_state)
+        self.assertEqual(raw_templates, [{
+            "name": "contract",
+            "yaml_file": "custom.yaml",
+            "selected_state": selected_state,
+        }])
+        self.assertNotIn("yaml_text", raw_templates[0])
+
     def test_refuses_to_overwrite_corrupt_template_file(self):
         with tempfile.TemporaryDirectory() as directory:
             template_file = Path(directory) / "tag_board_templates.json"

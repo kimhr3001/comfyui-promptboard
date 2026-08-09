@@ -445,6 +445,10 @@ MVP 안정화 후 별도 migration으로 검토한다.
   - 결과: PromptBoard toolbar에 `Reload YAML` 버튼을 추가하고 현재 선택 상태를 보존한 채 선택 YAML을 다시 읽도록 구현했다.
   - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
   - 다음 작업: Phase 1 / Step 9 - 템플릿 회귀 테스트
+- 완료: Phase 1 / Step 9 - 템플릿 회귀 테스트
+  - 결과: 템플릿 저장 계약이 `name`, `yaml_file`, `selected_state`만 유지하고 YAML 원문을 저장하지 않음을 테스트로 고정했다.
+  - 검증: JS syntax, existing JS/backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 10 - README 업데이트
 
 ## 단계별 구현 순서
 
@@ -458,7 +462,7 @@ MVP 안정화 후 별도 migration으로 검토한다.
 6. [완료] PromptBoard YAML 선택창을 보드 컨트롤 영역으로 이동
 7. [완료] PromptBoard YAML 원문 편집 UI 제거 또는 기본 숨김
 8. [완료] `Reload YAML` 추가
-9. 템플릿 회귀 테스트
+9. [완료] 템플릿 회귀 테스트
 10. README 업데이트
 
 ### Phase 2: 관리 기능 확장
