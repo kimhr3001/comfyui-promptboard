@@ -739,7 +739,7 @@ function createEditorElement(node) {
   sectionButton.className = "promptboard-yaml-editor-button";
   tagButton.className = "promptboard-yaml-editor-button";
   editor.className = "promptboard-yaml-editor-editor";
-  editorHost.className = "promptboard-yaml-editor-codemirror";
+  editorHost.className = "promptboard-yaml-editor-codemirror promptboard-codemirror";
   textarea.className = "promptboard-yaml-editor-textarea";
   status.className = "promptboard-yaml-editor-status";
 
