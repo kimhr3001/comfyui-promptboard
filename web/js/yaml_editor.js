@@ -12,6 +12,10 @@ const HIDDEN_MARK = "__promptboardYamlEditorHiddenWidget";
 const MIN_NODE_WIDTH = 520;
 const MIN_NODE_HEIGHT = 420;
 const EDITOR_HEIGHT = 360;
+const CODEMIRROR_MODULE = "../vendor/codemirror/promptboard-codemirror.bundle.js";
+const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", import.meta.url).href;
+
+let codeMirrorModulePromise = null;
 
 function widget(node, name) {
   return node.widgets?.find((item) => item.name === name);
@@ -26,6 +30,78 @@ function setWidgetValue(node, name, value) {
   if (item) {
     item.value = value;
   }
+}
+
+function loadCodeMirrorModule() {
+  if (!codeMirrorModulePromise) {
+    codeMirrorModulePromise = import(CODEMIRROR_MODULE);
+  }
+  return codeMirrorModulePromise;
+}
+
+function ensureCodeMirrorThemeCss() {
+  if (document.getElementById("promptboard-codemirror-theme")) {
+    return;
+  }
+
+  const link = document.createElement("link");
+  link.id = "promptboard-codemirror-theme";
+  link.rel = "stylesheet";
+  link.href = CODEMIRROR_THEME_CSS;
+  document.head.appendChild(link);
+}
+
+function materialHighlightStyle(cm) {
+  const t = cm.tags;
+  return cm.HighlightStyle.define([
+    { tag: t.keyword, color: "var(--pb-cm-keyword)" },
+    { tag: t.operator, color: "var(--pb-cm-operator)" },
+    {
+      tag: [t.variableName, t.standard(t.variableName), t.definition(t.variableName)],
+      color: "var(--pb-cm-variable)",
+    },
+    { tag: t.local(t.variableName), color: "var(--pb-cm-variable-2)" },
+    { tag: [t.typeName, t.className], color: "var(--pb-cm-type)" },
+    { tag: t.atom, color: "var(--pb-cm-atom)" },
+    { tag: [t.number, t.integer, t.float], color: "var(--pb-cm-number)" },
+    { tag: [t.string, t.special(t.string)], color: "var(--pb-cm-string)" },
+    { tag: t.escape, color: "var(--pb-cm-string-2)" },
+    { tag: t.comment, color: "var(--pb-cm-comment)" },
+    { tag: t.meta, color: "var(--pb-cm-meta)" },
+    { tag: t.attributeName, color: "var(--pb-cm-attribute)" },
+    { tag: t.propertyName, color: "var(--pb-cm-property)" },
+    { tag: t.tagName, color: "var(--pb-cm-tag)" },
+    { tag: t.heading, color: "var(--pb-cm-heading)", fontWeight: "700" },
+    { tag: t.bool, color: "var(--pb-cm-bool)" },
+    { tag: t.null, color: "var(--pb-cm-null)" },
+    {
+      tag: t.invalid,
+      color: "var(--pb-cm-error-fg)",
+      backgroundColor: "var(--pb-cm-error-bg)",
+    },
+  ]);
+}
+
+function activeLineDecorations(cm, lineDecoration, state) {
+  if (state.selection.ranges.some((range) => !range.empty)) {
+    return cm.Decoration.none;
+  }
+  const line = state.doc.lineAt(state.selection.main.head);
+  return cm.Decoration.set([lineDecoration.range(line.from)]);
+}
+
+function promptboardActiveLine(cm) {
+  const lineDecoration = cm.Decoration.line({ class: "cm-activeLine" });
+  return cm.StateField.define({
+    create: (state) => activeLineDecorations(cm, lineDecoration, state),
+    update: (decorations, transaction) => {
+      if (!transaction.docChanged && !transaction.selection) {
+        return decorations;
+      }
+      return activeLineDecorations(cm, lineDecoration, transaction.state);
+    },
+    provide: (field) => cm.EditorView.decorations.from(field),
+  });
 }
 
 function stopCanvasEvents(element) {
@@ -122,11 +198,31 @@ function ensureStyles() {
       background: #242424;
     }
 
+    .promptboard-yaml-editor-editor {
+      box-sizing: border-box;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: #171717;
+    }
+
+    .promptboard-yaml-editor-codemirror {
+      box-sizing: border-box;
+      display: none;
+      width: 100%;
+      min-width: 0;
+      height: 100%;
+      min-height: 0;
+    }
+
     .promptboard-yaml-editor-textarea {
       width: 100%;
       height: 100%;
       min-width: 0;
       min-height: 0;
+      border: 0;
       padding: 8px;
       resize: none;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -235,6 +331,32 @@ function setSaveReport(node, message) {
   setStatus(node, message);
 }
 
+function syncCodeMirrorFromWidget(node) {
+  const view = node.promptboardYamlEditorCodeMirror;
+  if (!view) {
+    return;
+  }
+
+  const value = widgetValue(node, "yaml_text", "");
+  const current = view.state.doc.toString();
+  if (current === value) {
+    return;
+  }
+
+  node.promptboardYamlEditorIgnoreCodeMirrorUpdate = true;
+  try {
+    view.dispatch({
+      changes: {
+        from: 0,
+        to: current.length,
+        insert: value,
+      },
+    });
+  } finally {
+    node.promptboardYamlEditorIgnoreCodeMirrorUpdate = false;
+  }
+}
+
 function syncEditorFromWidgets(node) {
   if (node.promptboardYamlEditorSelect) {
     const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
@@ -246,6 +368,7 @@ function syncEditorFromWidgets(node) {
       node.promptboardYamlEditorTextarea.value = yamlText;
     }
   }
+  syncCodeMirrorFromWidget(node);
 }
 
 async function fetchJson(url, options = {}) {
@@ -294,12 +417,7 @@ async function loadSelectedYaml(node) {
   try {
     const data = await fetchJson(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`);
     const text = String(data.text ?? "");
-    setWidgetValue(node, "yaml_text", text);
-    if (node.promptboardYamlEditorTextarea) {
-      node.promptboardYamlEditorTextarea.value = text;
-    }
-    setSaveReport(node, `Loaded: ${yamlFile}`);
-    app.canvas?.setDirty(true, true);
+    setYamlText(node, text, `Loaded: ${yamlFile}`);
   } catch (error) {
     setSaveReport(node, `Load error: ${error.message}`);
   }
@@ -378,8 +496,114 @@ function setYamlText(node, text, status) {
   if (node.promptboardYamlEditorTextarea) {
     node.promptboardYamlEditorTextarea.value = text;
   }
+  syncCodeMirrorFromWidget(node);
   setSaveReport(node, status);
   app.canvas?.setDirty(true, true);
+}
+
+function handleYamlSaveShortcut(event, node) {
+  if (!(event.metaKey || event.ctrlKey) || event.key?.toLowerCase() !== "s") {
+    return false;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation?.();
+  saveYaml(node);
+  return true;
+}
+
+async function createCodeMirrorEditor(node, host, textarea) {
+  try {
+    ensureCodeMirrorThemeCss();
+    const cm = await loadCodeMirrorModule();
+    const materialSyntax = materialHighlightStyle(cm);
+
+    node.promptboardYamlEditorCodeMirror?.destroy?.();
+    const theme = cm.EditorView.theme(
+      {
+        "&": {
+          height: "100%",
+          fontSize: "12px",
+        },
+        ".cm-scroller": {
+          overflow: "auto",
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+          lineHeight: "1.4",
+        },
+        ".cm-content": {
+          padding: "8px 0",
+        },
+        ".cm-line": {
+          padding: "0 8px",
+        },
+        ".cm-foldGutter": {
+          width: "14px",
+        },
+      },
+      { dark: true },
+    );
+
+    const saveKeymap = cm.keymap.of([
+      {
+        key: "Mod-s",
+        run: () => {
+          saveYaml(node);
+          return true;
+        },
+      },
+      cm.indentWithTab,
+      ...cm.foldKeymap,
+      ...cm.historyKeymap,
+      ...cm.defaultKeymap,
+    ]);
+
+    const view = new cm.EditorView({
+      state: cm.EditorState.create({
+        doc: widgetValue(node, "yaml_text", ""),
+        extensions: [
+          cm.lineNumbers(),
+          cm.highlightActiveLineGutter(),
+          cm.highlightSpecialChars(),
+          cm.history(),
+          cm.foldGutter(),
+          cm.drawSelection(),
+          cm.indentOnInput(),
+          cm.bracketMatching(),
+          cm.yaml(),
+          cm.syntaxHighlighting(materialSyntax),
+          promptboardActiveLine(cm),
+          cm.EditorView.updateListener.of((update) => {
+            if (!update.docChanged || node.promptboardYamlEditorIgnoreCodeMirrorUpdate) {
+              return;
+            }
+            const text = update.state.doc.toString();
+            if (textarea.value !== text) {
+              textarea.value = text;
+            }
+            setWidgetValue(node, "yaml_text", text);
+            setSaveReport(node, "Edited");
+            app.canvas?.setDirty(true, true);
+          }),
+          theme,
+          saveKeymap,
+        ],
+      }),
+      parent: host,
+    });
+
+    stopCanvasEvents(view.dom);
+    view.dom.addEventListener("keydown", (event) => {
+      handleYamlSaveShortcut(event, node);
+    }, { capture: true });
+    node.promptboardYamlEditorCodeMirror = view;
+    textarea.style.display = "none";
+    host.style.display = "block";
+    syncCodeMirrorFromWidget(node);
+  } catch (error) {
+    console.warn("PromptBoard YAML Editor CodeMirror load failed; falling back to textarea.", error);
+    host.style.display = "none";
+    textarea.style.display = "block";
+  }
 }
 
 function openInsertDialog(node, type) {
@@ -501,6 +725,8 @@ function createEditorElement(node) {
   const saveButton = document.createElement("button");
   const sectionButton = document.createElement("button");
   const tagButton = document.createElement("button");
+  const editor = document.createElement("div");
+  const editorHost = document.createElement("div");
   const textarea = document.createElement("textarea");
   const status = document.createElement("div");
 
@@ -512,6 +738,8 @@ function createEditorElement(node) {
   saveButton.className = "promptboard-yaml-editor-button";
   sectionButton.className = "promptboard-yaml-editor-button";
   tagButton.className = "promptboard-yaml-editor-button";
+  editor.className = "promptboard-yaml-editor-editor";
+  editorHost.className = "promptboard-yaml-editor-codemirror";
   textarea.className = "promptboard-yaml-editor-textarea";
   status.className = "promptboard-yaml-editor-status";
 
@@ -536,6 +764,8 @@ function createEditorElement(node) {
   stopCanvasEvents(saveButton);
   stopCanvasEvents(sectionButton);
   stopCanvasEvents(tagButton);
+  stopCanvasEvents(editor);
+  stopCanvasEvents(editorHost);
   stopCanvasEvents(textarea);
 
   select.addEventListener("change", () => {
@@ -573,19 +803,26 @@ function createEditorElement(node) {
   });
   textarea.addEventListener("input", () => {
     setWidgetValue(node, "yaml_text", textarea.value);
+    syncCodeMirrorFromWidget(node);
     setSaveReport(node, "Edited");
     app.canvas?.setDirty(true, true);
   });
+  textarea.addEventListener("keydown", (event) => {
+    handleYamlSaveShortcut(event, node);
+  });
 
   toolbar.append(select, loadButton, validateButton, saveButton, sectionButton, tagButton);
-  root.append(toolbar, textarea, status);
+  editor.append(editorHost, textarea);
+  root.append(toolbar, editor, status);
 
   node.promptboardYamlEditorElement = root;
   node.promptboardYamlEditorSelect = select;
+  node.promptboardYamlEditorEditorHost = editorHost;
   node.promptboardYamlEditorTextarea = textarea;
   node.promptboardYamlEditorStatusElement = status;
 
   syncEditorFromWidgets(node);
+  createCodeMirrorEditor(node, editorHost, textarea);
   refreshYamlFileOptions(node);
 
   return root;

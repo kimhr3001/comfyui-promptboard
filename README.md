@@ -370,9 +370,9 @@ Additional YAML files and saved board templates are user data and are ignored by
 
 ## Editor Theme
 
-`PromptBoard YAML Editor` uses the browser's textarea editor for YAML editing.
+`PromptBoard YAML Editor` uses the bundled CodeMirror 6 editor for YAML editing, with a textarea fallback when CodeMirror cannot be loaded.
 
-The legacy CodeMirror bundle is still kept in the repository for compatibility, and its colors are controlled by:
+Editor colors are controlled by:
 
 ```text
 web/vendor/codemirror/css/thema.css
