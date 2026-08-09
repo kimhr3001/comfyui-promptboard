@@ -14,6 +14,7 @@ const MIN_NODE_HEIGHT = 420;
 const MIN_EDITOR_HEIGHT = 280;
 const PANEL_GUTTER = 18;
 const NODE_BOTTOM_PADDING = 18;
+const SEARCH_DEBOUNCE_MS = 150;
 const CODEMIRROR_MODULE = "../vendor/codemirror/promptboard-codemirror.bundle.js";
 const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", import.meta.url).href;
 
@@ -104,6 +105,22 @@ function promptboardActiveLine(cm) {
     },
     provide: (field) => cm.EditorView.decorations.from(field),
   });
+}
+
+function lineStartOffset(lines, lineIndex) {
+  let offset = 0;
+  for (let index = 0; index < lineIndex; index += 1) {
+    offset += String(lines[index] ?? "").length + 1;
+  }
+  return offset;
+}
+
+function scrollTextareaToOffset(textarea, text, offset) {
+  textarea.setSelectionRange(offset, offset);
+
+  const lineIndex = String(text.slice(0, offset)).split("\n").length - 1;
+  const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight) || 14;
+  textarea.scrollTop = Math.max(0, lineIndex * lineHeight - textarea.clientHeight / 2);
 }
 
 function stopCanvasEvents(element) {
@@ -212,7 +229,7 @@ function ensureStyles() {
     .promptboard-yaml-editor {
       box-sizing: border-box;
       display: grid;
-      grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
       gap: 6px;
       width: 100%;
       height: 100%;
@@ -229,14 +246,46 @@ function ensureStyles() {
       min-width: 0;
     }
 
+    .promptboard-yaml-editor-search-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 42px;
+      min-width: 0;
+    }
+
     .promptboard-yaml-editor-select,
     .promptboard-yaml-editor-button,
+    .promptboard-yaml-editor-search-input,
     .promptboard-yaml-editor-textarea {
       box-sizing: border-box;
       border: 1px solid rgba(255, 255, 255, 0.16);
       background: #171717;
       color: rgba(255, 255, 255, 0.88);
       font-size: 12px;
+    }
+
+    .promptboard-yaml-editor-search-input {
+      height: 24px;
+      min-width: 0;
+      padding: 0 8px;
+      border-right: 0;
+    }
+
+    .promptboard-yaml-editor-search-input.is-invalid {
+      border-color: rgba(220, 88, 88, 0.82);
+      color: #ffd1d1;
+    }
+
+    .promptboard-yaml-editor-search-count {
+      box-sizing: border-box;
+      height: 24px;
+      padding: 5px 4px 0;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-left: 0;
+      background: #171717;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 10px;
+      text-align: center;
+      white-space: nowrap;
     }
 
     .promptboard-yaml-editor-select,
@@ -388,6 +437,144 @@ function setStatus(node, message) {
 
 function setSaveReport(node, message) {
   setStatus(node, message);
+}
+
+function setYamlEditorSearchInvalid(node, invalid) {
+  node.promptboardYamlEditorSearchInput?.classList.toggle("is-invalid", invalid);
+}
+
+function setYamlEditorSearchCount(node, current, total) {
+  const count = node.promptboardYamlEditorSearchCount;
+  if (!count) {
+    return;
+  }
+  count.textContent = total > 0 ? `${current}/${total}` : total === 0 ? "0/0" : "";
+}
+
+function setYamlEditorSearchHighlight(node, match) {
+  const view = node.promptboardYamlEditorCodeMirror;
+  const effect = node.promptboardYamlEditorSearchLineEffect;
+  if (!view || !effect) {
+    return;
+  }
+  view.dispatch({
+    effects: effect.of(match ? match.offset : null),
+  });
+}
+
+function findYamlEditorSearchMatches(text, pattern) {
+  const matcher = new RegExp(pattern);
+  const lines = String(text ?? "").split("\n");
+  const matches = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    matcher.lastIndex = 0;
+    if (matcher.test(lines[index])) {
+      matches.push({
+        lineIndex: index,
+        offset: lineStartOffset(lines, index),
+      });
+    }
+  }
+  return matches;
+}
+
+function yamlEditorSearchState(node, pattern, text) {
+  const signature = String(text ?? "");
+  const current = node.promptboardYamlEditorSearchState;
+  if (current?.pattern === pattern && current?.signature === signature) {
+    return current;
+  }
+
+  const next = {
+    pattern,
+    signature,
+    index: -1,
+    matches: findYamlEditorSearchMatches(text, pattern),
+  };
+  node.promptboardYamlEditorSearchState = next;
+  return next;
+}
+
+function scrollYamlEditorToMatch(node, match) {
+  if (!match) {
+    return;
+  }
+
+  const view = node.promptboardYamlEditorCodeMirror;
+  if (view) {
+    view.dispatch({
+      selection: { anchor: match.offset },
+      scrollIntoView: true,
+    });
+    return;
+  }
+
+  const textarea = node.promptboardYamlEditorTextarea;
+  if (textarea) {
+    scrollTextareaToOffset(textarea, widgetValue(node, "yaml_text", ""), match.offset);
+  }
+}
+
+function runYamlEditorSearch(node, direction = 0) {
+  const input = node.promptboardYamlEditorSearchInput;
+  const pattern = String(input?.value ?? "").trim();
+  if (!pattern) {
+    setYamlEditorSearchInvalid(node, false);
+    node.promptboardYamlEditorSearchState = null;
+    setYamlEditorSearchCount(node, -1, -1);
+    setYamlEditorSearchHighlight(node, null);
+    return;
+  }
+
+  const text = widgetValue(node, "yaml_text", "");
+  let state = null;
+  try {
+    state = yamlEditorSearchState(node, pattern, text);
+  } catch (error) {
+    setYamlEditorSearchInvalid(node, true);
+    setYamlEditorSearchCount(node, -1, -1);
+    setYamlEditorSearchHighlight(node, null);
+    setStatus(node, `Search regex error: ${error.message}`);
+    return;
+  }
+
+  setYamlEditorSearchInvalid(node, false);
+  if (!state.matches.length) {
+    setYamlEditorSearchCount(node, 0, 0);
+    setYamlEditorSearchHighlight(node, null);
+    setStatus(node, "Search: no match");
+    return;
+  }
+
+  if (direction < 0) {
+    state.index = state.index <= 0 ? state.matches.length - 1 : state.index - 1;
+  } else if (direction > 0) {
+    state.index = state.index >= state.matches.length - 1 ? 0 : state.index + 1;
+  } else if (state.index < 0) {
+    state.index = 0;
+  }
+  const match = state.matches[state.index];
+  setYamlEditorSearchCount(node, state.index + 1, state.matches.length);
+  setYamlEditorSearchHighlight(node, match);
+  scrollYamlEditorToMatch(node, match);
+  setStatus(node, "");
+}
+
+function scheduleYamlEditorSearch(node) {
+  if (node.promptboardYamlEditorSearchTimer) {
+    clearTimeout(node.promptboardYamlEditorSearchTimer);
+  }
+  node.promptboardYamlEditorSearchTimer = setTimeout(() => {
+    node.promptboardYamlEditorSearchTimer = null;
+    runYamlEditorSearch(node);
+  }, SEARCH_DEBOUNCE_MS);
+}
+
+function invalidateYamlEditorSearch(node) {
+  node.promptboardYamlEditorSearchState = null;
+  if (node.promptboardYamlEditorSearchInput?.value?.trim()) {
+    scheduleYamlEditorSearch(node);
+  }
 }
 
 function syncCodeMirrorFromWidget(node) {
@@ -556,6 +743,7 @@ function setYamlText(node, text, status) {
     node.promptboardYamlEditorTextarea.value = text;
   }
   syncCodeMirrorFromWidget(node);
+  invalidateYamlEditorSearch(node);
   setSaveReport(node, status);
   app.canvas?.setDirty(true, true);
 }
@@ -571,11 +759,46 @@ function handleYamlSaveShortcut(event, node) {
   return true;
 }
 
+function handleYamlSearchShortcut(event, node) {
+  if (!(event.metaKey || event.ctrlKey) || event.key?.toLowerCase() !== "f") {
+    return false;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation?.();
+  node.promptboardYamlEditorSearchInput?.focus();
+  node.promptboardYamlEditorSearchInput?.select();
+  return true;
+}
+
 async function createCodeMirrorEditor(node, host, textarea) {
   try {
     ensureCodeMirrorThemeCss();
     const cm = await loadCodeMirrorModule();
     const materialSyntax = materialHighlightStyle(cm);
+    const setSearchLineEffect = cm.StateEffect.define();
+    const searchLineField = cm.StateField.define({
+      create: () => cm.Decoration.none,
+      update: (value, transaction) => {
+        let next = value.map(transaction.changes);
+        for (const effect of transaction.effects) {
+          if (!effect.is(setSearchLineEffect)) {
+            continue;
+          }
+          const position = effect.value;
+          if (typeof position !== "number" || position < 0 || position > transaction.state.doc.length) {
+            next = cm.Decoration.none;
+            continue;
+          }
+          const line = transaction.state.doc.lineAt(position);
+          next = cm.Decoration.set([
+            cm.Decoration.line({ class: "cm-promptboard-search-line" }).range(line.from),
+          ]);
+        }
+        return next;
+      },
+      provide: (field) => cm.EditorView.decorations.from(field),
+    });
 
     node.promptboardYamlEditorCodeMirror?.destroy?.();
     const theme = cm.EditorView.theme(
@@ -598,6 +821,10 @@ async function createCodeMirrorEditor(node, host, textarea) {
         },
         ".cm-foldGutter": {
           width: "14px",
+        },
+        ".cm-line.cm-promptboard-search-line": {
+          backgroundColor: "rgba(76, 126, 176, 0.34)",
+          outline: "1px solid rgba(116, 166, 216, 0.45)",
         },
       },
       { dark: true },
@@ -632,6 +859,7 @@ async function createCodeMirrorEditor(node, host, textarea) {
           cm.yaml(),
           cm.syntaxHighlighting(materialSyntax),
           promptboardActiveLine(cm),
+          searchLineField,
           cm.EditorView.lineWrapping,
           cm.EditorView.updateListener.of((update) => {
             if (!update.docChanged || node.promptboardYamlEditorIgnoreCodeMirrorUpdate) {
@@ -642,6 +870,7 @@ async function createCodeMirrorEditor(node, host, textarea) {
               textarea.value = text;
             }
             setWidgetValue(node, "yaml_text", text);
+            invalidateYamlEditorSearch(node);
             setSaveReport(node, "Edited");
             app.canvas?.setDirty(true, true);
           }),
@@ -654,12 +883,14 @@ async function createCodeMirrorEditor(node, host, textarea) {
 
     stopCanvasEvents(view.dom);
     view.dom.addEventListener("keydown", (event) => {
-      handleYamlSaveShortcut(event, node);
+      handleYamlSaveShortcut(event, node) || handleYamlSearchShortcut(event, node);
     }, { capture: true });
     node.promptboardYamlEditorCodeMirror = view;
+    node.promptboardYamlEditorSearchLineEffect = setSearchLineEffect;
     textarea.style.display = "none";
     host.style.display = "block";
     syncCodeMirrorFromWidget(node);
+    runYamlEditorSearch(node);
     syncEditorSize(node);
   } catch (error) {
     console.warn("PromptBoard YAML Editor CodeMirror load failed; falling back to textarea.", error);
@@ -787,6 +1018,9 @@ function createEditorElement(node) {
   const saveButton = document.createElement("button");
   const sectionButton = document.createElement("button");
   const tagButton = document.createElement("button");
+  const searchRow = document.createElement("div");
+  const searchInput = document.createElement("input");
+  const searchCount = document.createElement("div");
   const editor = document.createElement("div");
   const editorHost = document.createElement("div");
   const textarea = document.createElement("textarea");
@@ -800,6 +1034,9 @@ function createEditorElement(node) {
   saveButton.className = "promptboard-yaml-editor-button";
   sectionButton.className = "promptboard-yaml-editor-button";
   tagButton.className = "promptboard-yaml-editor-button";
+  searchRow.className = "promptboard-yaml-editor-search-row";
+  searchInput.className = "promptboard-yaml-editor-search-input";
+  searchCount.className = "promptboard-yaml-editor-search-count";
   editor.className = "promptboard-yaml-editor-editor";
   editorHost.className = "promptboard-yaml-editor-codemirror promptboard-codemirror";
   textarea.className = "promptboard-yaml-editor-textarea";
@@ -815,6 +1052,11 @@ function createEditorElement(node) {
   sectionButton.textContent = "+ Section";
   tagButton.type = "button";
   tagButton.textContent = "+ Tag";
+  searchInput.type = "text";
+  searchInput.placeholder = "search";
+  searchInput.autocomplete = "off";
+  searchInput.spellcheck = false;
+  searchCount.textContent = "";
   textarea.spellcheck = false;
   textarea.value = widgetValue(node, "yaml_text", "");
   status.textContent = node.promptboardYamlEditorStatus ?? "";
@@ -826,6 +1068,7 @@ function createEditorElement(node) {
   stopCanvasEvents(saveButton);
   stopCanvasEvents(sectionButton);
   stopCanvasEvents(tagButton);
+  stopCanvasEvents(searchInput);
   stopCanvasEvents(editor);
   stopCanvasEvents(editorHost);
   stopCanvasEvents(textarea);
@@ -863,22 +1106,38 @@ function createEditorElement(node) {
     event.stopPropagation();
     openInsertDialog(node, "tag");
   });
+  searchInput.addEventListener("input", () => {
+    node.promptboardYamlEditorSearchState = null;
+    scheduleYamlEditorSearch(node);
+  });
+  searchInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    runYamlEditorSearch(node, event.shiftKey ? -1 : 1);
+  });
   textarea.addEventListener("input", () => {
     setWidgetValue(node, "yaml_text", textarea.value);
     syncCodeMirrorFromWidget(node);
+    invalidateYamlEditorSearch(node);
     setSaveReport(node, "Edited");
     app.canvas?.setDirty(true, true);
   });
   textarea.addEventListener("keydown", (event) => {
-    handleYamlSaveShortcut(event, node);
+    handleYamlSaveShortcut(event, node) || handleYamlSearchShortcut(event, node);
   });
 
   toolbar.append(select, loadButton, validateButton, saveButton, sectionButton, tagButton);
+  searchRow.append(searchInput, searchCount);
   editor.append(editorHost, textarea);
-  root.append(toolbar, editor, status);
+  root.append(toolbar, searchRow, editor, status);
 
   node.promptboardYamlEditorElement = root;
   node.promptboardYamlEditorSelect = select;
+  node.promptboardYamlEditorSearchInput = searchInput;
+  node.promptboardYamlEditorSearchCount = searchCount;
   node.promptboardYamlEditorEditorHost = editorHost;
   node.promptboardYamlEditorTextarea = textarea;
   node.promptboardYamlEditorStatusElement = status;
