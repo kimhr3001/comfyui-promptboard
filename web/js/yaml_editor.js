@@ -653,9 +653,9 @@ function scheduleYamlEditorSearch(node) {
   }, SEARCH_DEBOUNCE_MS);
 }
 
-function invalidateYamlEditorSearch(node) {
+function invalidateYamlEditorSearch(node, options = {}) {
   node.promptboardYamlEditorSearchState = null;
-  if (node.promptboardYamlEditorSearchInput?.value?.trim()) {
+  if (options.refresh && node.promptboardYamlEditorSearchInput?.value?.trim()) {
     scheduleYamlEditorSearch(node);
   }
 }
@@ -841,7 +841,7 @@ function setYamlText(node, text, status) {
     node.promptboardYamlEditorTextarea.value = text;
   }
   syncCodeMirrorFromWidget(node);
-  invalidateYamlEditorSearch(node);
+  invalidateYamlEditorSearch(node, { refresh: true });
   setSaveReport(node, status);
   app.canvas?.setDirty(true, true);
 }
