@@ -541,6 +541,10 @@ function setYamlEditorSearchHighlight(node, match) {
   });
 }
 
+function yamlEditorText(node) {
+  return node.promptboardYamlEditorCodeMirror?.state?.doc?.toString() ?? widgetValue(node, "yaml_text", "");
+}
+
 function findYamlEditorSearchMatches(text, pattern) {
   const matcher = new RegExp(pattern);
   const lines = String(text ?? "").split("\n");
@@ -590,7 +594,7 @@ function scrollYamlEditorToMatch(node, match) {
 
   const textarea = node.promptboardYamlEditorTextarea;
   if (textarea) {
-    scrollTextareaToOffset(textarea, widgetValue(node, "yaml_text", ""), match.offset);
+    scrollTextareaToOffset(textarea, yamlEditorText(node), match.offset);
   }
 }
 
@@ -605,7 +609,7 @@ function runYamlEditorSearch(node, direction = 0) {
     return;
   }
 
-  const text = widgetValue(node, "yaml_text", "");
+  const text = yamlEditorText(node);
   let state = null;
   try {
     state = yamlEditorSearchState(node, pattern, text);
@@ -902,8 +906,7 @@ async function createCodeMirrorEditor(node, host, textarea) {
           fontSize: "12px",
         },
         ".cm-scroller": {
-          overflowX: "hidden",
-          overflowY: "auto",
+          overflow: "auto",
           fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
           lineHeight: "1.4",
         },
@@ -954,7 +957,6 @@ async function createCodeMirrorEditor(node, host, textarea) {
           cm.syntaxHighlighting(materialSyntax),
           promptboardActiveLine(cm),
           searchLineField,
-          cm.EditorView.lineWrapping,
           cm.EditorView.updateListener.of((update) => {
             if (!update.docChanged || node.promptboardYamlEditorIgnoreCodeMirrorUpdate) {
               return;
