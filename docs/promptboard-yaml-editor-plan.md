@@ -421,6 +421,10 @@ MVP 안정화 후 별도 migration으로 검토한다.
   - 결과: validation report와 save report 출력을 가진 최소 노드를 등록했다.
   - 검증: `tests/test_promptboard_yaml_backend.py`, Python compile, `git diff --check`
   - 다음 작업: Phase 1 / Step 3 - Editor YAML 선택/로드 구현
+- 완료: Phase 1 / Step 3 - Editor YAML 선택/로드 구현
+  - 결과: Editor 노드 전용 DOM UI에서 YAML 파일 선택, 서버 원문 로드, hidden `yaml_text` 동기화를 구현했다.
+  - 검증: JS syntax, backend tests, Python compile, `git diff --check`
+  - 다음 작업: Phase 1 / Step 4 - Editor 저장/백업/검증 구현
 
 ## 단계별 구현 순서
 
@@ -428,7 +432,7 @@ MVP 안정화 후 별도 migration으로 검토한다.
 
 1. [완료] YAML backup/validate backend helper 추가
 2. [완료] `PromptBoard YAML Editor` 노드 skeleton 추가
-3. Editor YAML 선택/로드 구현
+3. [완료] Editor YAML 선택/로드 구현
 4. Editor 저장/백업/검증 구현
 5. 섹션/태그 추가 팝업 구현
 6. PromptBoard YAML 선택창을 보드 컨트롤 영역으로 이동
