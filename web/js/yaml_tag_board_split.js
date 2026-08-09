@@ -1623,7 +1623,7 @@ function ensureStyles() {
 	    }
 
 	    .promptboard-right {
-	      grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
+	      grid-template-rows: auto auto auto auto minmax(0, 1fr);
 	    }
 
     .promptboard-toolbar {
@@ -3008,16 +3008,33 @@ function renderCards(node) {
   renderNavigator(node, scroll, state);
 }
 
+function promptboardNoticeText(node) {
+  return [node.promptboardTemplateStatus, node.promptboardStatus]
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function updatePromptboardNotice(node) {
+  const sharedStatus = node.promptboardTemplateStatusElement;
+  if (sharedStatus) {
+    sharedStatus.textContent = promptboardNoticeText(node);
+    sharedStatus.style.display = "";
+  }
+
+  const yamlStatus = node.promptboardStatusElement;
+  if (yamlStatus && yamlStatus !== sharedStatus) {
+    yamlStatus.textContent = node.promptboardStatus ?? "";
+  }
+}
+
 function setStatus(node, text) {
   if (node.promptboardStatusTimer) {
     clearTimeout(node.promptboardStatusTimer);
     node.promptboardStatusTimer = null;
   }
   node.promptboardStatus = text;
-  const status = node.promptboardStatusElement;
-  if (status) {
-    status.textContent = text;
-  }
+  updatePromptboardNotice(node);
 }
 
 function setTemporaryStatus(node, text) {
@@ -3025,10 +3042,7 @@ function setTemporaryStatus(node, text) {
   node.promptboardStatusTimer = setTimeout(() => {
     node.promptboardStatus = "";
     node.promptboardStatusTimer = null;
-    const status = node.promptboardStatusElement;
-    if (status) {
-      status.textContent = "";
-    }
+    updatePromptboardNotice(node);
   }, 2000);
 }
 
@@ -3095,8 +3109,7 @@ function updateTemplateControls(node) {
   }
 
   if (status) {
-    status.textContent = node.promptboardTemplateStatus ?? "";
-    status.style.display = "";
+    updatePromptboardNotice(node);
   }
 }
 
@@ -3714,7 +3727,7 @@ function createSplitElement(node) {
   boardSearchRow.append(boardSearch, boardSearchCount);
   toolbarSearchRow.append(boardSearchRow, createResetButton(node));
   toolbar.append(toolbarYamlRow, toolbarTemplateRow, toolbarSearchRow);
-  right.append(toolbar, templateStatus, status, groupFilter, navigatorRailHost, scroll);
+  right.append(toolbar, templateStatus, groupFilter, navigatorRailHost, scroll);
   root.append(right);
   if (YAML_SOURCE_PANEL_ENABLED) {
     yamlSearchRow.append(yamlSearch, yamlSearchCount);
@@ -3733,7 +3746,7 @@ function createSplitElement(node) {
   node.promptboardEditor = editor;
   node.promptboardEditorHost = editorHost;
   node.promptboardTextarea = textarea;
-  node.promptboardStatusElement = status;
+  node.promptboardStatusElement = YAML_SOURCE_PANEL_ENABLED ? status : templateStatus;
   node.promptboardTemplateSelect = templateSelect;
   node.promptboardBoardSearchInput = boardSearch;
   node.promptboardBoardSearchCount = boardSearchCount;
