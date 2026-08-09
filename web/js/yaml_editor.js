@@ -11,7 +11,9 @@ const DEFAULT_YAML_FILE = "default.yaml";
 const HIDDEN_MARK = "__promptboardYamlEditorHiddenWidget";
 const MIN_NODE_WIDTH = 520;
 const MIN_NODE_HEIGHT = 420;
-const EDITOR_HEIGHT = 360;
+const MIN_EDITOR_HEIGHT = 280;
+const PANEL_GUTTER = 18;
+const NODE_BOTTOM_PADDING = 18;
 const CODEMIRROR_MODULE = "../vendor/codemirror/promptboard-codemirror.bundle.js";
 const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", import.meta.url).href;
 
@@ -138,6 +140,65 @@ function hideWidget(item, hidden) {
 function hideSourceWidgets(node) {
   hideWidget(widget(node, "yaml_file"), true);
   hideWidget(widget(node, "yaml_text"), true);
+}
+
+function clampSize(node) {
+  const width = Math.max(MIN_NODE_WIDTH, Number(node.size?.[0]) || MIN_NODE_WIDTH);
+  const height = Math.max(MIN_NODE_HEIGHT, Number(node.size?.[1]) || MIN_NODE_HEIGHT);
+  node.size = [width, height];
+}
+
+function editorTop(node) {
+  const item = widget(node, EDITOR_WIDGET);
+  const top = Number(item?.y ?? item?.last_y);
+  if (Number.isFinite(top) && top > 0) {
+    return top;
+  }
+  return 78;
+}
+
+function editorHeight(node) {
+  return Math.max(
+    MIN_EDITOR_HEIGHT,
+    Math.floor(Number(node.size?.[1] ?? MIN_NODE_HEIGHT) - editorTop(node) - NODE_BOTTOM_PADDING),
+  );
+}
+
+function syncEditorSize(node) {
+  const element = node.promptboardYamlEditorElement;
+  if (!element) {
+    return;
+  }
+  element.style.width = `${Math.max(320, Number(node.size?.[0] ?? MIN_NODE_WIDTH) - PANEL_GUTTER)}px`;
+  element.style.height = `${editorHeight(node)}px`;
+  node.promptboardYamlEditorCodeMirror?.requestMeasure?.();
+}
+
+function scheduleEditorSizeSync(node) {
+  if (!node.promptboardYamlEditorElement || typeof requestAnimationFrame !== "function") {
+    syncEditorSize(node);
+    return;
+  }
+
+  const previousFrames = node.promptboardYamlEditorLayoutFrames;
+  if (Array.isArray(previousFrames)) {
+    for (const frame of previousFrames) {
+      cancelAnimationFrame(frame);
+    }
+  }
+
+  const frames = [];
+  node.promptboardYamlEditorLayoutFrames = frames;
+  frames.push(requestAnimationFrame(() => {
+    frames.push(requestAnimationFrame(() => {
+      if (node.promptboardYamlEditorLayoutFrames !== frames) {
+        return;
+      }
+      node.promptboardYamlEditorLayoutFrames = null;
+      syncEditorSize(node);
+      app.canvas?.setDirty(true, true);
+    }));
+  }));
 }
 
 function ensureStyles() {
@@ -599,6 +660,7 @@ async function createCodeMirrorEditor(node, host, textarea) {
     textarea.style.display = "none";
     host.style.display = "block";
     syncCodeMirrorFromWidget(node);
+    syncEditorSize(node);
   } catch (error) {
     console.warn("PromptBoard YAML Editor CodeMirror load failed; falling back to textarea.", error);
     host.style.display = "none";
@@ -840,7 +902,11 @@ function ensureEditorWidget(node) {
     hideOnZoom: true,
   });
   editorWidget.serialize = false;
-  editorWidget.computeSize = (width) => [width ?? Number(node.size?.[0] ?? MIN_NODE_WIDTH), EDITOR_HEIGHT];
+  editorWidget.computeSize = (width) => [width ?? Number(node.size?.[0] ?? MIN_NODE_WIDTH), MIN_EDITOR_HEIGHT];
+  editorWidget.computeLayoutSize = () => ({
+    minHeight: MIN_EDITOR_HEIGHT,
+    minWidth: MIN_NODE_WIDTH - PANEL_GUTTER,
+  });
   return editorWidget;
 }
 
@@ -848,9 +914,12 @@ function finalizeNode(node, info = null, isNewNode = false) {
   if (isNewNode) {
     node.size = [MIN_NODE_WIDTH, MIN_NODE_HEIGHT];
   }
+  clampSize(node);
   node.resizable = true;
   hideSourceWidgets(node);
   ensureEditorWidget(node);
+  syncEditorSize(node);
+  scheduleEditorSizeSync(node);
   syncEditorFromWidgets(node);
   if (info) {
     refreshYamlFileOptions(node);
@@ -878,6 +947,15 @@ app.registerExtension({
     nodeType.prototype.onConfigure = function (info) {
       const result = onConfigure?.apply(this, arguments);
       finalizeNode(this, info);
+      return result;
+    };
+
+    const onResize = nodeType.prototype.onResize;
+    nodeType.prototype.onResize = function () {
+      const result = onResize?.apply(this, arguments);
+      clampSize(this);
+      syncEditorSize(this);
+      app.canvas?.setDirty(true, true);
       return result;
     };
   },
