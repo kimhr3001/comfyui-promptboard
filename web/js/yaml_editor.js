@@ -526,7 +526,8 @@ async function createCodeMirrorEditor(node, host, textarea) {
           fontSize: "12px",
         },
         ".cm-scroller": {
-          overflow: "auto",
+          overflowX: "hidden",
+          overflowY: "auto",
           fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
           lineHeight: "1.4",
         },
@@ -572,6 +573,7 @@ async function createCodeMirrorEditor(node, host, textarea) {
           cm.yaml(),
           cm.syntaxHighlighting(materialSyntax),
           promptboardActiveLine(cm),
+          cm.EditorView.lineWrapping,
           cm.EditorView.updateListener.of((update) => {
             if (!update.docChanged || node.promptboardYamlEditorIgnoreCodeMirrorUpdate) {
               return;
