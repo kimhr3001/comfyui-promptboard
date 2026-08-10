@@ -1,11 +1,9 @@
 # PromptBoard YAML schema v2 normalization contract
 
-Status: Phase 1 / Turn 1 contract
+Status: current contract
 
 This document defines the source YAML, normalized model, reserved names, and
 validation errors that the browser and Python implementations must share.
-It does not implement parsing, tag-set resolution, attribute selection, or
-placeholder composition.
 
 ## Source versions
 
@@ -176,8 +174,9 @@ Defaults:
 - Attribute `mode` defaults to `single`.
 - Attribute `migrateFrom` defaults to `null`.
 
-The only initial modes are `single` and `multiple`. Source resolution,
-selection limits, migration, and composition are implemented in later phases.
+Supported modes are `single` and `multiple`. Source resolution, attribute
+selection, migration, and composition are part of the current PromptBoard
+runtime behavior.
 
 ## Error shape
 
@@ -243,9 +242,8 @@ tests/fixtures/yaml_schema/
   expected_errors.json
 ```
 
-The browser parser introduced in Phase 1 / Turn 2 and the Python normalizer
-extended in Phase 1 / Turn 3 must consume these same fixtures without separate
-implementation-specific expectations.
+The browser parser and Python normalizer must consume these same fixtures
+without separate implementation-specific expectations.
 
 The bundled browser parser is js-yaml 5.2.3, loaded from the local extension
 files with its default YAML 1.2 core schema. Normalization converts supported

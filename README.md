@@ -44,12 +44,20 @@ Outputs:
 Main features:
 
 - YAML file selector independent from `Prompt Board`
-- YAML source load and edit
+- YAML source load and edit with the bundled CodeMirror editor
+- horizontal scrolling for long YAML lines instead of automatic soft wrapping
+- YAML source search with match count, current-line highlight, and `Enter` / `Shift+Enter` navigation
 - schema validation
 - automatic backup before saving
 - YAML save
+- `Load`, `Validate`, and `Save` buttons with fixed-width status feedback for running, success, and error states
 - `+ Section` and `+ Tag` dialogs for appending entries to a category or section
 - duplicate tag text blocking and duplicate label warning
+
+Shortcuts:
+
+- `Cmd+F` / `Ctrl+F`: focus YAML source search
+- `Cmd+S` / `Ctrl+S`: save the current YAML file
 
 Saving in `PromptBoard YAML Editor` does not automatically change an existing `Prompt Board` node. Use `Reload YAML` on `Prompt Board` when you want the board to read the saved file again.
 
@@ -95,17 +103,11 @@ Disabled rows, empty names, `None`, and rows where both strengths are `0` are sk
 
 ## Screenshots
 
-### Prompt Board
+### Prompt Board and YAML Editor
 
-The workflow screenshot below uses the included `default.yaml` starter tag file. It shows the current board structure and a complete text flow:
+The current workflow keeps tag selection in `Prompt Board` and YAML source editing in `PromptBoard YAML Editor`.
 
-- `Text Box (source_text)` provides source text with placeholders.
-- `Prompt Board` selects YAML-managed tags and sends `preview_text` to `Preview as Text - Board Preview`.
-- `Prompt Board Replace` receives `source_text` and `selection_json`, then sends its replaced `text` output to `Preview as Text - Replace Result`.
-
-The example also demonstrates `uiGroup` filters, tag labels, descriptions, selected-count badges, and nested replacement through `replaceInsideTags`.
-
-![Prompt Board using default.yaml](docs/images/promptboard-default.png)
+![Prompt Board and YAML Editor current UI](docs/images/promptboard-default.png)
 
 ### LoRA Info Dialog
 
@@ -399,7 +401,11 @@ PromptBoard has one board search field:
 
 - Board search: searches category names, tag labels, and tag values, expands a collapsed group when needed, scrolls to the current match, and highlights the matched group or tag.
 
-The search field shows match position as `current/total`. Press `Enter` for the next match and `Shift+Enter` for the previous match.
+`PromptBoard YAML Editor` has one YAML source search field:
+
+- YAML source search: searches the visible YAML source by line, scrolls to the current match, and highlights the matched line.
+
+Both search fields show match position as `current/total`. Press `Enter` for the next match and `Shift+Enter` for the previous match.
 
 ## Model Info
 
@@ -433,8 +439,10 @@ Supported checkpoint widgets:
 - `CheckpointLoader`
 - `CheckpointLoaderSimple`
 - `CheckpointLoader|pysssss`
+- `Checkpoint Loader with Name (Image Saver)`
 - `Efficient Loader`
 - `Eff. Loader SDXL`
+- `easy comfyLoader`
 
 ## Development
 
@@ -448,6 +456,7 @@ Validate the browser extension script:
 
 ```bash
 node --check web/js/yaml_tag_board_split.js
+node --check web/js/yaml_editor.js
 ```
 
 Validate the checkpoint info extension script:
