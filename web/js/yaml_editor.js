@@ -292,6 +292,70 @@ function ensureStyles() {
       white-space: nowrap;
     }
 
+    .promptboard-yaml-editor-search-menu {
+      position: fixed;
+      z-index: 10000;
+      overflow-x: hidden;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: #151515;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+      scrollbar-width: thin;
+    }
+
+    .promptboard-yaml-editor-search-option,
+    .promptboard-yaml-editor-search-empty {
+      box-sizing: border-box;
+      display: block;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.82);
+      font: 11px Arial, sans-serif;
+      text-align: left;
+    }
+
+    .promptboard-yaml-editor-search-option {
+      min-height: 38px;
+      padding: 5px 7px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      cursor: pointer;
+    }
+
+    .promptboard-yaml-editor-search-option:last-child {
+      border-bottom: 0;
+    }
+
+    .promptboard-yaml-editor-search-option:hover,
+    .promptboard-yaml-editor-search-option.is-active {
+      background: rgba(130, 166, 220, 0.22);
+      color: #fff;
+    }
+
+    .promptboard-yaml-editor-search-line,
+    .promptboard-yaml-editor-search-text {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .promptboard-yaml-editor-search-line {
+      color: #8ec5ff;
+      font: 10px Menlo, Consolas, monospace;
+    }
+
+    .promptboard-yaml-editor-search-text {
+      margin-top: 2px;
+      color: #f0f0f0;
+      font: 11px Menlo, Consolas, monospace;
+    }
+
+    .promptboard-yaml-editor-search-empty {
+      padding: 7px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
     .promptboard-yaml-editor-select,
     .promptboard-yaml-editor-button {
       height: 28px;
@@ -530,6 +594,34 @@ function setYamlEditorSearchCount(node, current, total) {
   count.textContent = total > 0 ? `${current}/${total}` : total === 0 ? "0/0" : "";
 }
 
+function hideYamlEditorSearchMenu(node) {
+  const menu = node.promptboardYamlEditorSearchMenu;
+  if (menu) {
+    menu.remove();
+  }
+  node.promptboardYamlEditorSearchInput?.setAttribute("aria-expanded", "false");
+}
+
+function showYamlEditorSearchMenu(node) {
+  const input = node.promptboardYamlEditorSearchInput;
+  const row = node.promptboardYamlEditorSearchRow;
+  const menu = node.promptboardYamlEditorSearchMenu;
+  if (!input || !row || !menu || document.activeElement !== input) {
+    hideYamlEditorSearchMenu(node);
+    return;
+  }
+
+  const rect = row.getBoundingClientRect();
+  menu.style.left = `${rect.left}px`;
+  menu.style.top = `${rect.bottom + 2}px`;
+  menu.style.width = `${rect.width}px`;
+  menu.style.maxHeight = `${Math.max(96, Math.min(280, window.innerHeight - rect.bottom - 8))}px`;
+  if (!menu.parentElement) {
+    document.body.append(menu);
+  }
+  input.setAttribute("aria-expanded", "true");
+}
+
 function setYamlEditorSearchHighlight(node, match) {
   const view = node.promptboardYamlEditorCodeMirror;
   const effect = node.promptboardYamlEditorSearchLineEffect;
@@ -546,7 +638,7 @@ function yamlEditorText(node) {
 }
 
 function findYamlEditorSearchMatches(text, pattern) {
-  const matcher = new RegExp(pattern);
+  const matcher = new RegExp(pattern, "i");
   const lines = String(text ?? "").split("\n");
   const matches = [];
   for (let index = 0; index < lines.length; index += 1) {
@@ -555,6 +647,7 @@ function findYamlEditorSearchMatches(text, pattern) {
       matches.push({
         lineIndex: index,
         offset: lineStartOffset(lines, index),
+        text: lines[index],
       });
     }
   }
@@ -598,14 +691,106 @@ function scrollYamlEditorToMatch(node, match) {
   }
 }
 
+function renderYamlEditorSearchMenu(node) {
+  const input = node.promptboardYamlEditorSearchInput;
+  const menu = node.promptboardYamlEditorSearchMenu;
+  const state = node.promptboardYamlEditorSearchState;
+  if (!input || !menu || !String(input.value ?? "").trim()) {
+    hideYamlEditorSearchMenu(node);
+    return;
+  }
+
+  menu.replaceChildren();
+  const matches = Array.isArray(state?.matches) ? state.matches : [];
+  if (node.promptboardYamlEditorSearchError) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-yaml-editor-search-empty";
+    empty.textContent = node.promptboardYamlEditorSearchError;
+    menu.append(empty);
+    showYamlEditorSearchMenu(node);
+    return;
+  }
+  if (!matches.length) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-yaml-editor-search-empty";
+    empty.textContent = "No matches";
+    menu.append(empty);
+    showYamlEditorSearchMenu(node);
+    return;
+  }
+
+  matches.forEach((match, index) => {
+    const option = document.createElement("button");
+    const line = document.createElement("span");
+    const text = document.createElement("span");
+    const isActive = index === state.index;
+
+    option.type = "button";
+    option.className = `promptboard-yaml-editor-search-option${isActive ? " is-active" : ""}`;
+    option.dataset.index = String(index);
+    option.setAttribute("role", "option");
+    option.setAttribute("aria-selected", String(isActive));
+    option.title = match.text || `Line ${match.lineIndex + 1}`;
+    line.className = "promptboard-yaml-editor-search-line";
+    line.textContent = `Line ${match.lineIndex + 1}`;
+    text.className = "promptboard-yaml-editor-search-text";
+    text.textContent = String(match.text ?? "").trim() || "(empty line)";
+    option.append(line, text);
+    option.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+    option.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      navigateToYamlEditorSearchMatch(node, index, { hideMenu: true });
+    });
+    menu.append(option);
+  });
+
+  showYamlEditorSearchMenu(node);
+  menu.querySelector(".promptboard-yaml-editor-search-option.is-active")?.scrollIntoView({ block: "nearest" });
+}
+
+function setYamlEditorSearchMenuIndex(node, index) {
+  const state = node.promptboardYamlEditorSearchState;
+  if (!state?.matches?.length) {
+    return;
+  }
+  state.index = (index + state.matches.length) % state.matches.length;
+  setYamlEditorSearchCount(node, state.index + 1, state.matches.length);
+  renderYamlEditorSearchMenu(node);
+}
+
+function navigateToYamlEditorSearchMatch(node, index, options = {}) {
+  const state = node.promptboardYamlEditorSearchState;
+  if (!state?.matches?.length) {
+    return;
+  }
+
+  state.index = (index + state.matches.length) % state.matches.length;
+  const match = state.matches[state.index];
+  setYamlEditorSearchCount(node, state.index + 1, state.matches.length);
+  setYamlEditorSearchHighlight(node, match);
+  scrollYamlEditorToMatch(node, match);
+  setStatus(node, "");
+  if (options.hideMenu) {
+    hideYamlEditorSearchMenu(node);
+  } else {
+    renderYamlEditorSearchMenu(node);
+  }
+}
+
 function runYamlEditorSearch(node, direction = 0) {
   const input = node.promptboardYamlEditorSearchInput;
   const pattern = String(input?.value ?? "").trim();
   if (!pattern) {
     setYamlEditorSearchInvalid(node, false);
+    node.promptboardYamlEditorSearchError = "";
     node.promptboardYamlEditorSearchState = null;
     setYamlEditorSearchCount(node, -1, -1);
     setYamlEditorSearchHighlight(node, null);
+    hideYamlEditorSearchMenu(node);
     return;
   }
 
@@ -614,18 +799,22 @@ function runYamlEditorSearch(node, direction = 0) {
   try {
     state = yamlEditorSearchState(node, pattern, text);
   } catch (error) {
+    node.promptboardYamlEditorSearchError = "Invalid search pattern";
     setYamlEditorSearchInvalid(node, true);
     setYamlEditorSearchCount(node, -1, -1);
     setYamlEditorSearchHighlight(node, null);
     setStatus(node, `Search regex error: ${error.message}`);
+    renderYamlEditorSearchMenu(node);
     return;
   }
 
+  node.promptboardYamlEditorSearchError = "";
   setYamlEditorSearchInvalid(node, false);
   if (!state.matches.length) {
     setYamlEditorSearchCount(node, 0, 0);
     setYamlEditorSearchHighlight(node, null);
     setStatus(node, "Search: no match");
+    renderYamlEditorSearchMenu(node);
     return;
   }
 
@@ -636,11 +825,7 @@ function runYamlEditorSearch(node, direction = 0) {
   } else if (state.index < 0) {
     state.index = 0;
   }
-  const match = state.matches[state.index];
-  setYamlEditorSearchCount(node, state.index + 1, state.matches.length);
-  setYamlEditorSearchHighlight(node, match);
-  scrollYamlEditorToMatch(node, match);
-  setStatus(node, "");
+  navigateToYamlEditorSearchMatch(node, state.index);
 }
 
 function scheduleYamlEditorSearch(node) {
@@ -655,8 +840,11 @@ function scheduleYamlEditorSearch(node) {
 
 function invalidateYamlEditorSearch(node, options = {}) {
   node.promptboardYamlEditorSearchState = null;
+  node.promptboardYamlEditorSearchError = "";
   if (options.refresh && node.promptboardYamlEditorSearchInput?.value?.trim()) {
     scheduleYamlEditorSearch(node);
+  } else {
+    hideYamlEditorSearchMenu(node);
   }
 }
 
@@ -686,10 +874,18 @@ function syncCodeMirrorFromWidget(node) {
   }
 }
 
-function syncEditorFromWidgets(node) {
+function syncEditorFromWidgets(node, options = {}) {
   if (node.promptboardYamlEditorSelect) {
     const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
+    const previousYamlFile = node.promptboardYamlEditorSelect.value;
     node.promptboardYamlEditorSelect.value = yamlFile;
+    if (
+      options.autoLoadFileChange
+      && node.promptboardYamlEditorSelect.options.length
+      && previousYamlFile !== yamlFile
+    ) {
+      loadSelectedYaml(node);
+    }
   }
   if (node.promptboardYamlEditorTextarea) {
     const yamlText = widgetValue(node, "yaml_text", "");
@@ -722,6 +918,7 @@ async function refreshYamlFileOptions(node) {
     }
 
     const current = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
+    const previous = select.value;
     select.replaceChildren();
     for (const value of values) {
       const option = document.createElement("option");
@@ -731,6 +928,9 @@ async function refreshYamlFileOptions(node) {
     }
     select.value = values.includes(current) ? current : values[0] ?? DEFAULT_YAML_FILE;
     setWidgetValue(node, "yaml_file", select.value);
+    if (select.value && select.value !== previous) {
+      loadSelectedYaml(node);
+    }
   } catch (error) {
     setStatus(node, `YAML list error: ${error.message}`);
   }
@@ -747,6 +947,9 @@ async function loadSelectedYaml(node) {
   setYamlEditorActionState(node, "load", "busy");
   try {
     const data = await fetchJson(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`);
+    if (widgetValue(node, "yaml_file", DEFAULT_YAML_FILE) !== yamlFile) {
+      return;
+    }
     const text = String(data.text ?? "");
     setYamlText(node, text, `Loaded: ${yamlFile}`);
     setYamlEditorActionState(node, "load", "done");
@@ -1117,6 +1320,7 @@ function createEditorElement(node) {
   const searchRow = document.createElement("div");
   const searchInput = document.createElement("input");
   const searchCount = document.createElement("div");
+  const searchMenu = document.createElement("div");
   const editor = document.createElement("div");
   const editorHost = document.createElement("div");
   const textarea = document.createElement("textarea");
@@ -1133,6 +1337,7 @@ function createEditorElement(node) {
   searchRow.className = "promptboard-yaml-editor-search-row";
   searchInput.className = "promptboard-yaml-editor-search-input";
   searchCount.className = "promptboard-yaml-editor-search-count";
+  searchMenu.className = "promptboard-yaml-editor-search-menu";
   editor.className = "promptboard-yaml-editor-editor";
   editorHost.className = "promptboard-yaml-editor-codemirror promptboard-codemirror";
   textarea.className = "promptboard-yaml-editor-textarea";
@@ -1152,6 +1357,12 @@ function createEditorElement(node) {
   searchInput.placeholder = "search";
   searchInput.autocomplete = "off";
   searchInput.spellcheck = false;
+  searchInput.setAttribute("role", "combobox");
+  searchInput.setAttribute("aria-autocomplete", "list");
+  searchInput.setAttribute("aria-expanded", "false");
+  searchMenu.id = `promptboard-yaml-editor-search-menu-${node.id ?? Date.now()}`;
+  searchMenu.setAttribute("role", "listbox");
+  searchInput.setAttribute("aria-controls", searchMenu.id);
   searchCount.textContent = "";
   textarea.spellcheck = false;
   textarea.value = widgetValue(node, "yaml_text", "");
@@ -1165,6 +1376,7 @@ function createEditorElement(node) {
   stopCanvasEvents(sectionButton);
   stopCanvasEvents(tagButton);
   stopCanvasEvents(searchInput);
+  stopCanvasEvents(searchMenu);
   stopCanvasEvents(editor);
   stopCanvasEvents(editorHost);
   stopCanvasEvents(textarea);
@@ -1206,13 +1418,57 @@ function createEditorElement(node) {
     node.promptboardYamlEditorSearchState = null;
     scheduleYamlEditorSearch(node);
   });
+  searchInput.addEventListener("focus", () => {
+    if (searchInput.value.trim()) {
+      runYamlEditorSearch(node);
+    }
+  });
   searchInput.addEventListener("keydown", (event) => {
+    event.stopPropagation();
+    if (event.key === "Escape") {
+      event.preventDefault();
+      hideYamlEditorSearchMenu(node);
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (node.promptboardYamlEditorSearchTimer) {
+        clearTimeout(node.promptboardYamlEditorSearchTimer);
+        node.promptboardYamlEditorSearchTimer = null;
+      }
+      if (node.promptboardYamlEditorSearchState?.pattern !== searchInput.value.trim()) {
+        runYamlEditorSearch(node);
+      }
+      const state = node.promptboardYamlEditorSearchState;
+      if (state?.matches?.length) {
+        const direction = event.key === "ArrowDown" ? 1 : -1;
+        setYamlEditorSearchMenuIndex(node, state.index + direction);
+      }
+      return;
+    }
     if (event.key !== "Enter") {
       return;
     }
     event.preventDefault();
-    event.stopPropagation();
-    runYamlEditorSearch(node, event.shiftKey ? -1 : 1);
+    if (node.promptboardYamlEditorSearchTimer) {
+      clearTimeout(node.promptboardYamlEditorSearchTimer);
+      node.promptboardYamlEditorSearchTimer = null;
+    }
+    if (node.promptboardYamlEditorSearchState?.pattern !== searchInput.value.trim()) {
+      runYamlEditorSearch(node);
+    }
+    const state = node.promptboardYamlEditorSearchState;
+    if (searchMenu.parentElement && state?.matches?.length) {
+      if (event.shiftKey) {
+        state.index = (state.index - 1 + state.matches.length) % state.matches.length;
+      }
+      navigateToYamlEditorSearchMatch(node, state.index, { hideMenu: true });
+    } else {
+      runYamlEditorSearch(node, event.shiftKey ? -1 : 1);
+    }
+  });
+  searchInput.addEventListener("blur", () => {
+    window.setTimeout(() => hideYamlEditorSearchMenu(node), 120);
   });
   textarea.addEventListener("input", () => {
     setWidgetValue(node, "yaml_text", textarea.value);
@@ -1237,6 +1493,8 @@ function createEditorElement(node) {
   node.promptboardYamlEditorSaveButton = saveButton;
   node.promptboardYamlEditorSearchInput = searchInput;
   node.promptboardYamlEditorSearchCount = searchCount;
+  node.promptboardYamlEditorSearchRow = searchRow;
+  node.promptboardYamlEditorSearchMenu = searchMenu;
   node.promptboardYamlEditorEditorHost = editorHost;
   node.promptboardYamlEditorTextarea = textarea;
   node.promptboardYamlEditorStatusElement = status;
@@ -1278,7 +1536,7 @@ function finalizeNode(node, info = null, isNewNode = false) {
   ensureEditorWidget(node);
   syncEditorSize(node);
   scheduleEditorSizeSync(node);
-  syncEditorFromWidgets(node);
+  syncEditorFromWidgets(node, { autoLoadFileChange: !!info });
   if (info) {
     refreshYamlFileOptions(node);
   }
@@ -1315,6 +1573,13 @@ app.registerExtension({
       syncEditorSize(this);
       app.canvas?.setDirty(true, true);
       return result;
+    };
+
+    const onRemoved = nodeType.prototype.onRemoved;
+    nodeType.prototype.onRemoved = function () {
+      hideYamlEditorSearchMenu(this);
+      this.promptboardYamlEditorCodeMirror?.destroy?.();
+      return onRemoved?.apply(this, arguments);
     };
   },
 });
