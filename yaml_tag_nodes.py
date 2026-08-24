@@ -689,6 +689,9 @@ def _replace_source_placeholders(source_text, replacements, empty_behavior):
         value = replacement if replacement else (placeholder if empty_behavior == "keep placeholder" else "")
         text = text.replace(placeholder, value)
 
+    if empty_behavior == "remove placeholder":
+        text = re.sub(r"<[A-Za-z0-9_:-]+>", "", text)
+
     return text, used
 
 

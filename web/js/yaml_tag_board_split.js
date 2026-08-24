@@ -35,6 +35,8 @@ const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", impor
 const EDITOR_STORAGE_PREFIX = "promptboard:editor:v1";
 const TEMPLATE_STORAGE_PREFIX = "promptboard:template:v1";
 const SEARCH_DEBOUNCE_MS = 150;
+const YAML_RELOAD_EVENT = "promptboard:yaml-reloaded";
+const YAML_RELOAD_SOURCE = "promptboard";
 const GROUP_ALL = "전체";
 const DEFAULT_UI_GROUP = "기타";
 const UI_GROUP_ACCENTS = {
@@ -101,6 +103,50 @@ function setWidgetValue(node, name, value) {
   if (item) {
     item.value = value;
   }
+}
+
+function dispatchYamlReload(node, yamlFile) {
+  if (!yamlFile || yamlFile === INLINE_YAML_OPTION) {
+    return;
+  }
+  window.dispatchEvent(new CustomEvent(YAML_RELOAD_EVENT, {
+    detail: {
+      yamlFile: String(yamlFile),
+      source: YAML_RELOAD_SOURCE,
+      sourceNode: node,
+    },
+  }));
+}
+
+function installYamlReloadListener(node) {
+  if (node.promptboardYamlReloadListener) {
+    return;
+  }
+
+  node.promptboardYamlReloadListener = async (event) => {
+    const detail = event.detail ?? {};
+    const yamlFile = String(detail.yamlFile ?? "");
+    if (
+      detail.sourceNode === node
+      || !yamlFile
+      || widgetValue(node, "yaml_file", DEFAULT_YAML_FILE) !== yamlFile
+    ) {
+      return;
+    }
+    const loaded = await loadSelectedYaml(node, { resetState: false, broadcast: false });
+    if (loaded) {
+      setTemporaryStatus(node, "Reloaded YAML");
+    }
+  };
+  window.addEventListener(YAML_RELOAD_EVENT, node.promptboardYamlReloadListener);
+}
+
+function removeYamlReloadListener(node) {
+  if (!node.promptboardYamlReloadListener) {
+    return;
+  }
+  window.removeEventListener(YAML_RELOAD_EVENT, node.promptboardYamlReloadListener);
+  node.promptboardYamlReloadListener = null;
 }
 
 function loadCodeMirrorModule() {
@@ -3418,6 +3464,9 @@ async function loadSelectedYaml(node, options = {}) {
     setYamlEditorText(node, data.text ?? "");
     renderFromYaml(node, resetState);
     setStatus(node, "");
+    if (options.broadcast) {
+      dispatchYamlReload(node, yamlFile);
+    }
     return true;
   } catch (error) {
     setStatus(node, `Load error: ${error.message}`);
@@ -3426,7 +3475,7 @@ async function loadSelectedYaml(node, options = {}) {
 }
 
 async function reloadSelectedYaml(node) {
-  const loaded = await loadSelectedYaml(node, { resetState: false });
+  const loaded = await loadSelectedYaml(node, { resetState: false, broadcast: true });
   if (loaded) {
     setTemporaryStatus(node, "Reloaded YAML");
   }
@@ -3593,7 +3642,7 @@ function createSplitElement(node) {
     node.promptboardSelectedTemplate = "";
     writeStoredTemplateState(node);
     updateTemplateControls(node);
-    loadSelectedYaml(node);
+    loadSelectedYaml(node, { broadcast: true });
   });
   reloadYaml.addEventListener("click", (event) => {
     event.preventDefault();
@@ -3887,6 +3936,7 @@ function finalizeNode(node, info = null, isNewNode = false) {
   clampSize(node);
   node.resizable = true;
   hideSourceWidgets(node);
+  installYamlReloadListener(node);
   ensureLayoutWidget(node);
   reorderWidgets(node);
   syncLayoutSize(node);
@@ -3949,6 +3999,7 @@ app.registerExtension({
     const onRemoved = nodeType.prototype.onRemoved;
     nodeType.prototype.onRemoved = function () {
       hideBoardSearchMenu(this);
+      removeYamlReloadListener(this);
       return onRemoved?.apply(this, arguments);
     };
   },

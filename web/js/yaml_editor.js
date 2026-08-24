@@ -19,6 +19,8 @@ const PANEL_GUTTER = 18;
 const NODE_BOTTOM_PADDING = 18;
 const SEARCH_DEBOUNCE_MS = 150;
 const ACTION_STATE_MS = 2000;
+const YAML_RELOAD_EVENT = "promptboard:yaml-reloaded";
+const YAML_RELOAD_SOURCE = "yaml-editor";
 const CODEMIRROR_MODULE = "../vendor/codemirror/promptboard-codemirror.bundle.js";
 const CODEMIRROR_THEME_CSS = new URL("../vendor/codemirror/css/thema.css", import.meta.url).href;
 
@@ -37,6 +39,47 @@ function setWidgetValue(node, name, value) {
   if (item) {
     item.value = value;
   }
+}
+
+function dispatchYamlReload(node, yamlFile) {
+  if (!yamlFile) {
+    return;
+  }
+  window.dispatchEvent(new CustomEvent(YAML_RELOAD_EVENT, {
+    detail: {
+      yamlFile: String(yamlFile),
+      source: YAML_RELOAD_SOURCE,
+      sourceNode: node,
+    },
+  }));
+}
+
+function installYamlReloadListener(node) {
+  if (node.promptboardYamlEditorReloadListener) {
+    return;
+  }
+
+  node.promptboardYamlEditorReloadListener = (event) => {
+    const detail = event.detail ?? {};
+    const yamlFile = String(detail.yamlFile ?? "");
+    if (
+      detail.sourceNode === node
+      || !yamlFile
+      || widgetValue(node, "yaml_file", DEFAULT_YAML_FILE) !== yamlFile
+    ) {
+      return;
+    }
+    loadSelectedYaml(node, { broadcast: false });
+  };
+  window.addEventListener(YAML_RELOAD_EVENT, node.promptboardYamlEditorReloadListener);
+}
+
+function removeYamlReloadListener(node) {
+  if (!node.promptboardYamlEditorReloadListener) {
+    return;
+  }
+  window.removeEventListener(YAML_RELOAD_EVENT, node.promptboardYamlEditorReloadListener);
+  node.promptboardYamlEditorReloadListener = null;
 }
 
 function loadCodeMirrorModule() {
@@ -936,7 +979,7 @@ async function refreshYamlFileOptions(node) {
   }
 }
 
-async function loadSelectedYaml(node) {
+async function loadSelectedYaml(node, options = {}) {
   const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
   if (!yamlFile) {
     setStatus(node, "Select a YAML file.");
@@ -953,6 +996,9 @@ async function loadSelectedYaml(node) {
     const text = String(data.text ?? "");
     setYamlText(node, text, `Loaded: ${yamlFile}`);
     setYamlEditorActionState(node, "load", "done");
+    if (options.broadcast) {
+      dispatchYamlReload(node, yamlFile);
+    }
   } catch (error) {
     setSaveReport(node, `Load error: ${error.message}`);
     setYamlEditorActionState(node, "load", "error");
@@ -1383,12 +1429,12 @@ function createEditorElement(node) {
 
   select.addEventListener("change", () => {
     setWidgetValue(node, "yaml_file", select.value);
-    loadSelectedYaml(node);
+    loadSelectedYaml(node, { broadcast: true });
   });
   loadButton.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    loadSelectedYaml(node);
+    loadSelectedYaml(node, { broadcast: true });
   });
   validateButton.addEventListener("click", async (event) => {
     event.preventDefault();
@@ -1534,6 +1580,7 @@ function finalizeNode(node, info = null, isNewNode = false) {
   node.resizable = true;
   hideSourceWidgets(node);
   ensureEditorWidget(node);
+  installYamlReloadListener(node);
   syncEditorSize(node);
   scheduleEditorSizeSync(node);
   syncEditorFromWidgets(node, { autoLoadFileChange: !!info });
@@ -1578,6 +1625,7 @@ app.registerExtension({
     const onRemoved = nodeType.prototype.onRemoved;
     nodeType.prototype.onRemoved = function () {
       hideYamlEditorSearchMenu(this);
+      removeYamlReloadListener(this);
       this.promptboardYamlEditorCodeMirror?.destroy?.();
       return onRemoved?.apply(this, arguments);
     };

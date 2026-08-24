@@ -419,6 +419,45 @@ STYLE:
         self.assertEqual(outputs[3], "")
         self.assertEqual(outputs[4], "")
 
+    def test_replace_removes_unknown_placeholders_by_default(self):
+        selection_json = json.dumps(
+            {
+                "STYLE": {
+                    "placeholder": "<STYLE>",
+                    "selected": ["cinematic"],
+                }
+            },
+            ensure_ascii=False,
+        )
+
+        replaced, report = PromptBoardReplace().replace_tags(
+            "look: <STYLE>, unknown: <XXXX>",
+            selection_json,
+        )
+
+        self.assertEqual(replaced, "look: cinematic, unknown:")
+        self.assertEqual(report, "")
+
+    def test_replace_can_keep_unknown_placeholders(self):
+        selection_json = json.dumps(
+            {
+                "STYLE": {
+                    "placeholder": "<STYLE>",
+                    "selected": ["cinematic"],
+                }
+            },
+            ensure_ascii=False,
+        )
+
+        replaced, report = PromptBoardReplace().replace_tags(
+            "look: <STYLE>, unknown: <XXXX>",
+            selection_json,
+            empty_behavior="keep placeholder",
+        )
+
+        self.assertEqual(replaced, "look: cinematic, unknown: <XXXX>")
+        self.assertEqual(report, "missing: <XXXX>")
+
     def test_attribute_preview_reports_state_warnings_with_paths(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")
         selected_state = {
