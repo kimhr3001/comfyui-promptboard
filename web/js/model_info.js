@@ -306,6 +306,9 @@ function ensureStyles() {
     }
 
     .promptboard-lora-info-meta {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
       min-height: 46px;
       padding: 0 16px;
       display: flex;
@@ -322,24 +325,39 @@ function ensureStyles() {
       gap: 7px;
       line-height: 1.35;
       min-width: 0;
+      max-width: 100%;
       color: #b3bac3;
       font-size: 12px;
     }
 
+    .promptboard-lora-info-row:first-child {
+      flex: 1 1 0;
+      overflow: hidden;
+    }
+
+    .promptboard-lora-info-row:last-child {
+      flex: 0 0 auto;
+    }
+
     .promptboard-lora-info-row label {
+      flex: 0 0 auto;
       color: #b3bac3;
       font-weight: 500;
     }
 
     .promptboard-lora-info-row span {
+      flex: 1 1 auto;
       min-width: 0;
+      max-width: 100%;
       color: #edf0f3;
       overflow-wrap: anywhere;
     }
 
     .promptboard-lora-info-row a {
       display: block;
+      flex: 1 1 auto;
       min-width: 0;
+      max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
