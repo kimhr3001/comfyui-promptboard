@@ -105,6 +105,21 @@ function setWidgetValue(node, name, value) {
   }
 }
 
+function selectedYamlFile(node) {
+  const selectValue = String(node.promptboardFileSelect?.value ?? "").trim();
+  const widgetYamlFile = String(widgetValue(node, "yaml_file", DEFAULT_YAML_FILE) ?? "").trim();
+  return (selectValue || widgetYamlFile || DEFAULT_YAML_FILE).replace(/^workflows\//, "");
+}
+
+function syncSelectedYamlFile(node) {
+  const yamlFile = selectedYamlFile(node);
+  setWidgetValue(node, "yaml_file", yamlFile);
+  if (node.promptboardFileSelect && node.promptboardFileSelect.value !== yamlFile) {
+    node.promptboardFileSelect.value = yamlFile;
+  }
+  return yamlFile;
+}
+
 function dispatchYamlReload(node, yamlFile) {
   if (!yamlFile || yamlFile === INLINE_YAML_OPTION) {
     return;
@@ -988,6 +1003,18 @@ function tagButtonTitle(tag, displayLabel) {
   return description || tagText || displayLabel;
 }
 
+function composeModifiedTagText(model, state, category, tag) {
+  const parts = [];
+  for (const [modifierId, modifier] of Object.entries(model?.modifiers ?? {})) {
+    if (!tag?.modifiers?.[modifierId]) {
+      continue;
+    }
+    parts.push(...tagModifierSelectedTexts(state, category, tag.text, modifierId));
+  }
+  parts.push(String(tag?.text ?? ""));
+  return parts.filter(Boolean).join(" ");
+}
+
 function tagItemsForTags(tags = [], tagItems = null) {
   return Array.isArray(tagItems) && tagItems.length
     ? tagItems
@@ -1074,19 +1101,96 @@ function parseSelectedState(node) {
   }
 }
 
+function categorySelectedArray(state, category) {
+  const entry = state?.[category];
+  if (Array.isArray(entry)) {
+    return entry.map((value) => String(value));
+  }
+  if (entry && typeof entry === "object" && !Array.isArray(entry) && Array.isArray(entry.selected)) {
+    return entry.selected.map((value) => String(value));
+  }
+  return [];
+}
+
 function selectedTextsForCategory(category, tags, selectedState) {
   if (Object.prototype.hasOwnProperty.call(selectedState, category)) {
-    let selected = selectedState[category];
-    if (selected && typeof selected === "object" && !Array.isArray(selected)) {
-      selected = selected.selected;
-    }
-    if (Array.isArray(selected)) {
-      const selectedSet = new Set(selected.map((item) => String(item)));
+    const selected = categorySelectedArray(selectedState, category);
+    if (selected.length) {
+      const selectedSet = new Set(selected);
       return tags.map((tag) => tag.text).filter((text) => selectedSet.has(text));
     }
+    return [];
   }
 
   return tags.filter((tag) => tag.default).map((tag) => tag.text);
+}
+
+function normalizeModifierValues(tags, rawValues, mode, path, warnings) {
+  if (!Array.isArray(rawValues)) {
+    if (rawValues != null) {
+      warnings.push(`${path} must be an array; the saved value was cleared.`);
+    }
+    return [];
+  }
+
+  const available = new Set(tags.map((tag) => tag.text));
+  const requested = rawValues.map((value) => String(value));
+  const invalid = requested.filter((value) => !available.has(value));
+  if (invalid.length) {
+    warnings.push(`${path} removed unknown tags: ${[...new Set(invalid)].join(", ")}`);
+  }
+
+  if (mode === "single") {
+    const selected = requested.find((value) => available.has(value));
+    if (requested.filter((value) => available.has(value)).length > 1) {
+      warnings.push(`${path} kept only one tag because its mode is single.`);
+    }
+    return selected ? [selected] : [];
+  }
+
+  const selected = new Set(requested.filter((value) => available.has(value)));
+  return tags.map((tag) => tag.text).filter((value) => selected.has(value));
+}
+
+function normalizeCategoryModifierState(model, selectedState, category, item, selected, warnings) {
+  const sourceEntry = selectedState?.[category];
+  const sourceModifiers =
+    sourceEntry && typeof sourceEntry === "object" && !Array.isArray(sourceEntry) && sourceEntry.modifiers
+      ? sourceEntry.modifiers
+      : {};
+  const selectedSet = new Set(selected);
+  const modifiers = {};
+
+  for (const tag of item.tags ?? []) {
+    if (!selectedSet.has(tag.text) || !tag.modifiers) {
+      continue;
+    }
+    const tagState = sourceModifiers?.[tag.text];
+    if (!tagState || typeof tagState !== "object" || Array.isArray(tagState)) {
+      continue;
+    }
+    for (const [modifierId, modifier] of Object.entries(model.modifiers ?? {})) {
+      if (!tag.modifiers?.[modifierId]) {
+        continue;
+      }
+      const tagSet = model.tagSets?.[modifier.source];
+      const values = normalizeModifierValues(
+        tagSet?.tags ?? [],
+        tagState[modifierId],
+        modifier.mode,
+        `${category}.${tag.text}.${modifierId}`,
+        warnings,
+      );
+      if (values.length) {
+        if (!modifiers[tag.text]) {
+          modifiers[tag.text] = {};
+        }
+        modifiers[tag.text][modifierId] = values;
+      }
+    }
+  }
+
+  return modifiers;
 }
 
 function pruneSelectedState(model, selectedState, warnings = []) {
@@ -1094,9 +1198,11 @@ function pruneSelectedState(model, selectedState, warnings = []) {
   const nextState = {};
   for (const [category, item] of Object.entries(config)) {
     const tagTexts = new Set(item.tags.map((tag) => tag.text));
-    nextState[category] = selectedTextsForCategory(category, item.tags, selectedState).filter((text) =>
+    const selected = selectedTextsForCategory(category, item.tags, selectedState).filter((text) =>
       tagTexts.has(text),
     );
+    const modifiers = normalizeCategoryModifierState(model, selectedState, category, item, selected, warnings);
+    nextState[category] = Object.keys(modifiers).length ? { selected, modifiers } : selected;
   }
   if (Object.keys(model.attributeBoards ?? {}).length) {
     nextState[ATTRIBUTE_STATE_KEY] = normalizeAttributeState(model, selectedState, warnings);
@@ -1105,7 +1211,7 @@ function pruneSelectedState(model, selectedState, warnings = []) {
 }
 
 function selectedCount(state, category, tags) {
-  const selected = new Set(Array.isArray(state[category]) ? state[category].map((item) => String(item)) : []);
+  const selected = new Set(categorySelectedArray(state, category));
   return tags.filter((tag) => selected.has(tag.text)).length;
 }
 
@@ -1131,13 +1237,105 @@ function selectedCountsByUiGroup(config, attributeBoards, state) {
 }
 
 function setSelected(state, category, tagText, enabled) {
-  const selected = new Set(Array.isArray(state[category]) ? state[category].map((item) => String(item)) : []);
+  const current = state[category];
+  const selected = new Set(categorySelectedArray(state, category));
   if (enabled) {
     selected.add(tagText);
   } else {
     selected.delete(tagText);
   }
+  if (current && typeof current === "object" && !Array.isArray(current)) {
+    const modifiers = current.modifiers && typeof current.modifiers === "object" ? { ...current.modifiers } : {};
+    if (!enabled) {
+      delete modifiers[tagText];
+    }
+    state[category] = Object.keys(modifiers).length
+      ? { selected: [...selected], modifiers }
+      : [...selected];
+    return;
+  }
   state[category] = [...selected];
+}
+
+function tagModifierSelectedTexts(state, category, tagText, modifierId) {
+  const entry = state?.[category];
+  const values = entry?.modifiers?.[tagText]?.[modifierId];
+  return Array.isArray(values) ? values.map((value) => String(value)) : [];
+}
+
+function ensureCategoryObjectState(state, category) {
+  const current = state[category];
+  if (current && typeof current === "object" && !Array.isArray(current)) {
+    if (!Array.isArray(current.selected)) {
+      current.selected = [];
+    }
+    if (!current.modifiers || typeof current.modifiers !== "object" || Array.isArray(current.modifiers)) {
+      current.modifiers = {};
+    }
+    return current;
+  }
+  const next = { selected: categorySelectedArray(state, category), modifiers: {} };
+  state[category] = next;
+  return next;
+}
+
+function cleanupCategoryObjectState(state, category) {
+  const current = state[category];
+  if (!current || typeof current !== "object" || Array.isArray(current)) {
+    return;
+  }
+  for (const [tagText, tagState] of Object.entries(current.modifiers ?? {})) {
+    if (!tagState || typeof tagState !== "object" || !Object.keys(tagState).length) {
+      delete current.modifiers[tagText];
+    }
+  }
+  if (!Object.keys(current.modifiers ?? {}).length) {
+    state[category] = current.selected ?? [];
+  }
+}
+
+function setTagModifierSelected(model, state, category, tag, modifierId, optionText, enabled) {
+  const modifier = model?.modifiers?.[modifierId];
+  const tagSet = modifier ? model?.tagSets?.[modifier.source] : null;
+  if (!modifier || !tag?.modifiers?.[modifierId] || !tagSet?.tags?.some((candidate) => candidate.text === optionText)) {
+    return false;
+  }
+
+  const categoryState = ensureCategoryObjectState(state, category);
+  if (!categoryState.selected.includes(tag.text)) {
+    categoryState.selected.push(tag.text);
+  }
+  if (!categoryState.modifiers[tag.text]) {
+    categoryState.modifiers[tag.text] = {};
+  }
+
+  const current = new Set(tagModifierSelectedTexts(state, category, tag.text, modifierId));
+  if (modifier.mode === "single") {
+    categoryState.modifiers[tag.text][modifierId] = enabled ? [optionText] : [];
+  } else {
+    if (enabled) {
+      current.add(optionText);
+    } else {
+      current.delete(optionText);
+    }
+    categoryState.modifiers[tag.text][modifierId] = tagSet.tags
+      .map((candidate) => candidate.text)
+      .filter((text) => current.has(text));
+  }
+
+  if (!categoryState.modifiers[tag.text][modifierId].length) {
+    delete categoryState.modifiers[tag.text][modifierId];
+  }
+  cleanupCategoryObjectState(state, category);
+  return true;
+}
+
+function clearTagModifierSelected(state, category, tagText, modifierId) {
+  const categoryState = ensureCategoryObjectState(state, category);
+  if (categoryState.modifiers?.[tagText]) {
+    delete categoryState.modifiers[tagText][modifierId];
+  }
+  cleanupCategoryObjectState(state, category);
 }
 
 function syncState(node, state) {
@@ -1301,8 +1499,7 @@ function boardSearchMatchSelected(node, match) {
       match.attributeId,
     ).includes(match.tagText);
   }
-  const selected = node.promptboardState?.[match.category];
-  return Array.isArray(selected) && selected.includes(match.tagText);
+  return categorySelectedArray(node.promptboardState, match.category).includes(match.tagText);
 }
 
 function renderBoardSearchMenu(node) {
@@ -2263,6 +2460,48 @@ function ensureStyles() {
 		      white-space: nowrap;
 		    }
 
+	    .promptboard-tag-modifiers {
+	      box-sizing: border-box;
+	      display: grid;
+	      grid-column: 1 / -1;
+	      gap: 6px;
+	      margin: 0 0 4px;
+	      padding: 6px;
+	      border: 1px solid color-mix(in srgb, var(--promptboard-accent) 34%, #4a5157);
+	      border-radius: 4px;
+	      background: color-mix(in srgb, var(--promptboard-accent) 8%, rgba(24, 29, 32, 0.92));
+	    }
+
+	    .promptboard-tag-modifier-group {
+	      display: grid;
+	      gap: 4px;
+	      min-width: 0;
+	    }
+
+	    .promptboard-tag-modifier-group .promptboard-tag-section {
+	      margin: 0;
+	    }
+
+	    .promptboard-tag-modifier-options {
+	      display: grid;
+	      grid-template-columns: repeat(auto-fit, minmax(min(104px, 100%), 1fr));
+	      gap: 4px;
+	      min-width: 0;
+	    }
+
+	    .promptboard-tag.promptboard-modifier-option {
+	      min-height: 22px;
+	      height: auto;
+	      margin-top: 0;
+	      padding: 2px 6px;
+	      font-size: 11px;
+	    }
+
+	    .promptboard-tag.promptboard-modifier-none {
+	      border-color: rgba(129, 137, 145, 0.58);
+	      background: rgba(38, 42, 45, 0.9);
+	    }
+
 	    .promptboard-selected-summary {
 	      display: grid;
 	      grid-template-rows: auto minmax(0, 1fr);
@@ -2599,7 +2838,7 @@ function updateGroupFilterCounts(node) {
 }
 
 function createTagButton(node, state, category, tag, accent = null) {
-  const selected = Array.isArray(state[category]) && state[category].includes(tag.text);
+  const selected = categorySelectedArray(state, category).includes(tag.text);
   const button = document.createElement("button");
   const label = document.createElement("span");
   const stateLabel = document.createElement("span");
@@ -2689,6 +2928,105 @@ function createAttributeTagButton(node, state, boardId, targetId, attributeId, t
   return button;
 }
 
+function createTagModifierOptionButton(node, state, category, tag, modifierId, option, accent = null) {
+  const selected = tagModifierSelectedTexts(state, category, tag.text, modifierId).includes(option.text);
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+  const stateLabel = document.createElement("span");
+  const displayLabel = tagButtonDisplayLabel(option);
+
+  button.type = "button";
+  button.className = `promptboard-tag promptboard-modifier-option${selected ? " is-on" : ""}`;
+  setAccent(button, accent);
+  button.title = tagButtonTitle(option, displayLabel);
+  button.dataset.category = category;
+  button.dataset.tagText = tag.text;
+  button.dataset.modifierId = modifierId;
+  button.dataset.modifierOptionText = option.text;
+  stopCanvasEvents(button);
+  label.className = "promptboard-tag-label";
+  label.textContent = displayLabel;
+  stateLabel.className = "promptboard-tag-state";
+  stateLabel.textContent = selected ? "on" : "off";
+  button.append(label, stateLabel);
+
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setTagModifierSelected(
+      node.promptboardYamlModel,
+      state,
+      category,
+      tag,
+      modifierId,
+      option.text,
+      !selected,
+    );
+    syncState(node, state);
+    renderCards(node);
+    focusYamlCategoryTag(node, category, tag.text);
+  });
+  return button;
+}
+
+function createTagModifierNoneButton(node, state, category, tag, modifierId, accent = null) {
+  const selected = tagModifierSelectedTexts(state, category, tag.text, modifierId).length === 0;
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+
+  button.type = "button";
+  button.className = `promptboard-tag promptboard-modifier-option promptboard-modifier-none${selected ? " is-on" : ""}`;
+  setAccent(button, accent);
+  button.title = "이 modifier를 사용하지 않음";
+  label.className = "promptboard-tag-label";
+  label.textContent = "None";
+  button.append(label);
+  stopCanvasEvents(button);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    clearTagModifierSelected(state, category, tag.text, modifierId);
+    syncState(node, state);
+    renderCards(node);
+    focusYamlCategoryTag(node, category, tag.text);
+  });
+  return button;
+}
+
+function createTagModifierPanel(node, state, category, tag, accent = null) {
+  const modifierIds = Object.keys(node.promptboardYamlModel?.modifiers ?? {}).filter(
+    (modifierId) => tag?.modifiers?.[modifierId],
+  );
+  if (!modifierIds.length) {
+    return null;
+  }
+
+  const panel = document.createElement("div");
+  panel.className = "promptboard-tag-modifiers";
+  setAccent(panel, accent);
+
+  for (const modifierId of modifierIds) {
+    const modifier = node.promptboardYamlModel.modifiers[modifierId];
+    const tagSet = node.promptboardYamlModel?.tagSets?.[modifier.source];
+    if (!tagSet?.tags?.length) {
+      continue;
+    }
+    const group = document.createElement("div");
+    const options = document.createElement("div");
+    group.className = "promptboard-tag-modifier-group";
+    options.className = "promptboard-tag-modifier-options";
+    group.append(createTagSection(modifier.label || modifierId));
+    options.append(createTagModifierNoneButton(node, state, category, tag, modifierId, accent));
+    for (const option of tagSet.tags ?? []) {
+      options.append(createTagModifierOptionButton(node, state, category, tag, modifierId, option, accent));
+    }
+    group.append(options);
+    panel.append(group);
+  }
+
+  return panel.childElementCount ? panel : null;
+}
+
 function createTagSection(label) {
   const section = document.createElement("div");
   const text = document.createElement("span");
@@ -2709,6 +3047,12 @@ function appendCategoryTagItems(container, node, state, category, item) {
     }
     if (tagItem.kind === "tag" && tagItem.tag) {
       container.append(createTagButton(node, state, category, tagItem.tag, accent));
+      if (categorySelectedArray(state, category).includes(tagItem.tag.text)) {
+        const modifierPanel = createTagModifierPanel(node, state, category, tagItem.tag, accent);
+        if (modifierPanel) {
+          container.append(modifierPanel);
+        }
+      }
     }
   }
 }
@@ -2743,6 +3087,12 @@ function appendNavigatorTagItems(container, node, state, item) {
     }
     if (tagItem.kind === "tag" && tagItem.tag) {
       container.append(createNavigatorTagButton(node, state, item, tagItem.tag, accent));
+      if (item.kind === "category" && categorySelectedArray(state, item.category).includes(tagItem.tag.text)) {
+        const modifierPanel = createTagModifierPanel(node, state, item.category, tagItem.tag, accent);
+        if (modifierPanel) {
+          container.append(modifierPanel);
+        }
+      }
     }
   }
 }
@@ -2919,9 +3269,10 @@ function selectedSummaryEntries(node, state) {
   const entries = [];
   const config = node.promptboardConfig ?? {};
   for (const [category, item] of Object.entries(config)) {
-    const selected = Array.isArray(state[category]) ? state[category] : [];
+    const selected = categorySelectedArray(state, category);
     for (const text of selected) {
       const tag = item.tags?.find((candidate) => candidate.text === text) ?? { text };
+      const composed = composeModifiedTagText(node.promptboardYamlModel, state, category, tag);
       entries.push({
         kind: "category",
         category,
@@ -2929,7 +3280,7 @@ function selectedSummaryEntries(node, state) {
         context: categoryUiGroup(item),
         accent: accentForLabel(categoryUiGroup(item)),
         text,
-        display: tagDisplayLabel(tag),
+        display: composed || tagDisplayLabel(tag),
       });
     }
   }
@@ -3255,7 +3606,7 @@ async function refreshYamlFileOptions(node) {
   }
 
   try {
-    const response = await fetch("/promptboard/yaml/files");
+    const response = await fetch("/promptboard/yaml/files", { cache: "no-store" });
     const values = await response.json();
     if (!response.ok || !Array.isArray(values)) {
       return;
@@ -3278,7 +3629,7 @@ async function refreshYamlFileOptions(node) {
 
 async function refreshBoardTemplates(node, selectedTemplate = node.promptboardSelectedTemplate ?? "") {
   try {
-    const response = await fetch("/promptboard/templates");
+    const response = await fetch("/promptboard/templates", { cache: "no-store" });
     const data = await response.json();
     if (!response.ok || data.error) {
       throw new Error(data.error || `HTTP ${response.status}`);
@@ -3332,7 +3683,7 @@ async function saveBoardTemplate(node, rawName, options = {}) {
     return;
   }
 
-  const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
+  const yamlFile = syncSelectedYamlFile(node);
   if (!yamlFile || yamlFile === INLINE_YAML_OPTION) {
     setTemplateStatus(node, "Select a YAML file before saving a template.");
     return;
@@ -3411,7 +3762,7 @@ async function loadBoardTemplate(node, name, options = {}) {
   const yamlPanelOpen = isYamlPanelOpen(node);
 
   try {
-    const response = await fetch(`/promptboard/template?name=${encodeURIComponent(templateName)}`);
+    const response = await fetch(`/promptboard/template?name=${encodeURIComponent(templateName)}`, { cache: "no-store" });
     const data = await response.json();
     if (!response.ok || data.error) {
       throw new Error(data.error || `HTTP ${response.status}`);
@@ -3424,7 +3775,7 @@ async function loadBoardTemplate(node, name, options = {}) {
     }
 
     if (yamlFile && yamlFile !== INLINE_YAML_OPTION) {
-      const yamlResponse = await fetch(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`);
+      const yamlResponse = await fetch(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`, { cache: "no-store" });
       const yamlData = await yamlResponse.json();
       if (!yamlResponse.ok || yamlData.error) {
         throw new Error(yamlData.error || `HTTP ${yamlResponse.status}`);
@@ -3450,13 +3801,13 @@ async function loadBoardTemplate(node, name, options = {}) {
 
 async function loadSelectedYaml(node, options = {}) {
   const resetState = options.resetState !== false;
-  const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
+  const yamlFile = syncSelectedYamlFile(node);
   if (!yamlFile || yamlFile === INLINE_YAML_OPTION) {
     return false;
   }
 
   try {
-    const response = await fetch(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`);
+    const response = await fetch(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`, { cache: "no-store" });
     const data = await response.json();
     if (!response.ok || data.error) {
       throw new Error(data.error || `HTTP ${response.status}`);
@@ -3482,7 +3833,7 @@ async function reloadSelectedYaml(node) {
 }
 
 async function saveSelectedYaml(node) {
-  const yamlFile = widgetValue(node, "yaml_file", DEFAULT_YAML_FILE);
+  const yamlFile = syncSelectedYamlFile(node);
   if (!yamlFile || yamlFile === INLINE_YAML_OPTION) {
     setYamlPanelOpen(node, true);
     setStatus(node, "Save error: select a YAML file.");

@@ -116,6 +116,31 @@ POSE:
             ],
         )
 
+    def test_rejects_per_tag_modifier_arrays(self):
+        with self.assertRaises(PromptBoardYamlError) as raised:
+            normalize_yaml_document(
+                """
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    propRelations:
+      tags:
+      - 'on'
+  modifiers:
+    relation:
+      source: propRelations
+소품:
+  placeholder: <ETC>
+  tags:
+  - text: table
+    relation:
+    - 'on'
+"""
+            )
+
+        self.assertEqual(raised.exception.code, "invalid_schema_type")
+        self.assertEqual(raised.exception.path, "소품.tags[0].relation")
+
     def test_keeps_selections_independent_for_categories_using_the_same_tag_set(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_tagsets.yaml")
         state = json.dumps({"상의색상": ["black"], "하의색상": ["white"]}, ensure_ascii=False)
@@ -382,6 +407,77 @@ STYLE:
             selected_text,
             "<TOP_ATTRS> sports bra,<BOTTOM_ATTRS> skirt,black leather denim,white",
         )
+
+    def test_tag_modifiers_compose_one_selected_prompt_fragment(self):
+        source = """
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      tags:
+      - text: black
+        label: 검정
+      - text: white
+        label: 흰색
+    propRelations:
+      tags:
+      - text: 'on'
+        label: 위
+      - text: under
+        label: 아래
+    propAttributes:
+      tags:
+      - text: wooden
+        label: 나무
+      - text: round
+        label: 원형
+  modifiers:
+    relation:
+      label: 위치
+      source: propRelations
+      mode: single
+    color:
+      label: 색상
+      source: colors
+      mode: single
+    attribute:
+      label: 속성
+      source: propAttributes
+      mode: single
+소품:
+  placeholder: <ETC>
+  tags:
+  - text: table
+    label: 테이블
+    relation: true
+    color: true
+    attribute: true
+"""
+        selected_state = {
+            "소품": {
+                "selected": ["table"],
+                "modifiers": {
+                    "table": {
+                        "relation": ["on"],
+                        "color": ["black"],
+                        "attribute": ["wooden"],
+                    }
+                },
+            }
+        }
+
+        selection_json, preview, selected_text = _select_tags_outputs(
+            yaml_text=source,
+            selected_state=json.dumps(selected_state, ensure_ascii=False),
+        )
+        payload = json.loads(selection_json)
+        replaced, report = PromptBoardReplace().replace_tags("prop: <ETC>", selection_json)
+
+        self.assertEqual(payload["소품"]["selected"], ["on black wooden table"])
+        self.assertEqual(preview, "<ETC>: on black wooden table")
+        self.assertEqual(selected_text, "on black wooden table")
+        self.assertEqual(replaced, "prop: on black wooden table")
+        self.assertEqual(report, "")
 
     def test_prompt_preview_matches_replace_node_output(self):
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_attribute_boards.yaml")

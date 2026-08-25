@@ -10,8 +10,8 @@ validation errors that the browser and Python implementations must share.
 - A YAML document without `_promptboard.schemaVersion` is schema v1.
 - Schema v1 consists of the existing top-level category mappings.
 - Schema v2 must declare `_promptboard.schemaVersion: 2`.
-- `tagSets` and `attributeBoards` are valid only in schema v2.
-- Declaring either v2 field without `schemaVersion: 2` is an error instead of
+- `tagSets`, `modifiers`, and `attributeBoards` are valid only in schema v2.
+- Declaring any v2 field without `schemaVersion: 2` is an error instead of
   silently treating the document as v1.
 - Unsupported explicit versions are errors. They do not fall back to v1.
 - Existing schema v1 category behavior remains unchanged.
@@ -61,6 +61,10 @@ Every valid source document normalizes to this root shape:
 }
 ```
 
+When a document declares `_promptboard.modifiers`, the normalized root also
+contains a `modifiers` mapping. Documents without modifiers omit that key to
+preserve existing normalized snapshots.
+
 Mapping order is significant for categories, tag sets, boards, targets, and
 attributes. Implementations must preserve YAML declaration order.
 
@@ -84,6 +88,35 @@ Rules:
 - `label` defaults to `text`.
 - `description` defaults to an empty string.
 - `default` defaults to `false` and uses existing boolean normalization.
+- In schema v2, a tag may declare `true` for a modifier id that exists in
+  `_promptboard.modifiers`. The normalized tag then includes
+  `modifiers: { "<modifierId>": true }`.
+- Per-tag modifier arrays are intentionally unsupported. Reusable options must
+  live in `_promptboard.tagSets`, with the tag only declaring
+  `<modifierId>: true`.
+
+Example:
+
+```yaml
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    propRelations:
+      tags:
+      - text: 'on'
+      - text: under
+  modifiers:
+    relation:
+      label: 위치
+      source: propRelations
+      mode: single
+
+소품:
+  placeholder: <ETC>
+  tags:
+  - text: table
+    relation: true
+```
 
 ## Normalized category
 
@@ -177,6 +210,38 @@ Defaults:
 Supported modes are `single` and `multiple`. Source resolution, attribute
 selection, migration, and composition are part of the current PromptBoard
 runtime behavior.
+
+## Normalized modifier
+
+```json
+{
+  "label": "위치",
+  "source": "propRelations",
+  "mode": "single"
+}
+```
+
+Rules:
+
+- Modifier identifiers use the same machine identifier rule as tag sets.
+- `source` is required and must refer to an existing tag set.
+- `mode` supports `single` and `multiple`; default is `single`.
+- Modifier declaration order is significant and is used by prompt composition.
+- A selected tag with modifier state composes one final tag fragment instead of
+  emitting duplicate fragments.
+
+Composition order:
+
+```text
+<modifier values in _promptboard.modifiers order> + <tag text>
+```
+
+For example, `relation=on`, `color=black`, `attribute=wooden`, and `table`
+compose to:
+
+```text
+on black wooden table
+```
 
 ## Error shape
 

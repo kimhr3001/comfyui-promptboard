@@ -138,13 +138,13 @@ def _source_version(root):
         return 1, {}
 
     settings = _assert_mapping(settings_value, "_promptboard")
-    has_v2_fields = "tagSets" in settings or "attributeBoards" in settings
+    has_v2_fields = "tagSets" in settings or "attributeBoards" in settings or "modifiers" in settings
     if "schemaVersion" not in settings:
         if has_v2_fields:
             _fail(
                 "schema_version_required",
                 "_promptboard.schemaVersion",
-                "schemaVersion: 2 is required for tagSets or attributeBoards",
+                "schemaVersion: 2 is required for tagSets, modifiers, or attributeBoards",
             )
         return 1, settings
 
@@ -157,7 +157,14 @@ def _source_version(root):
     return 2, settings
 
 
-def _normalize_tag(entry, path, strict):
+def _normalize_tag_modifier_flag(value, path):
+    if isinstance(value, (list, dict)):
+        _fail("invalid_schema_type", path, f"Expected a boolean at {path}")
+    return _normalize_bool(value)
+
+
+def _normalize_tag(entry, path, strict, modifier_ids=None):
+    modifier_ids = set(modifier_ids or [])
     if isinstance(entry, str):
         text = entry.strip()
         if strict and not text:
@@ -168,7 +175,7 @@ def _normalize_tag(entry, path, strict):
             _fail("invalid_tag", path, f"Tag must be a string or mapping: {path}")
         return None
     if strict:
-        _assert_known_fields(entry, {"text", "value", "label", "description", "default"}, path)
+        _assert_known_fields(entry, {"text", "value", "label", "description", "default", *modifier_ids}, path)
 
     source = entry["text"] if "text" in entry else entry.get("value", "")
     text = _text_value(source)
@@ -177,15 +184,22 @@ def _normalize_tag(entry, path, strict):
             _fail("invalid_tag", path, f"Tag text must not be empty: {path}")
         return None
     label = _text_value(entry.get("label"), text) or text
-    return {
+    tag = {
         "text": text,
         "label": label,
         "description": _text_value(entry.get("description")),
         "default": _normalize_bool(entry.get("default", False)),
     }
+    modifiers = {}
+    for modifier_id in modifier_ids:
+        if modifier_id in entry and _normalize_tag_modifier_flag(entry[modifier_id], f"{path}.{modifier_id}"):
+            modifiers[modifier_id] = True
+    if modifiers:
+        tag["modifiers"] = modifiers
+    return tag
 
 
-def _normalize_tag_items(value, path, strict):
+def _normalize_tag_items(value, path, strict, modifier_ids=None):
     if value is None:
         return {"tags": [], "tagItems": None}
     if not isinstance(value, list):
@@ -209,7 +223,7 @@ def _normalize_tag_items(value, path, strict):
             has_section = True
             continue
 
-        tag = _normalize_tag(entry, entry_path, strict)
+        tag = _normalize_tag(entry, entry_path, strict, modifier_ids)
         if tag is not None:
             tags.append(tag)
             tag_items.append({"kind": "tag", "tag": dict(tag)})
@@ -257,7 +271,37 @@ def _normalize_tag_sets(settings, schema_version):
     return tag_sets
 
 
-def _normalize_category(category, raw_value, schema_version, tag_sets):
+def _normalize_modifier(value, path, modifier_id, tag_sets):
+    modifier = _assert_mapping(value, path)
+    _assert_known_fields(modifier, {"label", "source", "mode"}, path)
+    if "source" not in modifier:
+        _fail("missing_required_field", f"{path}.source", f"Missing required field: {path}.source")
+    source = _assert_identifier(modifier["source"], f"{path}.source")
+    if source not in tag_sets:
+        _fail("unknown_tag_set", f"{path}.source", f"Unknown tag set: {source}")
+    mode = _text_value(modifier.get("mode"), "single") or "single"
+    if mode not in {"single", "multiple"}:
+        _fail("invalid_attribute_mode", f"{path}.mode", f"Unsupported modifier mode: {mode}")
+    return {
+        "label": _text_value(modifier.get("label"), modifier_id) or modifier_id,
+        "source": source,
+        "mode": mode,
+    }
+
+
+def _normalize_modifiers(settings, schema_version, tag_sets):
+    if schema_version != 2 or "modifiers" not in settings:
+        return {}
+    source = _assert_mapping(settings["modifiers"], "_promptboard.modifiers")
+    modifiers = {}
+    for raw_id, raw_value in source.items():
+        modifier_id = _assert_identifier(raw_id, f"_promptboard.modifiers.{raw_id}")
+        path = f"_promptboard.modifiers.{modifier_id}"
+        modifiers[modifier_id] = _normalize_modifier(raw_value, path, modifier_id, tag_sets)
+    return modifiers
+
+
+def _normalize_category(category, raw_value, schema_version, tag_sets, modifiers):
     path = category
     value = _assert_mapping(raw_value, path)
     strict = schema_version == 2
@@ -287,7 +331,11 @@ def _normalize_category(category, raw_value, schema_version, tag_sets):
     placeholder = _text_value(value.get("placeholder"), fallback_placeholder)
     if strict:
         _assert_placeholder(placeholder, f"{path}.placeholder")
-    direct_tags = _normalize_tag_items(value.get("tags"), f"{path}.tags", strict) if has_tags else None
+    direct_tags = (
+        _normalize_tag_items(value.get("tags"), f"{path}.tags", strict, modifiers.keys())
+        if has_tags
+        else None
+    )
     tag_set_items = _clone_tag_items(tag_sets[tag_set].get("tagItems")) if tag_set else None
     normalized = {
         "placeholder": placeholder,
@@ -309,7 +357,7 @@ def _normalize_category(category, raw_value, schema_version, tag_sets):
     return normalized
 
 
-def _normalize_categories(root, schema_version, tag_sets):
+def _normalize_categories(root, schema_version, tag_sets, modifiers):
     categories = {}
     for raw_category, raw_value in root.items():
         if raw_category == "_promptboard":
@@ -323,7 +371,7 @@ def _normalize_categories(root, schema_version, tag_sets):
             if schema_version == 2:
                 _fail("invalid_schema_type", category, f"Expected a mapping at {category}")
             continue
-        categories[category] = _normalize_category(category, raw_value, schema_version, tag_sets)
+        categories[category] = _normalize_category(category, raw_value, schema_version, tag_sets, modifiers)
     return categories
 
 
@@ -440,14 +488,18 @@ def normalize_yaml_document(yaml_text):
     root = parse_yaml_source(yaml_text)
     schema_version, settings = _source_version(root)
     if "_promptboard" in root and root["_promptboard"] is not None:
-        _assert_known_fields(settings, {"schemaVersion", "tagSets", "attributeBoards"}, "_promptboard")
+        _assert_known_fields(settings, {"schemaVersion", "tagSets", "attributeBoards", "modifiers"}, "_promptboard")
 
     tag_sets = _normalize_tag_sets(settings, schema_version)
-    categories = _normalize_categories(root, schema_version, tag_sets)
+    modifiers = _normalize_modifiers(settings, schema_version, tag_sets)
+    categories = _normalize_categories(root, schema_version, tag_sets, modifiers)
     attribute_boards = _normalize_attribute_boards(settings, schema_version, tag_sets, categories)
-    return {
+    normalized = {
         "schemaVersion": schema_version,
         "tagSets": tag_sets,
         "attributeBoards": attribute_boards,
         "categories": categories,
     }
+    if modifiers:
+        normalized["modifiers"] = modifiers
+    return normalized
