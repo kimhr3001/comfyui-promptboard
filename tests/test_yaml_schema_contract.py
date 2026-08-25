@@ -104,14 +104,15 @@ class YamlSchemaContractFixtureTests(unittest.TestCase):
             with self.subTest(path=source_path.name):
                 self.assertTrue(expected_path.is_file())
                 normalized = load_json(expected_path)
-                self.assertEqual(
-                    list(normalized),
-                    ["schemaVersion", "tagSets", "attributeBoards", "categories"],
-                )
+                allowed_keys = ["schemaVersion", "tagSets", "attributeBoards", "categories", "modifiers", "tagFamilies"]
+                self.assertEqual(list(normalized)[:4], allowed_keys[:4])
+                self.assertTrue(all(key in allowed_keys for key in normalized))
                 self.assertIn(normalized["schemaVersion"], {1, 2})
                 self.assertIsInstance(normalized["tagSets"], dict)
                 self.assertIsInstance(normalized["attributeBoards"], dict)
                 self.assertIsInstance(normalized["categories"], dict)
+                if "tagFamilies" in normalized:
+                    self.assertIsInstance(normalized["tagFamilies"], dict)
 
     def test_v1_snapshots_match_existing_normalization(self):
         cases = (
@@ -134,6 +135,10 @@ class YamlSchemaContractFixtureTests(unittest.TestCase):
                 self.assertEqual(normalized["schemaVersion"], 2)
                 for tag_set_id in normalized["tagSets"]:
                     self.assertRegex(tag_set_id, identifier)
+                for family_id, family in normalized.get("tagFamilies", {}).items():
+                    self.assertRegex(family_id, identifier)
+                    for slot_id in family["slots"]:
+                        self.assertRegex(slot_id, identifier)
                 for board_id, board in normalized["attributeBoards"].items():
                     self.assertRegex(board_id, identifier)
                     for target_id, target in board["targets"].items():

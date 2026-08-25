@@ -1,0 +1,21 @@
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    grabOwners:
+      tags:
+      - own
+    grabTargets:
+      tags:
+      - breast
+  tagFamilies:
+    grabbing:
+      placeholder: <GIRL_POS>
+      pattern: "grabbing_{owner}_{target}"
+      slots:
+        owner:
+          source: grabOwners
+        target:
+          source: grabTargets
+      allowed:
+      - owner: own
+        target: hair

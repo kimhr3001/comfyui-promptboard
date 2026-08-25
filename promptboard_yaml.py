@@ -9,6 +9,8 @@ PLACEHOLDER_PATTERN = re.compile(r"^<[A-Za-z0-9_:-]+>$")
 RESERVED_CATEGORY_NAMES = {"_promptboard", "$attributes"}
 RESERVED_IDENTIFIERS = {"_promptboard", "$attributes"}
 ATTRIBUTE_ENTRY_PREFIX = "$attribute:"
+FAMILY_STATE_KEY = "$families"
+FAMILY_ENTRY_PREFIX = "$family:"
 
 
 class PromptBoardYamlError(ValueError):
@@ -102,7 +104,11 @@ def _assert_known_fields(value, fields, path):
 
 def _assert_identifier(value, path):
     identifier = _text_value(value)
-    if identifier in RESERVED_IDENTIFIERS or identifier.startswith(ATTRIBUTE_ENTRY_PREFIX):
+    if (
+        identifier in RESERVED_IDENTIFIERS
+        or identifier.startswith(ATTRIBUTE_ENTRY_PREFIX)
+        or identifier.startswith(FAMILY_ENTRY_PREFIX)
+    ):
         _fail("reserved_identifier", path, f"Reserved identifier: {identifier}")
     if not IDENTIFIER_PATTERN.fullmatch(identifier):
         _fail("invalid_identifier", path, f"Invalid identifier: {identifier or '<empty>'}")
@@ -138,13 +144,18 @@ def _source_version(root):
         return 1, {}
 
     settings = _assert_mapping(settings_value, "_promptboard")
-    has_v2_fields = "tagSets" in settings or "attributeBoards" in settings or "modifiers" in settings
+    has_v2_fields = (
+        "tagSets" in settings
+        or "attributeBoards" in settings
+        or "modifiers" in settings
+        or "tagFamilies" in settings
+    )
     if "schemaVersion" not in settings:
         if has_v2_fields:
             _fail(
                 "schema_version_required",
                 "_promptboard.schemaVersion",
-                "schemaVersion: 2 is required for tagSets, modifiers, or attributeBoards",
+                "schemaVersion: 2 is required for tagSets, modifiers, attributeBoards, or tagFamilies",
             )
         return 1, settings
 
@@ -301,6 +312,144 @@ def _normalize_modifiers(settings, schema_version, tag_sets):
     return modifiers
 
 
+def _pattern_slot_ids(pattern, path):
+    slot_ids = re.findall(r"{([A-Za-z][A-Za-z0-9_-]*)}", pattern)
+    if not slot_ids:
+        _fail("invalid_tag_family_pattern", path, f"Pattern must contain at least one slot: {path}")
+    leftover = re.sub(r"{[A-Za-z][A-Za-z0-9_-]*}", "", pattern)
+    if "{" in leftover or "}" in leftover:
+        _fail("invalid_tag_family_pattern", path, f"Pattern contains an invalid slot reference: {path}")
+    return slot_ids
+
+
+def _normalize_tag_family_slot(value, path, slot_id, tag_sets):
+    slot = _assert_mapping(value, path)
+    _assert_known_fields(slot, {"label", "source"}, path)
+    if "source" not in slot:
+        _fail("missing_required_field", f"{path}.source", f"Missing required field: {path}.source")
+    source = _assert_identifier(slot["source"], f"{path}.source")
+    if source not in tag_sets:
+        _fail("unknown_tag_set", f"{path}.source", f"Unknown tag set: {source}")
+    return {
+        "label": _text_value(slot.get("label"), slot_id) or slot_id,
+        "source": source,
+    }
+
+
+def _tag_set_values(tag_sets, tag_set_id):
+    return {tag["text"] for tag in tag_sets.get(tag_set_id, {}).get("tags", [])}
+
+
+def _normalize_tag_family_allowed(value, path, family_id, slots, tag_sets):
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        _fail("invalid_schema_type", path, f"Expected a sequence at {path}")
+    allowed = []
+    seen = set()
+    slot_ids = list(slots.keys())
+    slot_id_set = set(slot_ids)
+
+    for index, raw_combination in enumerate(value):
+        combination_path = f"{path}[{index}]"
+        combination = _assert_mapping(raw_combination, combination_path)
+        combination_keys = {str(key) for key in combination}
+        missing = [slot_id for slot_id in slot_ids if slot_id not in combination_keys]
+        extra = sorted(combination_keys - slot_id_set)
+        if missing:
+            _fail(
+                "invalid_tag_family_allowed",
+                combination_path,
+                f"Allowed combination is missing slot: {missing[0]}",
+            )
+        if extra:
+            _fail(
+                "invalid_tag_family_allowed",
+                f"{combination_path}.{extra[0]}",
+                f"Allowed combination has unknown slot: {extra[0]}",
+            )
+
+        normalized = {}
+        for slot_id in slot_ids:
+            slot_value = _text_value(combination.get(slot_id))
+            source = slots[slot_id]["source"]
+            if slot_value not in _tag_set_values(tag_sets, source):
+                _fail(
+                    "invalid_tag_family_allowed",
+                    f"{combination_path}.{slot_id}",
+                    f"Allowed value is not in tag set {source}: {slot_value or '<empty>'}",
+                )
+            normalized[slot_id] = slot_value
+
+        key = tuple(normalized[slot_id] for slot_id in slot_ids)
+        if key in seen:
+            _fail(
+                "duplicate_tag_family_allowed",
+                combination_path,
+                f"Duplicate allowed combination in tag family: {family_id}",
+            )
+        seen.add(key)
+        allowed.append(normalized)
+
+    return allowed
+
+
+def _normalize_tag_family(value, path, family_id, tag_sets):
+    family = _assert_mapping(value, path)
+    _assert_known_fields(family, {"label", "placeholder", "pattern", "slots", "allowed"}, path)
+    if "placeholder" not in family:
+        _fail("missing_required_field", f"{path}.placeholder", f"Missing required field: {path}.placeholder")
+    if "pattern" not in family:
+        _fail("missing_required_field", f"{path}.pattern", f"Missing required field: {path}.pattern")
+    if "slots" not in family:
+        _fail("missing_required_field", f"{path}.slots", f"Missing required field: {path}.slots")
+
+    placeholder = _assert_placeholder(family["placeholder"], f"{path}.placeholder")
+    pattern = _text_value(family.get("pattern"))
+    if not pattern:
+        _fail("invalid_tag_family_pattern", f"{path}.pattern", f"Pattern must not be empty: {path}.pattern")
+
+    raw_slots = _assert_mapping(family["slots"], f"{path}.slots")
+    slots = {}
+    for raw_slot_id, raw_slot in raw_slots.items():
+        slot_id = _assert_identifier(raw_slot_id, f"{path}.slots.{raw_slot_id}")
+        slots[slot_id] = _normalize_tag_family_slot(raw_slot, f"{path}.slots.{slot_id}", slot_id, tag_sets)
+    if not slots:
+        _fail("missing_required_field", f"{path}.slots", f"Missing required field: {path}.slots")
+
+    pattern_slots = _pattern_slot_ids(pattern, f"{path}.pattern")
+    for slot_id in pattern_slots:
+        if slot_id not in slots:
+            _fail(
+                "unknown_tag_family_slot",
+                f"{path}.pattern",
+                f"Pattern references unknown slot: {slot_id}",
+            )
+
+    allowed = _normalize_tag_family_allowed(family.get("allowed"), f"{path}.allowed", family_id, slots, tag_sets)
+    normalized = {
+        "label": _text_value(family.get("label"), family_id) or family_id,
+        "placeholder": placeholder,
+        "pattern": pattern,
+        "slots": slots,
+    }
+    if allowed is not None:
+        normalized["allowed"] = allowed
+    return normalized
+
+
+def _normalize_tag_families(settings, schema_version, tag_sets):
+    if schema_version != 2 or "tagFamilies" not in settings:
+        return {}
+    source = _assert_mapping(settings["tagFamilies"], "_promptboard.tagFamilies")
+    tag_families = {}
+    for raw_id, raw_value in source.items():
+        family_id = _assert_identifier(raw_id, f"_promptboard.tagFamilies.{raw_id}")
+        path = f"_promptboard.tagFamilies.{family_id}"
+        tag_families[family_id] = _normalize_tag_family(raw_value, path, family_id, tag_sets)
+    return tag_families
+
+
 def _normalize_category(category, raw_value, schema_version, tag_sets, modifiers):
     path = category
     value = _assert_mapping(raw_value, path)
@@ -365,7 +514,12 @@ def _normalize_categories(root, schema_version, tag_sets, modifiers):
         category = _text_value(raw_category)
         if not category:
             continue
-        if category in RESERVED_CATEGORY_NAMES or category.startswith(ATTRIBUTE_ENTRY_PREFIX):
+        if (
+            category in RESERVED_CATEGORY_NAMES
+            or category == FAMILY_STATE_KEY
+            or category.startswith(ATTRIBUTE_ENTRY_PREFIX)
+            or category.startswith(FAMILY_ENTRY_PREFIX)
+        ):
             _fail("reserved_category_name", category, f"Reserved category name: {category}")
         if not _is_mapping(raw_value):
             if schema_version == 2:
@@ -488,10 +642,15 @@ def normalize_yaml_document(yaml_text):
     root = parse_yaml_source(yaml_text)
     schema_version, settings = _source_version(root)
     if "_promptboard" in root and root["_promptboard"] is not None:
-        _assert_known_fields(settings, {"schemaVersion", "tagSets", "attributeBoards", "modifiers"}, "_promptboard")
+        _assert_known_fields(
+            settings,
+            {"schemaVersion", "tagSets", "attributeBoards", "modifiers", "tagFamilies"},
+            "_promptboard",
+        )
 
     tag_sets = _normalize_tag_sets(settings, schema_version)
     modifiers = _normalize_modifiers(settings, schema_version, tag_sets)
+    tag_families = _normalize_tag_families(settings, schema_version, tag_sets)
     categories = _normalize_categories(root, schema_version, tag_sets, modifiers)
     attribute_boards = _normalize_attribute_boards(settings, schema_version, tag_sets, categories)
     normalized = {
@@ -502,4 +661,6 @@ def normalize_yaml_document(yaml_text):
     }
     if modifiers:
         normalized["modifiers"] = modifiers
+    if tag_families:
+        normalized["tagFamilies"] = tag_families
     return normalized

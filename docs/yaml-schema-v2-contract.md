@@ -10,7 +10,8 @@ validation errors that the browser and Python implementations must share.
 - A YAML document without `_promptboard.schemaVersion` is schema v1.
 - Schema v1 consists of the existing top-level category mappings.
 - Schema v2 must declare `_promptboard.schemaVersion: 2`.
-- `tagSets`, `modifiers`, and `attributeBoards` are valid only in schema v2.
+- `tagSets`, `modifiers`, `attributeBoards`, and `tagFamilies` are valid only
+  in schema v2.
 - Declaring any v2 field without `schemaVersion: 2` is an error instead of
   silently treating the document as v1.
 - Unsupported explicit versions are errors. They do not fall back to v1.
@@ -22,11 +23,14 @@ The following source and state names are reserved:
 
 - `_promptboard`: top-level schema v2 configuration
 - `$attributes`: attribute selections inside `selected_state`
+- `$families`: tag-family selections inside `selected_state`
 - `$attribute:`: prefix for synthetic attribute-target entries in
   `selection_json`
+- `$family:`: prefix for synthetic tag-family entries in `selection_json`
 
 Category names may contain Korean text and spaces, but they must not equal
-`_promptboard` or `$attributes`, and must not begin with `$attribute:`.
+`_promptboard`, `$attributes`, or `$families`, and must not begin with
+`$attribute:` or `$family:`.
 
 Machine identifiers for tag sets, attribute boards, targets, and attributes
 must match:
@@ -64,6 +68,10 @@ Every valid source document normalizes to this root shape:
 When a document declares `_promptboard.modifiers`, the normalized root also
 contains a `modifiers` mapping. Documents without modifiers omit that key to
 preserve existing normalized snapshots.
+
+When a document declares `_promptboard.tagFamilies`, the normalized root also
+contains a `tagFamilies` mapping. Documents without tag families omit that key
+to preserve existing normalized snapshots.
 
 Mapping order is significant for categories, tag sets, boards, targets, and
 attributes. Implementations must preserve YAML declaration order.
@@ -243,6 +251,59 @@ compose to:
 on black wooden table
 ```
 
+## Normalized tag family
+
+```json
+{
+  "label": "잡기",
+  "placeholder": "<GIRL_POS>",
+  "pattern": "grabbing_{owner}_{target}",
+  "slots": {
+    "owner": {
+      "label": "주체",
+      "source": "grabOwners"
+    },
+    "target": {
+      "label": "대상",
+      "source": "grabTargets"
+    }
+  },
+  "allowed": [
+    {
+      "owner": "own",
+      "target": "breast"
+    }
+  ]
+}
+```
+
+Rules:
+
+- Tag-family identifiers use the same machine identifier rule as tag sets.
+- `placeholder`, `pattern`, and `slots` are required.
+- `placeholder` uses the normal placeholder syntax.
+- `pattern` must contain at least one `{slotId}` reference.
+- Every slot referenced by `pattern` must exist in `slots`.
+- Every slot must declare a `source` that refers to an existing tag set.
+- `allowed` is optional. When present, each allowed combination must provide
+  exactly one value for every slot.
+- Each allowed value must exist in the tag set used by its slot.
+- Duplicate allowed combinations are rejected.
+
+Runtime behavior:
+
+- Family selections are stored under `$families` in `selected_state`.
+- Runtime selection entries are emitted with `$family:<familyId>` keys.
+- Existing category selections are emitted before family selections. This
+  preserves current category output and appends generated family tags to the
+  same placeholder.
+- Attribute target entries are still emitted after categories and families.
+- If `allowed` exists, saved combinations outside the allow-list are skipped
+  with a warning.
+- If `allowed` is omitted, the backend composes only saved combinations whose
+  slot values exist in the referenced tag sets. It does not generate a full
+  cartesian product by itself.
+
 ## Error shape
 
 Semantic validation errors use this stable shape:
@@ -280,14 +341,18 @@ Semantic validation errors use this stable shape:
 | `ambiguous_category_source` | category path | Category declares both `tags` and `tagSet` |
 | `empty_tag_set` | tag-set `tags` path | Tag set does not contain a usable tag |
 | `invalid_tag` | tag entry path | Tag is malformed or has empty text |
+| `invalid_tag_family_pattern` | family `pattern` | Pattern is empty or has malformed slot references |
+| `unknown_tag_family_slot` | family `pattern` | Pattern references a slot that is not declared |
+| `invalid_tag_family_allowed` | family `allowed` entry | Allowed combination is malformed or references unknown values |
+| `duplicate_tag_family_allowed` | family `allowed` entry | Family declares the same allowed combination more than once |
 | `invalid_attribute_mode` | attribute `mode` | Mode is not `single` or `multiple` |
 | `duplicate_migration_source` | second attribute `migrateFrom` | Target maps more than one attribute from the same legacy category |
 | `invalid_placeholder` | placeholder path | Placeholder syntax is invalid |
 | `placeholder_collision` | target placeholder path | Target placeholder conflicts with another output slot |
 
-Unknown fields under `_promptboard`, `tagSets`, or `attributeBoards` use
-`unknown_schema_field`. Unknown legacy category fields continue to be ignored
-for schema v1 compatibility.
+Unknown fields under `_promptboard`, `tagSets`, `tagFamilies`, or
+`attributeBoards` use `unknown_schema_field`. Unknown legacy category fields
+continue to be ignored for schema v1 compatibility.
 
 ## Fixture layout
 
@@ -296,10 +361,12 @@ tests/fixtures/yaml_schema/
   valid/
     legacy_v1.yaml
     schema_v2_tagsets.yaml
+    schema_v2_tag_families.yaml
     schema_v2_attribute_boards.yaml
   expected/
     legacy_v1.normalized.json
     schema_v2_tagsets.normalized.json
+    schema_v2_tag_families.normalized.json
     schema_v2_attribute_boards.normalized.json
     default_v1.normalized.json
   invalid/

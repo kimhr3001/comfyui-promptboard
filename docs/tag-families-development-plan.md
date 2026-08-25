@@ -1,13 +1,17 @@
-# PromptBoard Tag Families Development Plan
+# PromptBoard 태그 패밀리 개발 계획
 
-Status: planning
+상태: Phase 1 완료
 
-## Purpose
+진행 상태:
 
-PromptBoard already supports reusable `tagSets` for shared option lists and
-attribute/modifier composition for simple prefix-like combinations.
+- 완료: Phase 1 / Schema와 Backend 조합
+- 다음: Phase 2 / 최소 UI
 
-The next step is to support structured Danbooru-style tag families such as:
+## 목적
+
+PromptBoard는 이미 공통 선택 목록을 위한 `tagSets`와, 색상/재질처럼 앞에 붙는 단순 조합을 위한 modifier 구조를 지원한다.
+
+다음 단계는 아래처럼 단부루 스타일의 구조적 태그 묶음을 지원하는 것이다.
 
 ```text
 grabbing_own_breast
@@ -17,13 +21,11 @@ arms_behind_back
 looking_at_viewer
 ```
 
-These are not simple color/material prefixes. They are generated from a small
-tag grammar and should be emitted into the current positive prompt structure
-without changing the larger workflow yet.
+이 태그들은 단순한 색상/재질 접두어 조합이 아니다. 작은 태그 문법에서 최종 태그 하나를 생성하는 구조이며, 아직 전체 워크플로우 구조를 바꾸지 않고 현재 긍정 프롬프트 구조 안으로 출력되어야 한다.
 
-## Current Positive Prompt Structure
+## 현재 긍정 프롬프트 구조
 
-The current `2608_default.json` positive prompt flow is:
+현재 `2608_default.json`의 긍정 프롬프트 흐름은 다음과 같다.
 
 ```text
 PrimitiveStringMultiline "BasePrompt"
@@ -34,7 +36,7 @@ PrimitiveStringMultiline "BasePrompt"
   -> KSampler positive
 ```
 
-The current base prompt template is:
+현재 기본 프롬프트 템플릿은 다음 구조다.
 
 ```text
 masterpiece, best quality, amazing quality, realistic, detailed, newest, <INTER>, <POSE_SET>,
@@ -62,33 +64,30 @@ BREAK
 <LOCATION>,
 ```
 
-Tag family output should target these existing placeholders first. The future
-main-character/sub-character system is out of scope for this phase.
+태그 패밀리의 출력은 먼저 이 기존 placeholder를 대상으로 한다. 메인 캐릭터와 서브 캐릭터를 분리해 프롬프트를 생성하는 미래 구조는 이번 개발 범위에 포함하지 않는다.
 
-## Scope
+## 개발 범위
 
-### In Scope
+### 포함
 
-- Add schema support for `_promptboard.tagFamilies`.
-- Reuse existing `tagSets` as slot option sources.
-- Generate one final tag text from a pattern and selected slot values.
-- Restrict invalid combinations with an explicit allow-list.
-- Emit generated family tags into existing placeholders such as `<GIRL_POS>`,
-  `<GIRL_FACE>`, `<PARTNER>`, `<HARD>`, or `<VIEW>`.
-- Render tag family selectors in PromptBoard UI.
-- Store selected family state in `selected_state`.
-- Include generated tags in `selection_json`, `preview_text`, and
-  `prompt_preview`.
+- `_promptboard.tagFamilies` schema 지원 추가
+- 기존 `tagSets`를 slot 선택지 소스로 재사용
+- pattern과 선택된 slot 값으로 최종 태그 text 하나 생성
+- 명시적 허용 목록으로 잘못된 조합 제한
+- 생성된 패밀리 태그를 `<GIRL_POS>`, `<GIRL_FACE>`, `<PARTNER>`, `<HARD>`, `<VIEW>` 같은 기존 placeholder로 출력
+- PromptBoard UI에서 태그 패밀리 선택 UI 표시
+- 선택된 패밀리 상태를 `selected_state`에 저장
+- 생성된 태그를 `selection_json`, `preview_text`, `prompt_preview`에 포함
 
-### Out of Scope
+### 제외
 
-- Add-on YAML composition.
-- Main character plus multiple sub-character prompt generation.
-- New BREAK layout generation.
-- Automatic validation against external Danbooru tag databases.
-- Generating every cartesian combination by default.
+- add-on YAML 조합 기능
+- 메인 캐릭터 + 복수 서브 캐릭터 프롬프트 생성
+- 새로운 `BREAK` 레이아웃 생성
+- 외부 단부루 태그 DB와의 자동 검증
+- 모든 조합을 기본으로 생성하는 카테시안 곱 방식
 
-## Proposed YAML Shape
+## 제안 YAML 구조
 
 ```yaml
 _promptboard:
@@ -135,23 +134,22 @@ _promptboard:
           target: ass
 ```
 
-## Schema Rules
+## Schema 규칙
 
-- `tagFamilies` is valid only with `schemaVersion: 2`.
-- Family identifiers use the same identifier rule as tag sets:
-  `^[A-Za-z][A-Za-z0-9_-]*$`.
-- `label` defaults to the family identifier.
-- `placeholder` is required and must match the existing placeholder pattern.
-- `pattern` is required and must contain named slots in `{slotId}` form.
-- `slots` is required.
-- Every slot id referenced by `pattern` must exist in `slots`.
-- Every slot must declare a `source` that references an existing `tagSet`.
-- `allowed` is optional, but recommended.
-- When `allowed` is present, only those exact slot combinations are selectable.
-- When `allowed` is omitted, the runtime may generate all combinations, but
-  this should be used only for small, low-risk families.
+- `tagFamilies`는 `schemaVersion: 2`에서만 유효하다.
+- 패밀리 id는 `tagSets`와 같은 식별자 규칙을 사용한다.
+  - `^[A-Za-z][A-Za-z0-9_-]*$`
+- `label`이 없으면 패밀리 id를 표시명으로 사용한다.
+- `placeholder`는 필수이며 기존 placeholder 패턴과 일치해야 한다.
+- `pattern`은 필수이며 `{slotId}` 형태의 이름 있는 slot을 포함해야 한다.
+- `slots`는 필수다.
+- `pattern`에서 참조한 모든 slot id는 `slots`에 존재해야 한다.
+- 각 slot은 기존 `tagSet`을 참조하는 `source`를 선언해야 한다.
+- `allowed`는 선택 항목이지만 권장한다.
+- `allowed`가 있으면 명시된 slot 조합만 선택 가능하다.
+- `allowed`가 없으면 런타임에서 모든 조합을 만들 수 있지만, 작고 위험이 낮은 패밀리에만 사용한다.
 
-## Normalized Model Shape
+## 정규화된 모델 구조
 
 ```json
 {
@@ -178,9 +176,9 @@ _promptboard:
 }
 ```
 
-## Selected State Shape
+## 선택 상태 구조
 
-Store family state separately from legacy category and attribute state.
+패밀리 선택 상태는 기존 category 선택 상태나 modifier 선택 상태와 분리해서 저장한다.
 
 ```json
 {
@@ -199,21 +197,20 @@ Store family state separately from legacy category and attribute state.
 }
 ```
 
-Generated output:
+생성 결과는 다음과 같다.
 
 ```text
 grabbing_own_breast
 grabbing_another's_hair
 ```
 
-## UI Proposal
+## UI 제안
 
-Tag families should appear as category-like panels under their target context.
+태그 패밀리는 대상 문맥 아래의 category 비슷한 패널로 표시한다.
 
-For example, a family targeting `<GIRL_POS>` can appear near `캐릭터 > 포즈`
-or `캐릭터 > 손`, depending on the family label and optional UI grouping.
+예를 들어 `<GIRL_POS>`로 출력되는 패밀리는 `캐릭터 > 포즈` 또는 `캐릭터 > 손` 주변에 배치할 수 있다. 정확한 위치는 패밀리 label과 선택적 UI grouping 규칙으로 결정한다.
 
-Minimal UI:
+최소 UI는 다음과 같다.
 
 ```text
 잡기
@@ -224,31 +221,30 @@ Minimal UI:
 [자기 + 가슴] [자기 + 엉덩이] [상대 + 머리카락]
 ```
 
-Recommended UI for phase 1:
+초기 UI 권장안은 다음과 같다.
 
-- Show family as a selectable list of generated allowed combinations.
-- Display labels from slot tag labels.
-- Show generated tag text in tooltip.
-- Avoid a complex multi-step slot picker until the model proves useful.
+- slot 선택기를 바로 만들지 않고, 허용된 최종 조합을 버튼 목록으로 표시한다.
+- 버튼에는 slot tag의 `label`을 조합해서 표시한다.
+- 실제 생성되는 tag text는 툴팁에 표시한다.
+- 모델의 유용성이 확인되기 전까지 복잡한 다단계 slot picker는 피한다.
 
-Example button label:
+버튼 표시 예:
 
 ```text
 자기 / 가슴
 ```
 
-Tooltip:
+툴팁 예:
 
 ```text
 grabbing_own_breast
 ```
 
-## Runtime Composition
+## 런타임 조합
 
-Family selections should be converted into synthetic selection entries keyed by
-placeholder.
+패밀리 선택은 placeholder를 기준으로 가상 선택 항목으로 변환한다.
 
-Example:
+예:
 
 ```json
 {
@@ -262,90 +258,113 @@ Example:
 }
 ```
 
-The existing placeholder replacement path can then append these values in YAML
-order alongside normal category values.
+기존 placeholder 치환 경로는 이 값을 일반 category 값과 함께 YAML 순서 기준으로 추가할 수 있다.
 
-## Suggested Phase Plan
+## 제안 Phase 계획
 
-### Phase 1: Schema And Backend Composition
+### Phase 1: Schema와 Backend 조합 [완료]
 
-- Add parser support for `_promptboard.tagFamilies` in Python and browser YAML
-  parsers.
-- Add contract tests for valid and invalid family definitions.
-- Add selected-state normalization for `$families`.
-- Add backend composition from selected family state to generated tag strings.
-- Emit family selections through the existing selection payload path.
+- Python YAML parser와 browser YAML parser에 `_promptboard.tagFamilies` 지원 추가
+- 정상/오류 패밀리 정의에 대한 계약 테스트 추가
+- `$families` 선택 상태 정규화 추가
+- 백엔드에서 선택된 family state를 최종 tag string으로 조합
+- 기존 selection payload 경로로 family selection 출력
 
-Completion criteria:
+완료 기준:
 
-- Valid YAML normalizes with `tagFamilies`.
-- Unknown tag set sources, missing pattern slots, and invalid allowed values
-  fail with stable errors.
-- Backend preview can produce a generated tag in the correct placeholder.
+- 정상 YAML이 `tagFamilies`를 포함한 형태로 정규화된다.
+- 존재하지 않는 tagSet source, pattern slot 누락, 잘못된 allowed 값이 안정적인 오류로 실패한다.
+- 백엔드 preview가 올바른 placeholder에 생성 태그를 출력할 수 있다.
 
-### Phase 2: Minimal UI
+완료 결과:
 
-- Render tag family groups in the navigator.
-- For phase 2, render only allowed generated combinations as buttons.
-- Store selected combinations in `$families`.
-- Show selected family tags in the selected summary.
-- Clicking a family selection should toggle the generated tag.
+- `_promptboard.tagFamilies`를 Python/browser YAML parser에서 같은 계약으로 정규화한다.
+- `$families` 선택 상태를 읽어 `$family:<familyId>` selection payload로 출력한다.
+- 같은 placeholder에서는 기존 category 선택값을 먼저 두고, family 생성값을 뒤에 추가한다.
+- `allowed`가 있으면 허용된 조합만 출력하고, 허용되지 않은 저장 상태는 warning으로 제거한다.
+- `allowed`가 없으면 backend가 전체 조합을 생성하지 않고, 저장된 slot 조합 중 tagSet에 존재하는 값만 조합한다.
+- schema 계약 문서와 valid/invalid fixture를 갱신했다.
 
-Completion criteria:
+검증:
 
-- User can select `grabbing_own_breast` from the UI.
-- Selection appears in preview and final prompt.
-- Existing categories, attributes, and modifiers still work.
+- `/Users/rociomini/Downloads/ComfyUI/.venv/bin/python -m unittest discover -s tests -p 'test_promptboard_yaml_backend.py'`
+- `node --test tests/test_promptboard_yaml.mjs`
+- `node --check web/js/promptboard_yaml.mjs`
+- `/Users/rociomini/Downloads/ComfyUI/.venv/bin/python -m py_compile promptboard_yaml.py yaml_tag_nodes.py`
 
-### Phase 3: First YAML Families
+### Phase 2: 최소 UI
 
-Start with a small set that fits the current prompt placeholders:
+- navigator에 tag family group 표시
+- Phase 2에서는 허용된 최종 조합만 버튼으로 표시
+- 선택된 조합을 `$families`에 저장
+- 선택 요약에 선택된 family tag 표시
+- family selection 클릭 시 생성 태그가 toggle된다.
 
-- Character hand/body actions:
-  - `grabbing_own_{target}` -> `<GIRL_POS>` or `<GIRL_BODY>`
+완료 기준:
+
+- 사용자가 UI에서 `grabbing_own_breast`를 선택할 수 있다.
+- 선택 결과가 preview와 최종 prompt에 표시된다.
+- 기존 category, attribute, modifier 기능이 계속 동작한다.
+
+### Phase 3: 첫 YAML 패밀리
+
+현재 placeholder 구조와 잘 맞는 작은 집합부터 시작한다.
+
+- 캐릭터 손/몸 동작
+  - `grabbing_own_{target}` -> `<GIRL_POS>` 또는 `<GIRL_BODY>`
   - `spreading_own_{target}` -> `<GIRL_POS>`
-- Partner actions:
+- 파트너 동작
   - `grabbing_another's_{target}` -> `<PARTNER>`
   - `foot_on_another's_{target}` -> `<PARTNER>`
-- Eye direction:
+- 시선 방향
   - `looking_{direction}` -> `<GIRL_FACE>`
-- Arms:
+- 팔 자세
   - `arms_{position}` -> `<GIRL_POS>`
 
-Completion criteria:
+완료 기준:
 
-- Add only a few high-confidence allowed combinations.
-- No large cartesian expansion.
-- Existing explicit tags are not removed in this phase.
+- 확신도가 높은 allowed 조합만 소량 추가한다.
+- 큰 카테시안 곱 확장은 하지 않는다.
+- 이 Phase에서는 기존 명시 태그를 제거하지 않는다.
 
-### Phase 4: Cleanup Candidates
+### Phase 4: 정리 후보 검토
 
-After families are proven usable:
+패밀리가 실제로 쓸 만하다고 확인된 뒤 정리를 진행한다.
 
-- Identify explicit category tags now duplicated by family outputs.
-- Move or remove duplicates only after comparing generated output with old
-  selection behavior.
-- Keep high-value standalone Danbooru tags when family grammar would make them
-  harder to discover.
+- family output과 중복되는 기존 category tag를 식별한다.
+- 생성 결과와 기존 선택 동작을 비교한 뒤에만 이동 또는 제거한다.
+- family 문법으로 만들면 오히려 찾기 어려운 고가치 단독 단부루 태그는 유지한다.
 
-Completion criteria:
+완료 기준:
 
-- No prompt output regression for existing templates.
-- Removed tags have a documented generated replacement.
+- 기존 template의 prompt output 회귀가 없다.
+- 제거한 태그에는 문서화된 generated replacement가 있다.
 
-## Risks
+## 리스크
 
-- Over-generating invalid Danbooru-looking tags.
-- Making the UI more complex than the current tag button model.
-- Losing discoverability if explicit tags disappear too early.
-- Mixing character-owned actions and partner actions into the wrong BREAK
-  section.
+- 단부루 태그처럼 보이지만 실제로는 잘못된 태그를 과도하게 생성할 수 있다.
+- 현재 태그 버튼 모델보다 UI가 복잡해질 수 있다.
+- 명시 태그를 너무 빨리 제거하면 검색성과 발견성이 떨어질 수 있다.
+- 캐릭터 동작과 파트너 동작이 잘못된 `BREAK` 영역으로 섞일 수 있다.
 
-## Recommended Direction
+## 권장 방향
 
-Build tag families as a constrained generator, not as a general cartesian
-product system.
+태그 패밀리는 범용 카테시안 곱 생성기가 아니라 제한된 태그 생성기로 만든다.
 
-Use the current positive prompt placeholders as output boundaries. This keeps
-the feature useful now while preserving a path toward future character-slot
-prompt generation.
+현재 긍정 프롬프트 placeholder를 출력 경계로 사용한다. 이렇게 하면 지금 구조 안에서 바로 유용하게 쓸 수 있고, 이후 캐릭터 slot 기반 프롬프트 생성 구조로 확장할 길도 남길 수 있다.
+
+## 문서 리뷰 결과
+
+현재 방향은 대체로 적절하다. 특히 범용 조합 생성기가 아니라 `allowed` 기반의 제한된 생성기로 시작하는 판단이 좋다. 지금 YAML은 이미 태그 수가 많고 의미가 비슷한 태그가 계속 늘어나는 구조라, 손/파트너 동작/시선처럼 패턴이 분명한 영역부터 구조화하면 관리 부담을 줄일 수 있다.
+
+개발 전 보강하면 좋은 지점은 다음과 같다.
+
+- `_promptboard`의 허용 필드 목록에 `tagFamilies`를 추가해야 하므로, 구현 시 [yaml-schema-v2-contract.md](/Users/rociomini/Downloads/ComfyUI/custom_nodes/comfyui-promptboard/docs/yaml-schema-v2-contract.md)도 함께 갱신해야 한다.
+- `$families`는 기존 category 이름과 충돌하지 않는 예약 key로 취급해야 한다. 사용자가 YAML category 이름을 `$families`로 만들었을 때 어떻게 막을지 schema 규칙에 포함하는 것이 좋다.
+- 같은 placeholder에 일반 category tag와 family tag가 같이 들어갈 때 출력 순서를 명확히 해야 한다. 현재 문서의 "YAML 순서 기준" 방향은 좋지만, category와 family가 서로 다른 tree에 있을 때 어느 쪽을 먼저 둘지 구현 전에 고정해야 한다.
+- `allowed`가 없는 전체 조합 생성은 가능하다고 열어두되, 초기 구현에서는 비활성화하거나 작은 최대 조합 수 제한을 두는 편이 안전하다.
+- 첫 UI는 slot을 단계별로 고르는 방식보다 "허용된 최종 조합 버튼" 방식이 맞다. 사용자는 `owner`, `target` 같은 내부 구조보다 실제 선택 결과를 먼저 이해하기 때문이다.
+- Phase 3에서 기존 명시 태그를 제거하지 않는 결정은 유지하는 것이 좋다. 구조화가 실제로 검색성과 선택 속도를 개선하는지 확인하기 전에는 제거보다 병행이 안전하다.
+- `another's`처럼 apostrophe가 들어간 값, `looking_at_viewer`처럼 이미 밑줄을 포함한 값, 여러 단어가 결합된 값은 pattern 치환 테스트에 반드시 포함해야 한다.
+
+결론적으로, 이 문서는 다음 개발의 기준으로 사용해도 된다. 다만 Phase 1을 시작하기 전에 예약 key, 출력 순서, 전체 조합 제한 정책 세 가지를 먼저 문서에 확정하면 구현 중 흔들릴 가능성이 줄어든다.

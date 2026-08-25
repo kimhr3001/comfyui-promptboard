@@ -40,6 +40,8 @@ YAML_FILE_ROOTS = (("tags", NODE_ROOT / "tags"),)
 TEMPLATE_FILE = NODE_ROOT / "templates" / "tag_board_templates.json"
 ATTRIBUTE_STATE_KEY = "$attributes"
 ATTRIBUTE_ENTRY_PREFIX = "$attribute:"
+FAMILY_STATE_KEY = "$families"
+FAMILY_ENTRY_PREFIX = "$family:"
 
 
 def _yaml_file_options():
@@ -578,6 +580,99 @@ def _compose_attribute_targets(model, selected_state=None, warnings=None):
     return targets
 
 
+def _family_slot_values(model, family, slot_id):
+    slot = (family.get("slots") or {}).get(slot_id) or {}
+    tag_set = (model.get("tagSets") or {}).get(slot.get("source")) or {}
+    return {tag["text"] for tag in tag_set.get("tags") or []}
+
+
+def _family_allowed_key(family, combination):
+    slot_ids = list((family.get("slots") or {}).keys())
+    return tuple(str(combination.get(slot_id, "")) for slot_id in slot_ids)
+
+
+def _compose_family_text(family, combination):
+    text = str(family.get("pattern", ""))
+    for slot_id in family.get("slots") or {}:
+        text = text.replace(f"{{{slot_id}}}", str(combination.get(slot_id, "")))
+    return text
+
+
+def _normalize_family_combination(model, family_id, family, raw_combination, warnings):
+    path = f"{FAMILY_STATE_KEY}.{family_id}"
+    if not isinstance(raw_combination, dict):
+        warnings.append(f"{path} must contain objects; the saved value was cleared.")
+        return None
+
+    slot_ids = list((family.get("slots") or {}).keys())
+    requested_keys = {str(key) for key in raw_combination}
+    missing = [slot_id for slot_id in slot_ids if slot_id not in requested_keys]
+    extra = sorted(requested_keys - set(slot_ids))
+    if missing:
+        warnings.append(f"{path} removed incomplete combination missing slot: {missing[0]}")
+        return None
+    if extra:
+        warnings.append(f"{path} removed combination with unknown slot: {extra[0]}")
+        return None
+
+    combination = {}
+    for slot_id in slot_ids:
+        value = str(raw_combination.get(slot_id, "")).strip()
+        if value not in _family_slot_values(model, family, slot_id):
+            warnings.append(f"{path}.{slot_id} removed unknown tag: {value or '<empty>'}")
+            return None
+        combination[slot_id] = value
+
+    allowed = family.get("allowed")
+    if isinstance(allowed, list):
+        allowed_keys = {_family_allowed_key(family, item) for item in allowed if isinstance(item, dict)}
+        if _family_allowed_key(family, combination) not in allowed_keys:
+            warnings.append(f"{path} removed disallowed combination: {_compose_family_text(family, combination)}")
+            return None
+
+    return combination
+
+
+def _compose_tag_family_targets(model, selected_state=None, warnings=None):
+    selected_state = selected_state if isinstance(selected_state, dict) else {}
+    warnings = warnings if isinstance(warnings, list) else []
+    saved_root = selected_state.get(FAMILY_STATE_KEY)
+    saved_root = saved_root if isinstance(saved_root, dict) else {}
+    targets = {}
+
+    for family_id in saved_root:
+        if family_id not in (model.get("tagFamilies") or {}):
+            warnings.append(f"{FAMILY_STATE_KEY}.{family_id} no longer exists and was removed.")
+
+    for family_id, family in (model.get("tagFamilies") or {}).items():
+        raw_combinations = saved_root.get(family_id, [])
+        if raw_combinations is None:
+            raw_combinations = []
+        if not isinstance(raw_combinations, list):
+            warnings.append(f"{FAMILY_STATE_KEY}.{family_id} must be an array; the saved value was cleared.")
+            raw_combinations = []
+
+        selected = []
+        seen = set()
+        for raw_combination in raw_combinations:
+            combination = _normalize_family_combination(model, family_id, family, raw_combination, warnings)
+            if combination is None:
+                continue
+            key = _family_allowed_key(family, combination)
+            if key in seen:
+                continue
+            seen.add(key)
+            selected.append(_compose_family_text(family, combination))
+
+        targets[family_id] = {
+            "familyId": family_id,
+            "placeholder": family.get("placeholder", ""),
+            "selected": selected,
+        }
+
+    return targets
+
+
 def _build_selection_payload(model, config, selected_state, warnings=None):
     warnings = warnings if isinstance(warnings, list) else []
     payload = {}
@@ -615,6 +710,23 @@ def _build_attribute_selection_payload(model, selected_state, warnings=None):
             "uiGroup": "",
             "delimiter": FIXED_DELIMITER,
             "replaceInsideTags": True,
+            "selected": selected,
+        }
+        selected_values.extend(selected)
+    return payload, selected_values
+
+
+def _build_family_selection_payload(model, selected_state, warnings=None):
+    payload = {}
+    selected_values = []
+    for family_id, item in _compose_tag_family_targets(model, selected_state, warnings).items():
+        selected = item.get("selected") or []
+        entry_name = f"{FAMILY_ENTRY_PREFIX}{family_id}"
+        payload[entry_name] = {
+            "placeholder": item["placeholder"],
+            "uiGroup": "",
+            "delimiter": FIXED_DELIMITER,
+            "replaceInsideTags": False,
             "selected": selected,
         }
         selected_values.extend(selected)
@@ -781,6 +893,9 @@ def _select_tags_outputs(yaml_file=DEFAULT_YAML_FILE, yaml_text="", selected_sta
         state = _load_selected_state(selected_state)
         warnings = []
         payload, selected_values = _build_selection_payload(model, config, state, warnings)
+        family_payload, family_selected_values = _build_family_selection_payload(model, state, warnings)
+        payload.update(family_payload)
+        selected_values.extend(family_selected_values)
         attribute_payload, attribute_selected_values = _build_attribute_selection_payload(model, state, warnings)
         payload.update(attribute_payload)
         selected_values.extend(attribute_selected_values)

@@ -1,0 +1,13 @@
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    grabOwners:
+      tags:
+      - own
+  tagFamilies:
+    grabbing:
+      placeholder: <GIRL_POS>
+      pattern: "grabbing_{owner}_{target}"
+      slots:
+        owner:
+          source: grabOwners

@@ -15,13 +15,19 @@
     "fixture": "schema_version_required.yaml",
     "code": "schema_version_required",
     "path": "_promptboard.schemaVersion",
-    "message": "schemaVersion: 2 is required for tagSets, modifiers, or attributeBoards"
+    "message": "schemaVersion: 2 is required for tagSets, modifiers, attributeBoards, or tagFamilies"
   },
   {
     "fixture": "reserved_category_name.yaml",
     "code": "reserved_category_name",
     "path": "$attributes",
     "message": "Reserved category name: $attributes"
+  },
+  {
+    "fixture": "reserved_family_category_name.yaml",
+    "code": "reserved_category_name",
+    "path": "$families",
+    "message": "Reserved category name: $families"
   },
   {
     "fixture": "reserved_tag_set_identifier.yaml",
@@ -76,5 +82,17 @@
     "code": "placeholder_collision",
     "path": "_promptboard.attributeBoards.clothing.targets.top.placeholder",
     "message": "Attribute target placeholder conflicts with category placeholder: <CLOTHES>"
+  },
+  {
+    "fixture": "unknown_tag_family_slot.yaml",
+    "code": "unknown_tag_family_slot",
+    "path": "_promptboard.tagFamilies.grabbing.pattern",
+    "message": "Pattern references unknown slot: target"
+  },
+  {
+    "fixture": "invalid_tag_family_allowed.yaml",
+    "code": "invalid_tag_family_allowed",
+    "path": "_promptboard.tagFamilies.grabbing.allowed[0].target",
+    "message": "Allowed value is not in tag set grabTargets: hair"
   }
 ]
