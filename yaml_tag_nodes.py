@@ -389,6 +389,42 @@ def _selected_for_category(category, tags, selected_state):
     return [tag["text"] for tag in tags if tag.get("default")]
 
 
+def _category_state(selected_state, category):
+    state = selected_state.get(category) if isinstance(selected_state, dict) else None
+    return state if isinstance(state, dict) else {}
+
+
+def _compose_modified_tag(model, category, tag, selected_state, warnings):
+    modifiers = tag.get("modifiers") or {}
+    if not modifiers:
+        return tag["text"]
+
+    state = _category_state(selected_state, category)
+    saved_modifiers = state.get("modifiers") if isinstance(state.get("modifiers"), dict) else {}
+    saved_tag_modifiers = saved_modifiers.get(tag["text"]) if isinstance(saved_modifiers, dict) else {}
+    saved_tag_modifiers = saved_tag_modifiers if isinstance(saved_tag_modifiers, dict) else {}
+
+    values = []
+    for modifier_id, modifier in (model.get("modifiers") or {}).items():
+        if not modifiers.get(modifier_id):
+            continue
+        tag_set = (model.get("tagSets") or {}).get(modifier.get("source")) or {}
+        path = f"{category}.{tag['text']}.{modifier_id}"
+        values.extend(
+            _normalize_attribute_values(
+                tag_set.get("tags") or [],
+                saved_tag_modifiers.get(modifier_id, []),
+                modifier.get("mode", "single"),
+                False,
+                path,
+                warnings,
+            )
+        )
+
+    values.append(tag["text"])
+    return " ".join(value for value in values if value)
+
+
 def _normalize_attribute_values(tags, raw_values, mode, use_defaults, path, warnings):
     available = {tag["text"] for tag in tags}
     source_values = (
@@ -542,12 +578,19 @@ def _compose_attribute_targets(model, selected_state=None, warnings=None):
     return targets
 
 
-def _build_selection_payload(config, selected_state):
+def _build_selection_payload(model, config, selected_state, warnings=None):
+    warnings = warnings if isinstance(warnings, list) else []
     payload = {}
     selected_values = []
 
     for category, item in config.items():
-        selected = _selected_for_category(category, item["tags"], selected_state)
+        selected_tags = _selected_for_category(category, item["tags"], selected_state)
+        selected_set = set(selected_tags)
+        selected = [
+            _compose_modified_tag(model, category, tag, selected_state, warnings)
+            for tag in item["tags"]
+            if tag["text"] in selected_set
+        ]
         payload[category] = {
             "placeholder": item["placeholder"],
             "uiGroup": item.get("uiGroup", ""),
@@ -736,8 +779,8 @@ def _select_tags_outputs(yaml_file=DEFAULT_YAML_FILE, yaml_text="", selected_sta
         model = normalize_yaml_document(source_yaml)
         config = _config_from_model(model)
         state = _load_selected_state(selected_state)
-        payload, selected_values = _build_selection_payload(config, state)
         warnings = []
+        payload, selected_values = _build_selection_payload(model, config, state, warnings)
         attribute_payload, attribute_selected_values = _build_attribute_selection_payload(model, state, warnings)
         payload.update(attribute_payload)
         selected_values.extend(attribute_selected_values)

@@ -102,13 +102,13 @@ function sourceVersion(root) {
   }
 
   const settings = assertMapping(settingsValue, "_promptboard");
-  const hasV2Fields = hasOwn(settings, "tagSets") || hasOwn(settings, "attributeBoards");
+  const hasV2Fields = hasOwn(settings, "tagSets") || hasOwn(settings, "attributeBoards") || hasOwn(settings, "modifiers");
   if (!hasOwn(settings, "schemaVersion")) {
     if (hasV2Fields) {
       fail(
         "schema_version_required",
         "_promptboard.schemaVersion",
-        "schemaVersion: 2 is required for tagSets or attributeBoards",
+        "schemaVersion: 2 is required for tagSets, modifiers, or attributeBoards",
       );
     }
     return { schemaVersion: 1, settings };
@@ -124,7 +124,14 @@ function sourceVersion(root) {
   return { schemaVersion: 2, settings };
 }
 
-function normalizeTag(entry, path, strict) {
+function normalizeTagModifierFlag(value, path) {
+  if (Array.isArray(value) || isMapping(value)) {
+    fail("invalid_schema_type", path, `Expected a boolean at ${path}`);
+  }
+  return normalizeBool(value);
+}
+
+function normalizeTag(entry, path, strict, modifierIds = new Set()) {
   if (typeof entry === "string") {
     const text = entry.trim();
     if (strict && !text) {
@@ -139,7 +146,7 @@ function normalizeTag(entry, path, strict) {
     return null;
   }
   if (strict) {
-    assertKnownFields(entry, new Set(["text", "value", "label", "description", "default"]), path);
+    assertKnownFields(entry, new Set(["text", "value", "label", "description", "default", ...modifierIds]), path);
   }
 
   const text = textValue(hasOwn(entry, "text") ? entry.text : entry.value);
@@ -150,15 +157,25 @@ function normalizeTag(entry, path, strict) {
     return null;
   }
   const label = textValue(entry.label, text) || text;
-  return {
+  const tag = {
     text,
     label,
     description: textValue(entry.description),
     default: normalizeBool(entry.default),
   };
+  const modifiers = {};
+  for (const modifierId of modifierIds) {
+    if (hasOwn(entry, modifierId) && normalizeTagModifierFlag(entry[modifierId], `${path}.${modifierId}`)) {
+      modifiers[modifierId] = true;
+    }
+  }
+  if (Object.keys(modifiers).length) {
+    tag.modifiers = modifiers;
+  }
+  return tag;
 }
 
-function normalizeTagItems(value, path, strict) {
+function normalizeTagItems(value, path, strict, modifierIds = new Set()) {
   if (value == null) {
     return { tags: [], tagItems: null };
   }
@@ -189,7 +206,7 @@ function normalizeTagItems(value, path, strict) {
       continue;
     }
 
-    const tag = normalizeTag(entry, entryPath, strict);
+    const tag = normalizeTag(entry, entryPath, strict, modifierIds);
     if (tag) {
       tags.push(tag);
       tagItems.push({ kind: "tag", tag: { ...tag } });
@@ -240,7 +257,43 @@ function normalizeTagSets(settings, schemaVersion) {
   return tagSets;
 }
 
-function normalizeCategory(category, rawValue, schemaVersion, tagSets) {
+function normalizeModifier(value, path, id, tagSets) {
+  const modifier = assertMapping(value, path);
+  assertKnownFields(modifier, new Set(["label", "source", "mode"]), path);
+  if (!hasOwn(modifier, "source")) {
+    fail("missing_required_field", `${path}.source`, `Missing required field: ${path}.source`);
+  }
+  const source = assertIdentifier(modifier.source, `${path}.source`);
+  if (!hasOwn(tagSets, source)) {
+    fail("unknown_tag_set", `${path}.source`, `Unknown tag set: ${source}`);
+  }
+  const mode = textValue(modifier.mode, "single") || "single";
+  if (mode !== "single" && mode !== "multiple") {
+    fail("invalid_attribute_mode", `${path}.mode`, `Unsupported modifier mode: ${mode}`);
+  }
+  return {
+    label: textValue(modifier.label, id) || id,
+    source,
+    mode,
+  };
+}
+
+function normalizeModifiers(settings, schemaVersion, tagSets) {
+  if (schemaVersion !== 2 || !hasOwn(settings, "modifiers")) {
+    return {};
+  }
+  const source = assertMapping(settings.modifiers, "_promptboard.modifiers");
+  const modifiers = {};
+
+  for (const [rawId, rawValue] of Object.entries(source)) {
+    const id = assertIdentifier(rawId, `_promptboard.modifiers.${rawId}`);
+    const path = `_promptboard.modifiers.${id}`;
+    modifiers[id] = normalizeModifier(rawValue, path, id, tagSets);
+  }
+  return modifiers;
+}
+
+function normalizeCategory(category, rawValue, schemaVersion, tagSets, modifiers) {
   const path = category;
   const value = assertMapping(rawValue, path);
   const strict = schemaVersion === 2;
@@ -275,7 +328,9 @@ function normalizeCategory(category, rawValue, schemaVersion, tagSets) {
   if (strict) {
     assertPlaceholder(placeholder, `${path}.placeholder`);
   }
-  const directTags = hasTags ? normalizeTagItems(value.tags, `${path}.tags`, strict) : null;
+  const directTags = hasTags
+    ? normalizeTagItems(value.tags, `${path}.tags`, strict, new Set(Object.keys(modifiers ?? {})))
+    : null;
   const tagSetItems = tagSet ? cloneTagItems(tagSets[tagSet].tagItems) : null;
   const normalized = {
     placeholder,
@@ -297,7 +352,7 @@ function normalizeCategory(category, rawValue, schemaVersion, tagSets) {
   return normalized;
 }
 
-function normalizeCategories(root, schemaVersion, tagSets) {
+function normalizeCategories(root, schemaVersion, tagSets, modifiers) {
   const categories = {};
   for (const [rawCategory, rawValue] of Object.entries(root)) {
     if (rawCategory === "_promptboard") {
@@ -316,7 +371,7 @@ function normalizeCategories(root, schemaVersion, tagSets) {
       }
       continue;
     }
-    categories[category] = normalizeCategory(category, rawValue, schemaVersion, tagSets);
+    categories[category] = normalizeCategory(category, rawValue, schemaVersion, tagSets, modifiers);
   }
   return categories;
 }
@@ -432,13 +487,18 @@ export function normalizeYamlDocument(yamlText) {
   const root = parseYamlSource(yamlText);
   const { schemaVersion, settings } = sourceVersion(root);
   if (hasOwn(root, "_promptboard") && root._promptboard != null) {
-    assertKnownFields(settings, new Set(["schemaVersion", "tagSets", "attributeBoards"]), "_promptboard");
+    assertKnownFields(settings, new Set(["schemaVersion", "tagSets", "attributeBoards", "modifiers"]), "_promptboard");
   }
 
   const tagSets = normalizeTagSets(settings, schemaVersion);
-  const categories = normalizeCategories(root, schemaVersion, tagSets);
+  const modifiers = normalizeModifiers(settings, schemaVersion, tagSets);
+  const categories = normalizeCategories(root, schemaVersion, tagSets, modifiers);
   const attributeBoards = normalizeAttributeBoards(settings, schemaVersion, tagSets, categories);
-  return { schemaVersion, tagSets, attributeBoards, categories };
+  const normalized = { schemaVersion, tagSets, attributeBoards, categories };
+  if (Object.keys(modifiers).length) {
+    normalized.modifiers = modifiers;
+  }
+  return normalized;
 }
 
 export function parseYamlCategories(yamlText) {

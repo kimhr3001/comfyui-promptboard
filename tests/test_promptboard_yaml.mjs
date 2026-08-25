@@ -106,6 +106,76 @@ POSE:
   ]);
 });
 
+test("normalizes shared modifiers and tag-level true flags", () => {
+  const model = normalizeYamlDocument(`
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    colors:
+      tags:
+      - black
+    propRelations:
+      tags:
+      - text: 'on'
+        label: 위
+  modifiers:
+    relation:
+      label: 위치
+      source: propRelations
+      mode: single
+    color:
+      label: 색상
+      source: colors
+      mode: single
+소품:
+  placeholder: <ETC>
+  tags:
+  - text: table
+    label: 테이블
+    relation: true
+    color: true
+`);
+
+  assert.deepEqual(model.modifiers, {
+    relation: { label: "위치", source: "propRelations", mode: "single" },
+    color: { label: "색상", source: "colors", mode: "single" },
+  });
+  assert.deepEqual(model.categories["소품"].tags[0], {
+    text: "table",
+    label: "테이블",
+    description: "",
+    default: false,
+    modifiers: { relation: true, color: true },
+  });
+});
+
+test("rejects per-tag modifier arrays", () => {
+  assert.throws(
+    () => normalizeYamlDocument(`
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    propRelations:
+      tags:
+      - 'on'
+  modifiers:
+    relation:
+      source: propRelations
+소품:
+  placeholder: <ETC>
+  tags:
+  - text: table
+    relation:
+    - 'on'
+`),
+    (error) => {
+      assert.equal(error.code, "invalid_schema_type");
+      assert.equal(error.path, "소품.tags[0].relation");
+      return true;
+    },
+  );
+});
+
 test("expands tag-set categories to the same effective tags as direct categories", async () => {
   const sharedSource = await readText(join(fixtureRoot, "valid", "schema_v2_tagsets.yaml"));
   const directSource = await readText(join(fixtureRoot, "valid", "schema_v2_tagsets_direct.yaml"));
