@@ -9,6 +9,17 @@ import {
   normalizeAttributeState,
   setAttributeSelected,
 } from "./promptboard_attribute_state.mjs";
+import {
+  FAMILY_STATE_KEY,
+  composeTagFamilyText,
+  emptyTagFamilyState,
+  normalizeTagFamilyState,
+  setTagFamilySelected,
+  tagFamilyAllowedCombinations,
+  tagFamilyCombinationLabel,
+  tagFamilyCombinationSelected,
+  tagFamilySelectedCombinations,
+} from "./promptboard_tag_family_state.mjs";
 import { normalizeYamlDocument } from "./promptboard_yaml.mjs";
 
 const NODE_NAME = "PromptBoard";
@@ -594,6 +605,14 @@ function findYamlTagSetMatch(text, tagSetId, tagText) {
   return yamlLineMatch(lines, tagSetBlock.start);
 }
 
+function findYamlTagFamilyMatch(text, familyId) {
+  const lines = String(text ?? "").split("\n");
+  const rootBlock = findTopLevelYamlBlock(lines, "_promptboard");
+  const familiesBlock = findNestedYamlBlock(lines, rootBlock, "tagFamilies");
+  const familyBlock = findNestedYamlBlock(lines, familiesBlock, familyId);
+  return familyBlock ? yamlLineMatch(lines, familyBlock.start) : null;
+}
+
 function focusYamlSourceMatch(node, match) {
   if (!isYamlPanelOpen(node) || !match) {
     return;
@@ -622,6 +641,10 @@ function focusYamlAttributeTag(node, boardId, targetId, attributeId, tagText) {
   focusYamlSourceMatch(node, findYamlTagSetMatch(widgetValue(node, "yaml_text", ""), source, tagText));
 }
 
+function focusYamlTagFamily(node, familyId) {
+  focusYamlSourceMatch(node, findYamlTagFamilyMatch(widgetValue(node, "yaml_text", ""), familyId));
+}
+
 function focusYamlNavigatorItem(node, item) {
   if (item?.kind === "attribute") {
     focusYamlAttributeTag(node, item.boardId, item.targetId, item.attributeId, "");
@@ -630,6 +653,10 @@ function focusYamlNavigatorItem(node, item) {
   if (item?.kind === "attributeTarget") {
     const attributeId = Object.keys(item.attributes ?? {})[0] ?? "";
     focusYamlAttributeTag(node, item.boardId, item.targetId, attributeId, "");
+    return;
+  }
+  if (item?.kind === "family") {
+    focusYamlTagFamily(node, item.familyId);
     return;
   }
   if (item?.kind === "category") {
@@ -643,6 +670,8 @@ function focusYamlBoardSearchMatch(node, match) {
   }
   if (match.kind === "attribute") {
     focusYamlAttributeTag(node, match.boardId, match.targetId, match.attributeId, match.tagText);
+  } else if (match.kind === "family") {
+    focusYamlTagFamily(node, match.familyId);
   } else if (match.tagText) {
     focusYamlCategoryTag(node, match.category, match.tagText);
   } else {
@@ -908,6 +937,10 @@ function attributeBoardUiGroup(board) {
   return normalizeUiGroup(board?.uiGroup) || DEFAULT_UI_GROUP;
 }
 
+function tagFamilyUiGroup(family) {
+  return inferUiGroup(family);
+}
+
 function navigatorItemAccent(item) {
   if (!item) {
     return accentForLabel(DEFAULT_UI_GROUP);
@@ -919,10 +952,13 @@ function navigatorItemAccent(item) {
   return accentForLabel(item.uiGroup || item.context);
 }
 
-function availableUiGroups(config, attributeBoards = {}) {
+function availableUiGroups(config, attributeBoards = {}, tagFamilies = {}) {
   const groups = new Set();
   for (const item of Object.values(config ?? {})) {
     groups.add(categoryUiGroup(item));
+  }
+  for (const family of Object.values(tagFamilies ?? {})) {
+    groups.add(tagFamilyUiGroup(family));
   }
   for (const board of Object.values(attributeBoards ?? {})) {
     groups.add(attributeBoardUiGroup(board));
@@ -931,7 +967,11 @@ function availableUiGroups(config, attributeBoards = {}) {
 }
 
 function activeUiGroup(node, config = node.promptboardConfig ?? {}) {
-  const groups = availableUiGroups(config, node.promptboardYamlModel?.attributeBoards);
+  const groups = availableUiGroups(
+    config,
+    node.promptboardYamlModel?.attributeBoards,
+    node.promptboardYamlModel?.tagFamilies,
+  );
   const active = normalizeUiGroup(node.promptboardActiveUiGroup) || GROUP_ALL;
   if (active === GROUP_ALL || groups.includes(active)) {
     return active;
@@ -965,12 +1005,26 @@ function allAttributeBoardEntries(node) {
   return Object.entries(node.promptboardYamlModel?.attributeBoards ?? {});
 }
 
+function visibleTagFamilyEntries(node) {
+  const active = activeUiGroup(node);
+  return Object.entries(node.promptboardYamlModel?.tagFamilies ?? {}).filter(([, family]) =>
+    active === GROUP_ALL || tagFamilyUiGroup(family) === active,
+  );
+}
+
+function allTagFamilyEntries(node) {
+  return Object.entries(node.promptboardYamlModel?.tagFamilies ?? {});
+}
+
 function navigatorItemId(item) {
   if (!item) {
     return "";
   }
   if (item.kind === "attribute" || item.kind === "attributeTarget") {
     return `attributeTarget\u0000${item.boardId}\u0000${item.targetId}`;
+  }
+  if (item.kind === "family") {
+    return `family\u0000${item.familyId}`;
   }
   return `category\u0000${item.category}`;
 }
@@ -979,9 +1033,13 @@ function navigatorItemFromMatch(match) {
   if (!match) {
     return "";
   }
-  return match.kind === "attribute"
-    ? navigatorItemId({ kind: "attributeTarget", boardId: match.boardId, targetId: match.targetId })
-    : navigatorItemId({ kind: "category", category: match.category });
+  if (match.kind === "attribute") {
+    return navigatorItemId({ kind: "attributeTarget", boardId: match.boardId, targetId: match.targetId });
+  }
+  if (match.kind === "family") {
+    return navigatorItemId({ kind: "family", familyId: match.familyId });
+  }
+  return navigatorItemId({ kind: "category", category: match.category });
 }
 
 function tagDisplayLabel(tag) {
@@ -1043,6 +1101,17 @@ function navigatorItems(node) {
       tagItems: tagItemsForCategory(item),
     });
   }
+  for (const [familyId, family] of visibleTagFamilyEntries(node)) {
+    const uiGroup = tagFamilyUiGroup(family);
+    items.push({
+      kind: "family",
+      familyId,
+      label: family.label || familyId,
+      context: uiGroup,
+      uiGroup,
+      placeholder: family.placeholder,
+    });
+  }
   for (const [boardId, board] of visibleAttributeBoardEntries(node)) {
     const uiGroup = attributeBoardUiGroup(board);
     for (const [targetId, target] of Object.entries(board.targets ?? {})) {
@@ -1068,6 +1137,9 @@ function navigatorItemCount(node, item) {
   if (item?.kind === "attributeTarget") {
     const target = node.promptboardYamlModel?.attributeBoards?.[item.boardId]?.targets?.[item.targetId];
     return attributeCountForTarget(state, item.boardId, item.targetId, target);
+  }
+  if (item?.kind === "family") {
+    return tagFamilySelectedCombinations(state, item.familyId).length;
   }
   return selectedCount(state, item?.category, item?.tags ?? []);
 }
@@ -1207,6 +1279,9 @@ function pruneSelectedState(model, selectedState, warnings = []) {
   if (Object.keys(model.attributeBoards ?? {}).length) {
     nextState[ATTRIBUTE_STATE_KEY] = normalizeAttributeState(model, selectedState, warnings);
   }
+  if (Object.keys(model.tagFamilies ?? {}).length) {
+    nextState[FAMILY_STATE_KEY] = normalizeTagFamilyState(model, selectedState, warnings);
+  }
   return nextState;
 }
 
@@ -1215,7 +1290,7 @@ function selectedCount(state, category, tags) {
   return tags.filter((tag) => selected.has(tag.text)).length;
 }
 
-function selectedCountsByUiGroup(config, attributeBoards, state) {
+function selectedCountsByUiGroup(config, attributeBoards, tagFamilies, state) {
   const counts = { [GROUP_ALL]: 0 };
   for (const [category, item] of Object.entries(config ?? {})) {
     const count = selectedCount(state, category, item.tags ?? []);
@@ -1230,6 +1305,12 @@ function selectedCountsByUiGroup(config, attributeBoards, state) {
       0,
     );
     const group = attributeBoardUiGroup(board);
+    counts[GROUP_ALL] += count;
+    counts[group] = (counts[group] ?? 0) + count;
+  }
+  for (const [familyId, family] of Object.entries(tagFamilies ?? {})) {
+    const count = tagFamilySelectedCombinations(state, familyId).length;
+    const group = tagFamilyUiGroup(family);
     counts[GROUP_ALL] += count;
     counts[group] = (counts[group] ?? 0) + count;
   }
@@ -1354,6 +1435,9 @@ function resetSelection(node) {
   if (Object.keys(node.promptboardYamlModel?.attributeBoards ?? {}).length) {
     Object.assign(state, emptyAttributeState(node.promptboardYamlModel));
   }
+  if (Object.keys(node.promptboardYamlModel?.tagFamilies ?? {}).length) {
+    Object.assign(state, emptyTagFamilyState(node.promptboardYamlModel));
+  }
 
   syncState(node, state);
   renderCards(node);
@@ -1418,13 +1502,48 @@ function collectBoardSearchMatches(node, regex) {
       }
     }
   }
+  for (const [familyId, family] of allTagFamilyEntries(node)) {
+    const uiGroup = tagFamilyUiGroup(family);
+    const familyLabel = family.label || familyId;
+    if (regex.test(familyId) || regex.test(familyLabel)) {
+      matches.push({
+        kind: "family",
+        familyId,
+        tagText: "",
+        label: String(familyLabel),
+        description: "",
+        uiGroup,
+        context: uiGroup,
+      });
+    }
+    for (const combination of tagFamilyAllowedCombinations(node.promptboardYamlModel, familyId)) {
+      const tagText = composeTagFamilyText(family, combination);
+      const label = tagFamilyCombinationLabel(node.promptboardYamlModel, familyId, combination) || tagText;
+      if (regex.test(label) || regex.test(tagText)) {
+        matches.push({
+          kind: "family",
+          familyId,
+          combination,
+          tagText,
+          label,
+          description: tagText,
+          uiGroup,
+          context: familyLabel,
+        });
+      }
+    }
+  }
   return matches;
 }
 
 function boardSearchMatchKey(match) {
-  return match?.kind === "attribute"
-    ? `attribute\u0000${match.boardId}\u0000${match.targetId}\u0000${match.attributeId}\u0000${match.tagText}`
-    : `category\u0000${match?.category}\u0000${match?.tagText}`;
+  if (match?.kind === "attribute") {
+    return `attribute\u0000${match.boardId}\u0000${match.targetId}\u0000${match.attributeId}\u0000${match.tagText}`;
+  }
+  if (match?.kind === "family") {
+    return `family\u0000${match.familyId}\u0000${match.tagText}`;
+  }
+  return `category\u0000${match?.category}\u0000${match?.tagText}`;
 }
 
 function currentBoardSearchMatch(node) {
@@ -1498,6 +1617,11 @@ function boardSearchMatchSelected(node, match) {
       match.targetId,
       match.attributeId,
     ).includes(match.tagText);
+  }
+  if (match.kind === "family") {
+    return match.combination
+      ? tagFamilyCombinationSelected(node.promptboardYamlModel, node.promptboardState, match.familyId, match.combination)
+      : tagFamilySelectedCombinations(node.promptboardState, match.familyId).length > 0;
   }
   return categorySelectedArray(node.promptboardState, match.category).includes(match.tagText);
 }
@@ -1604,6 +1728,20 @@ function findBoardSearchElement(node, match) {
         element.dataset.tagText === match.tagText
       ) {
         return element;
+      }
+    }
+    return null;
+  }
+  if (match.kind === "family") {
+    const selector = match.tagText ? ".promptboard-tag" : ".promptboard-navigator-category";
+    for (const root of roots) {
+      for (const element of root.querySelectorAll(selector)) {
+        if (element.dataset.familyId !== match.familyId) {
+          continue;
+        }
+        if (!match.tagText || element.dataset.tagText === match.tagText) {
+          return element;
+        }
       }
     }
     return null;
@@ -2804,10 +2942,11 @@ function renderGroupFilter(node) {
 
   const config = node.promptboardConfig ?? {};
   const attributeBoards = node.promptboardYamlModel?.attributeBoards ?? {};
+  const tagFamilies = node.promptboardYamlModel?.tagFamilies ?? {};
   const state = node.promptboardState ?? {};
-  const groups = availableUiGroups(config, attributeBoards);
+  const groups = availableUiGroups(config, attributeBoards, tagFamilies);
   const active = activeUiGroup(node, config);
-  const counts = selectedCountsByUiGroup(config, attributeBoards, state);
+  const counts = selectedCountsByUiGroup(config, attributeBoards, tagFamilies, state);
   container.replaceChildren();
   for (const group of [GROUP_ALL, ...groups]) {
     container.append(createGroupFilterButton(node, group, group === active, counts[group] ?? 0));
@@ -2822,8 +2961,9 @@ function updateGroupFilterCounts(node) {
 
   const config = node.promptboardConfig ?? {};
   const attributeBoards = node.promptboardYamlModel?.attributeBoards ?? {};
+  const tagFamilies = node.promptboardYamlModel?.tagFamilies ?? {};
   const state = node.promptboardState ?? {};
-  const counts = selectedCountsByUiGroup(config, attributeBoards, state);
+  const counts = selectedCountsByUiGroup(config, attributeBoards, tagFamilies, state);
 
   for (const button of container.querySelectorAll(".promptboard-group-button")) {
     const group = button.dataset.group || GROUP_ALL;
@@ -2924,6 +3064,45 @@ function createAttributeTagButton(node, state, boardId, targetId, attributeId, t
     syncState(node, state);
     renderCards(node);
     focusYamlAttributeTag(node, boardId, targetId, attributeId, tagText);
+  });
+  return button;
+}
+
+function createTagFamilyButton(node, state, familyId, combination, accent = null) {
+  const family = node.promptboardYamlModel?.tagFamilies?.[familyId];
+  const tagText = composeTagFamilyText(family, combination);
+  const displayLabel = tagFamilyCombinationLabel(node.promptboardYamlModel, familyId, combination) || tagText;
+  const selected = tagFamilyCombinationSelected(node.promptboardYamlModel, state, familyId, combination);
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+  const stateLabel = document.createElement("span");
+
+  button.type = "button";
+  button.className = `promptboard-tag${selected ? " is-on" : ""}`;
+  setAccent(button, accent);
+  button.title = tagText;
+  button.dataset.familyId = familyId;
+  button.dataset.tagText = tagText;
+  button.setAttribute("aria-pressed", String(selected));
+  button.classList.toggle(
+    "is-search-match",
+    boardSearchMatchKey(currentBoardSearchMatch(node)) === boardSearchMatchKey({ kind: "family", familyId, tagText }),
+  );
+  stopCanvasEvents(button);
+  label.className = "promptboard-tag-label";
+  label.textContent = displayLabel;
+  stateLabel.className = "promptboard-tag-state";
+  stateLabel.textContent = selected ? "on" : "off";
+  button.append(label, stateLabel);
+
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setTagFamilySelected(node.promptboardYamlModel, state, familyId, combination, !selected);
+    requestBoardFocus(node, { kind: "family", familyId, tagText });
+    syncState(node, state);
+    renderCards(node);
+    focusYamlTagFamily(node, familyId);
   });
   return button;
 }
@@ -3071,6 +3250,23 @@ function appendAttributeTagItems(container, node, state, boardId, targetId, attr
 
 function appendNavigatorTagItems(container, node, state, item) {
   const accent = navigatorItemAccent(item);
+  if (item?.kind === "family") {
+    const family = node.promptboardYamlModel?.tagFamilies?.[item.familyId];
+    const combinations = tagFamilyAllowedCombinations(node.promptboardYamlModel, item.familyId);
+    if (combinations.length) {
+      container.append(createTagSection(family?.label || item.familyId));
+    }
+    for (const combination of combinations) {
+      container.append(createTagFamilyButton(node, state, item.familyId, combination, accent));
+    }
+    if (!combinations.length) {
+      const empty = document.createElement("div");
+      empty.className = "promptboard-empty";
+      empty.textContent = "No allowed combinations";
+      container.append(empty);
+    }
+    return;
+  }
   if (item?.kind === "attributeTarget") {
     const target = node.promptboardYamlModel?.attributeBoards?.[item.boardId]?.targets?.[item.targetId];
     for (const [attributeId, attribute] of Object.entries(target?.attributes ?? {})) {
@@ -3107,6 +3303,12 @@ function findPendingBoardFocusElement(node, identity) {
     return null;
   }
   for (const element of scroll.querySelectorAll(".promptboard-tag")) {
+    if (identity.kind === "family") {
+      if (element.dataset.familyId === identity.familyId && element.dataset.tagText === identity.tagText) {
+        return element;
+      }
+      continue;
+    }
     if (element.dataset.boardId !== identity.boardId || element.dataset.targetId !== identity.targetId) {
       continue;
     }
@@ -3163,6 +3365,11 @@ function clearNavigatorItemSelection(node, item) {
     }
   } else if (item?.kind === "category") {
     state[item.category] = [];
+  } else if (item?.kind === "family") {
+    if (!state[FAMILY_STATE_KEY] || typeof state[FAMILY_STATE_KEY] !== "object" || Array.isArray(state[FAMILY_STATE_KEY])) {
+      state[FAMILY_STATE_KEY] = {};
+    }
+    state[FAMILY_STATE_KEY][item.familyId] = [];
   }
   syncState(node, state);
   renderCards(node);
@@ -3189,6 +3396,8 @@ function createNavigatorCategoryButton(node, item, active) {
   } else if (item.kind === "attributeTarget") {
     button.dataset.boardId = item.boardId;
     button.dataset.targetId = item.targetId;
+  } else if (item.kind === "family") {
+    button.dataset.familyId = item.familyId;
   }
   button.title = item.kind === "category" && item.label !== item.category
     ? `${item.context} > ${item.label} (${item.category}, ${selectedCountValue} selected)`
@@ -3251,6 +3460,14 @@ function createSelectedSummaryButton(node, state, entry) {
         entry.text,
         false,
       );
+    } else if (entry.kind === "family") {
+      setTagFamilySelected(
+        node.promptboardYamlModel,
+        state,
+        entry.familyId,
+        entry.combination,
+        false,
+      );
     } else {
       setSelected(state, entry.category, entry.text, false);
     }
@@ -3258,6 +3475,8 @@ function createSelectedSummaryButton(node, state, entry) {
     renderCards(node);
     if (entry.kind === "attribute") {
       focusYamlAttributeTag(node, entry.boardId, entry.targetId, entry.attributeId, entry.text);
+    } else if (entry.kind === "family") {
+      focusYamlTagFamily(node, entry.familyId);
     } else {
       focusYamlCategoryTag(node, entry.category, entry.text);
     }
@@ -3303,6 +3522,21 @@ function selectedSummaryEntries(node, state) {
           });
         }
       }
+    }
+  }
+  for (const [familyId, family] of Object.entries(node.promptboardYamlModel?.tagFamilies ?? {})) {
+    for (const combination of tagFamilySelectedCombinations(state, familyId)) {
+      const text = composeTagFamilyText(family, combination);
+      entries.push({
+        kind: "family",
+        familyId,
+        combination,
+        label: family.label || familyId,
+        context: tagFamilyUiGroup(family),
+        accent: accentForLabel(tagFamilyUiGroup(family)),
+        text,
+        display: tagFamilyCombinationLabel(node.promptboardYamlModel, familyId, combination) || text,
+      });
     }
   }
   return entries;

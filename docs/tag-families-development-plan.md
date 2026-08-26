@@ -1,11 +1,12 @@
 # PromptBoard 태그 패밀리 개발 계획
 
-상태: Phase 1 완료
+상태: Phase 2 완료
 
 진행 상태:
 
 - 완료: Phase 1 / Schema와 Backend 조합
-- 다음: Phase 2 / 최소 UI
+- 완료: Phase 2 / 최소 UI
+- 다음: Phase 3 / 첫 YAML 패밀리
 
 ## 목적
 
@@ -292,7 +293,7 @@ grabbing_own_breast
 - `node --check web/js/promptboard_yaml.mjs`
 - `/Users/rociomini/Downloads/ComfyUI/.venv/bin/python -m py_compile promptboard_yaml.py yaml_tag_nodes.py`
 
-### Phase 2: 최소 UI
+### Phase 2: 최소 UI [완료]
 
 - navigator에 tag family group 표시
 - Phase 2에서는 허용된 최종 조합만 버튼으로 표시
@@ -305,6 +306,23 @@ grabbing_own_breast
 - 사용자가 UI에서 `grabbing_own_breast`를 선택할 수 있다.
 - 선택 결과가 preview와 최종 prompt에 표시된다.
 - 기존 category, attribute, modifier 기능이 계속 동작한다.
+
+완료 결과:
+
+- `tagFamilies`를 navigator item으로 표시한다.
+- Phase 2에서는 `allowed`에 선언된 최종 조합만 버튼으로 렌더링한다.
+- family 선택 상태는 `$families` 아래에 저장하고 template 저장/불러오기 흐름을 그대로 사용한다.
+- group filter 카운트, 현재 category clear, 선택 요약, 검색 이동이 family 선택을 인식한다.
+- family 버튼은 label 조합을 표시하고, 실제 생성 tag text는 tooltip과 검색 결과에서 확인할 수 있다.
+- `allowed`가 없는 family는 UI에서 조합 버튼을 만들지 않고 빈 안내만 표시한다.
+
+검증:
+
+- `node --test tests/test_promptboard_tag_family_state.mjs tests/test_promptboard_yaml.mjs tests/test_promptboard_attribute_state.mjs`
+- `/Users/rociomini/Downloads/ComfyUI/.venv/bin/python -m unittest discover -s tests`
+- `node --check web/js/yaml_tag_board_split.js`
+- `node --check web/js/promptboard_tag_family_state.mjs`
+- `node --check web/js/promptboard_yaml.mjs`
 
 ### Phase 3: 첫 YAML 패밀리
 
