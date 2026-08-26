@@ -142,5 +142,22 @@
         }
       }
     }
+  },
+  "uiComposites": {
+    "handArm": {
+      "label": "손/팔",
+      "uiGroup": "캐릭터",
+      "items": [
+        {
+          "kind": "category",
+          "category": "캐릭터포즈"
+        },
+        {
+          "kind": "family",
+          "family": "looking",
+          "target": "default"
+        }
+      ]
+    }
   }
 }

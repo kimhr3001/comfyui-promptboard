@@ -55,6 +55,14 @@ _promptboard:
         direction:
           label: 방향
           source: lookDirections
+  uiComposites:
+    handArm:
+      label: 손/팔
+      uiGroup: 캐릭터
+      items:
+      - category: 캐릭터포즈
+      - family: looking
+        target: default
 
 캐릭터포즈:
   placeholder: <GIRL_POS>

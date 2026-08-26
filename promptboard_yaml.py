@@ -95,6 +95,12 @@ def _assert_mapping(value, path):
     return value
 
 
+def _assert_list(value, path):
+    if not isinstance(value, list):
+        _fail("invalid_schema_type", path, f"Expected a list at {path}")
+    return value
+
+
 def _assert_known_fields(value, fields, path):
     for raw_key in value:
         key = str(raw_key)
@@ -149,13 +155,14 @@ def _source_version(root):
         or "attributeBoards" in settings
         or "modifiers" in settings
         or "tagFamilies" in settings
+        or "uiComposites" in settings
     )
     if "schemaVersion" not in settings:
         if has_v2_fields:
             _fail(
                 "schema_version_required",
                 "_promptboard.schemaVersion",
-                "schemaVersion: 2 is required for tagSets, modifiers, attributeBoards, or tagFamilies",
+                "schemaVersion: 2 is required for tagSets, modifiers, attributeBoards, tagFamilies, or uiComposites",
             )
         return 1, settings
 
@@ -687,13 +694,73 @@ def _normalize_attribute_boards(settings, schema_version, tag_sets, categories):
     return attribute_boards
 
 
+def _normalize_ui_composite_item(value, path, categories, tag_families):
+    item = _assert_mapping(value, path)
+    _assert_known_fields(item, {"category", "family", "target"}, path)
+    has_category = "category" in item
+    has_family = "family" in item
+    if has_category == has_family:
+        _fail(
+            "invalid_ui_composite_item",
+            path,
+            f"UI composite item must declare exactly one of category or family: {path}",
+        )
+    if has_category:
+        category = _text_value(item.get("category"))
+        if category not in categories:
+            _fail("unknown_ui_composite_category", f"{path}.category", f"Unknown category: {category}")
+        if "target" in item:
+            _fail(
+                "invalid_ui_composite_item",
+                f"{path}.target",
+                "Category UI composite items must not declare target",
+            )
+        return {"kind": "category", "category": category}
+
+    family_id = _assert_identifier(item.get("family"), f"{path}.family")
+    family = tag_families.get(family_id)
+    if family is None:
+        _fail("unknown_ui_composite_family", f"{path}.family", f"Unknown tag family: {family_id}")
+    target_id = _text_value(item.get("target"), "default") or "default"
+    if target_id not in (family.get("targets") or {}):
+        _fail("unknown_ui_composite_target", f"{path}.target", f"Unknown tag family target: {target_id}")
+    return {"kind": "family", "family": family_id, "target": target_id}
+
+
+def _normalize_ui_composites(settings, schema_version, categories, tag_families):
+    if schema_version != 2 or "uiComposites" not in settings:
+        return {}
+    source = _assert_mapping(settings["uiComposites"], "_promptboard.uiComposites")
+    composites = {}
+    for raw_composite_id, raw_composite in source.items():
+        composite_id = _assert_identifier(raw_composite_id, f"_promptboard.uiComposites.{raw_composite_id}")
+        path = f"_promptboard.uiComposites.{composite_id}"
+        composite = _assert_mapping(raw_composite, path)
+        _assert_known_fields(composite, {"label", "uiGroup", "items"}, path)
+        if "items" not in composite:
+            _fail("missing_required_field", f"{path}.items", f"Missing required field: {path}.items")
+        raw_items = _assert_list(composite["items"], f"{path}.items")
+        if not raw_items:
+            _fail("invalid_ui_composite_item", f"{path}.items", f"UI composite must contain at least one item: {path}")
+        items = [
+            _normalize_ui_composite_item(item, f"{path}.items[{index}]", categories, tag_families)
+            for index, item in enumerate(raw_items)
+        ]
+        composites[composite_id] = {
+            "label": _text_value(composite.get("label"), composite_id) or composite_id,
+            "uiGroup": _text_value(composite.get("uiGroup")),
+            "items": items,
+        }
+    return composites
+
+
 def normalize_yaml_document(yaml_text):
     root = parse_yaml_source(yaml_text)
     schema_version, settings = _source_version(root)
     if "_promptboard" in root and root["_promptboard"] is not None:
         _assert_known_fields(
             settings,
-            {"schemaVersion", "tagSets", "attributeBoards", "modifiers", "tagFamilies"},
+            {"schemaVersion", "tagSets", "attributeBoards", "modifiers", "tagFamilies", "uiComposites"},
             "_promptboard",
         )
 
@@ -702,6 +769,7 @@ def normalize_yaml_document(yaml_text):
     tag_families = _normalize_tag_families(settings, schema_version, tag_sets)
     categories = _normalize_categories(root, schema_version, tag_sets, modifiers)
     attribute_boards = _normalize_attribute_boards(settings, schema_version, tag_sets, categories)
+    ui_composites = _normalize_ui_composites(settings, schema_version, categories, tag_families)
     normalized = {
         "schemaVersion": schema_version,
         "tagSets": tag_sets,
@@ -712,4 +780,6 @@ def normalize_yaml_document(yaml_text):
         normalized["modifiers"] = modifiers
     if tag_families:
         normalized["tagFamilies"] = tag_families
+    if ui_composites:
+        normalized["uiComposites"] = ui_composites
     return normalized

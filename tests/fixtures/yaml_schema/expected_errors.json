@@ -15,7 +15,7 @@
     "fixture": "schema_version_required.yaml",
     "code": "schema_version_required",
     "path": "_promptboard.schemaVersion",
-    "message": "schemaVersion: 2 is required for tagSets, modifiers, attributeBoards, or tagFamilies"
+    "message": "schemaVersion: 2 is required for tagSets, modifiers, attributeBoards, tagFamilies, or uiComposites"
   },
   {
     "fixture": "reserved_category_name.yaml",

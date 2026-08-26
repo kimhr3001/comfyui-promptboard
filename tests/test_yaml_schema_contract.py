@@ -104,7 +104,15 @@ class YamlSchemaContractFixtureTests(unittest.TestCase):
             with self.subTest(path=source_path.name):
                 self.assertTrue(expected_path.is_file())
                 normalized = load_json(expected_path)
-                allowed_keys = ["schemaVersion", "tagSets", "attributeBoards", "categories", "modifiers", "tagFamilies"]
+                allowed_keys = [
+                    "schemaVersion",
+                    "tagSets",
+                    "attributeBoards",
+                    "categories",
+                    "modifiers",
+                    "tagFamilies",
+                    "uiComposites",
+                ]
                 self.assertEqual(list(normalized)[:4], allowed_keys[:4])
                 self.assertTrue(all(key in allowed_keys for key in normalized))
                 self.assertIn(normalized["schemaVersion"], {1, 2})
@@ -113,6 +121,8 @@ class YamlSchemaContractFixtureTests(unittest.TestCase):
                 self.assertIsInstance(normalized["categories"], dict)
                 if "tagFamilies" in normalized:
                     self.assertIsInstance(normalized["tagFamilies"], dict)
+                if "uiComposites" in normalized:
+                    self.assertIsInstance(normalized["uiComposites"], dict)
 
     def test_v1_snapshots_match_existing_normalization(self):
         cases = (

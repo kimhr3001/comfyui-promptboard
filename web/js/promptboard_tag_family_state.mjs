@@ -4,7 +4,7 @@ function isMapping(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function familySlotIds(family) {
+export function tagFamilySlotIds(family) {
   return Object.keys(family?.slots ?? {});
 }
 
@@ -25,22 +25,22 @@ export function firstTagFamilyTargetId(family) {
   return tagFamilyTargetEntries(family)[0]?.[0] || "default";
 }
 
-function familySlotTags(model, family, slotId) {
+export function tagFamilySlotTags(model, family, slotId) {
   const source = family?.slots?.[slotId]?.source;
   return model?.tagSets?.[source]?.tags ?? [];
 }
 
 function familySlotValues(model, family, slotId) {
-  return new Set(familySlotTags(model, family, slotId).map((tag) => tag.text));
+  return new Set(tagFamilySlotTags(model, family, slotId).map((tag) => tag.text));
 }
 
 export function tagFamilyAllowedKey(family, combination) {
-  return familySlotIds(family).map((slotId) => String(combination?.[slotId] ?? "")).join("\u0000");
+  return tagFamilySlotIds(family).map((slotId) => String(combination?.[slotId] ?? "")).join("\u0000");
 }
 
 export function composeTagFamilyText(family, combination) {
   let text = String(family?.pattern ?? "");
-  for (const slotId of familySlotIds(family)) {
+  for (const slotId of tagFamilySlotIds(family)) {
     text = text.replaceAll(`{${slotId}}`, String(combination?.[slotId] ?? ""));
   }
   return text;
@@ -53,7 +53,7 @@ function normalizeCombination(model, familyId, family, rawCombination, warnings)
     return null;
   }
 
-  const slotIds = familySlotIds(family);
+  const slotIds = tagFamilySlotIds(family);
   const rawKeys = Object.keys(rawCombination);
   const slotSet = new Set(slotIds);
   const missing = slotIds.filter((slotId) => !rawKeys.includes(slotId));
@@ -237,9 +237,9 @@ export function tagFamilyCombinationLabel(model, familyId, combination) {
   if (!family) {
     return "";
   }
-  return familySlotIds(family)
+  return tagFamilySlotIds(family)
     .map((slotId) => {
-      const tag = familySlotTags(model, family, slotId).find((candidate) => candidate.text === combination?.[slotId]);
+      const tag = tagFamilySlotTags(model, family, slotId).find((candidate) => candidate.text === combination?.[slotId]);
       return tag?.label || tag?.text || combination?.[slotId] || "";
     })
     .filter(Boolean)

@@ -47,6 +47,13 @@ function assertMapping(value, path) {
   return value;
 }
 
+function assertList(value, path) {
+  if (!Array.isArray(value)) {
+    fail("invalid_schema_type", path, `Expected a list at ${path}`);
+  }
+  return value;
+}
+
 function assertKnownFields(value, fields, path) {
   for (const key of Object.keys(value)) {
     if (!fields.has(key)) {
@@ -111,13 +118,14 @@ function sourceVersion(root) {
   const hasV2Fields = hasOwn(settings, "tagSets")
     || hasOwn(settings, "attributeBoards")
     || hasOwn(settings, "modifiers")
-    || hasOwn(settings, "tagFamilies");
+    || hasOwn(settings, "tagFamilies")
+    || hasOwn(settings, "uiComposites");
   if (!hasOwn(settings, "schemaVersion")) {
     if (hasV2Fields) {
       fail(
         "schema_version_required",
         "_promptboard.schemaVersion",
-        "schemaVersion: 2 is required for tagSets, modifiers, attributeBoards, or tagFamilies",
+        "schemaVersion: 2 is required for tagSets, modifiers, attributeBoards, tagFamilies, or uiComposites",
       );
     }
     return { schemaVersion: 1, settings };
@@ -704,13 +712,80 @@ function normalizeAttributeBoards(settings, schemaVersion, tagSets, categories) 
   return attributeBoards;
 }
 
+function normalizeUiCompositeItem(value, path, categories, tagFamilies) {
+  const item = assertMapping(value, path);
+  assertKnownFields(item, new Set(["category", "family", "target"]), path);
+  const hasCategory = hasOwn(item, "category");
+  const hasFamily = hasOwn(item, "family");
+  if (hasCategory === hasFamily) {
+    fail(
+      "invalid_ui_composite_item",
+      path,
+      `UI composite item must declare exactly one of category or family: ${path}`,
+    );
+  }
+  if (hasCategory) {
+    const category = textValue(item.category);
+    if (!hasOwn(categories, category)) {
+      fail("unknown_ui_composite_category", `${path}.category`, `Unknown category: ${category}`);
+    }
+    if (hasOwn(item, "target")) {
+      fail(
+        "invalid_ui_composite_item",
+        `${path}.target`,
+        "Category UI composite items must not declare target",
+      );
+    }
+    return { kind: "category", category };
+  }
+
+  const family = assertIdentifier(item.family, `${path}.family`);
+  if (!hasOwn(tagFamilies, family)) {
+    fail("unknown_ui_composite_family", `${path}.family`, `Unknown tag family: ${family}`);
+  }
+  const target = textValue(item.target, "default") || "default";
+  if (!hasOwn(tagFamilies[family].targets ?? {}, target)) {
+    fail("unknown_ui_composite_target", `${path}.target`, `Unknown tag family target: ${target}`);
+  }
+  return { kind: "family", family, target };
+}
+
+function normalizeUiComposites(settings, schemaVersion, categories, tagFamilies) {
+  if (schemaVersion !== 2 || !hasOwn(settings, "uiComposites")) {
+    return {};
+  }
+  const source = assertMapping(settings.uiComposites, "_promptboard.uiComposites");
+  const composites = {};
+  for (const [rawCompositeId, rawComposite] of Object.entries(source)) {
+    const compositeId = assertIdentifier(rawCompositeId, `_promptboard.uiComposites.${rawCompositeId}`);
+    const path = `_promptboard.uiComposites.${compositeId}`;
+    const composite = assertMapping(rawComposite, path);
+    assertKnownFields(composite, new Set(["label", "uiGroup", "items"]), path);
+    if (!hasOwn(composite, "items")) {
+      fail("missing_required_field", `${path}.items`, `Missing required field: ${path}.items`);
+    }
+    const rawItems = assertList(composite.items, `${path}.items`);
+    if (!rawItems.length) {
+      fail("invalid_ui_composite_item", `${path}.items`, `UI composite must contain at least one item: ${path}`);
+    }
+    composites[compositeId] = {
+      label: textValue(composite.label, compositeId) || compositeId,
+      uiGroup: textValue(composite.uiGroup),
+      items: rawItems.map((item, index) =>
+        normalizeUiCompositeItem(item, `${path}.items[${index}]`, categories, tagFamilies),
+      ),
+    };
+  }
+  return composites;
+}
+
 export function normalizeYamlDocument(yamlText) {
   const root = parseYamlSource(yamlText);
   const { schemaVersion, settings } = sourceVersion(root);
   if (hasOwn(root, "_promptboard") && root._promptboard != null) {
     assertKnownFields(
       settings,
-      new Set(["schemaVersion", "tagSets", "attributeBoards", "modifiers", "tagFamilies"]),
+      new Set(["schemaVersion", "tagSets", "attributeBoards", "modifiers", "tagFamilies", "uiComposites"]),
       "_promptboard",
     );
   }
@@ -720,12 +795,16 @@ export function normalizeYamlDocument(yamlText) {
   const tagFamilies = normalizeTagFamilies(settings, schemaVersion, tagSets);
   const categories = normalizeCategories(root, schemaVersion, tagSets, modifiers);
   const attributeBoards = normalizeAttributeBoards(settings, schemaVersion, tagSets, categories);
+  const uiComposites = normalizeUiComposites(settings, schemaVersion, categories, tagFamilies);
   const normalized = { schemaVersion, tagSets, attributeBoards, categories };
   if (Object.keys(modifiers).length) {
     normalized.modifiers = modifiers;
   }
   if (Object.keys(tagFamilies).length) {
     normalized.tagFamilies = tagFamilies;
+  }
+  if (Object.keys(uiComposites).length) {
+    normalized.uiComposites = uiComposites;
   }
   return normalized;
 }

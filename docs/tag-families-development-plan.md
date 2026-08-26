@@ -1,13 +1,15 @@
 # PromptBoard 태그 패밀리 개발 계획
 
-상태: Phase 2.5 완료
+상태: Phase 3.5 완료
 
 진행 상태:
 
 - 완료: Phase 1 / Schema와 Backend 조합
 - 완료: Phase 2 / 최소 UI
 - 완료: Phase 2.5 / 다중 target 노출
-- 다음: Phase 3 / 첫 YAML 패밀리
+- 완료: Phase 3 / 개인 YAML family 전체 등록
+- 완료: Phase 3.5 / slot 단계형 UI
+- 다음: Phase 4 / 정리 후보 검토
 
 ## 목적
 
@@ -346,6 +348,12 @@ grabbing_own_breast
 - family 버튼은 label 조합을 표시하고, 실제 생성 tag text는 tooltip과 검색 결과에서 확인할 수 있다.
 - `allowed`가 없는 family는 UI에서 조합 버튼을 만들지 않고 빈 안내만 표시한다.
 
+주의:
+
+- 이 UI는 schema/backend/preview/selection_json 흐름을 확인하기 위한 최소 검증용 UI다.
+- family 후보가 소량일 때는 최종 조합 버튼 나열이 단순하지만, 전체 후보를 등록하면 버튼 수가 급격히 늘어난다.
+- 전체 등록 이후 사용자용 UI는 `잡기 > 상대 > 대상`처럼 slot을 단계적으로 선택하는 방식으로 보강해야 한다.
+
 검증:
 
 - `node --test tests/test_promptboard_tag_family_state.mjs tests/test_promptboard_yaml.mjs tests/test_promptboard_attribute_state.mjs`
@@ -385,26 +393,150 @@ grabbing_own_breast
 - `node --check web/js/promptboard_tag_family_state.mjs`
 - `node --check web/js/promptboard_yaml.mjs`
 
-### Phase 3: 첫 YAML 패밀리
+### Phase 3: 개인 YAML family 전체 등록 [완료]
 
-현재 placeholder 구조와 잘 맞는 작은 집합부터 시작한다.
+개인 YAML인 `tags/2607_default_tags.yaml`에 논의에서 확정한 family 후보를 전체 등록한다.
 
-- 캐릭터 손/몸 동작
-  - `grabbing_own_{target}` -> `<GIRL_POS>` 또는 `<GIRL_BODY>`
-  - `spreading_own_{target}` -> `<GIRL_POS>`
-- 파트너 동작
-  - `grabbing_another's_{target}` -> `<PARTNER>`
-  - `foot_on_another's_{target}` -> `<PARTNER>`
-- 시선 방향
-  - `looking_{direction}` -> `<GIRL_FACE>`
-- 팔 자세
-  - `arms_{position}` -> `<GIRL_POS>`
+등록 대상:
+
+- `arms_{position}`
+- `looking_{direction}`
+- `grabbing_own_{target}`
+- `grabbing_another's_{target}`
+- `spreading_own_{target}`
+- `spreading_another's_{target}`
+- `foot_on_another's_{target}`
+
+보류 대상:
+
+- `arm_`: 자세, 타투, 장식, 의상, 신체 특징이 섞여 있어 family로 묶지 않는다.
+- `holding_`: 손 동작보다 소품/오브젝트 계열로 보고 별도 소품 구조화에서 검토한다.
+- `spread_`: `spread_legs`, `spread_pussy`, `spread_anus` 같은 고가치 단독 태그가 많아 기존 명시 태그를 유지한다.
+- `feet_on_`: 소품 관계와 상대 신체 접촉 의미가 섞여 있어 1차 family에서는 제외한다.
 
 완료 기준:
 
-- 확신도가 높은 allowed 조합만 소량 추가한다.
-- 큰 카테시안 곱 확장은 하지 않는다.
-- 이 Phase에서는 기존 명시 태그를 제거하지 않는다.
+- 개인 YAML에 family 정의가 들어간다.
+- 캐릭터/파트너 양쪽에 같은 family를 노출할 수 있도록 `targets.girl`, `targets.partner`를 사용한다.
+- 기존 명시 태그는 제거하지 않는다.
+- public/default YAML에는 직접 요청 없이는 추가하지 않는다.
+- 원격 validate가 통과한다.
+
+완료 결과:
+
+- `2607_default_tags.yaml`에 `armPositions`, `lookDirections`, `grabbingOwnTargets`, `grabbingAnotherTargets`, `spreadingOwnTargets`, `spreadingAnotherTargets`, `footOnAnotherTargets` tagSet을 추가했다.
+- 같은 YAML에 `arms`, `looking`, `grabbingOwn`, `grabbingAnother`, `spreadingOwn`, `spreadingAnother`, `footOnAnother` family를 추가했다.
+- 등록 전 백업을 생성했다.
+
+검증:
+
+- 원격 `cui.illai.me`의 `2607_default_tags.yaml` validate 통과
+- `node --test tests/test_promptboard_tag_family_state.mjs tests/test_promptboard_yaml.mjs tests/test_promptboard_attribute_state.mjs`
+- `/Users/rociomini/Downloads/ComfyUI/.venv/bin/python -m unittest discover -s tests`
+- `node --check web/js/yaml_tag_board_split.js`
+- `node --check web/js/promptboard_tag_family_state.mjs`
+- `node --check web/js/promptboard_yaml.mjs`
+
+주의:
+
+- `2607_default_tags.yaml`은 `.gitignore` 대상 개인 YAML이므로 git commit에는 포함되지 않는다.
+- 전체 등록 이후 현재 최소 UI는 조합 버튼을 많이 펼치므로 최종 사용자 UI로 보기 어렵다.
+
+### Phase 3.5: Slot 단계형 UI [완료]
+
+전체 family 등록 이후에는 최종 조합 버튼을 전부 나열하는 방식 대신, slot을 단계적으로 선택하는 UI가 필요하다.
+
+목표 UI:
+
+```text
+잡기
+[자기] [상대]
+
+대상
+[몸통] [가슴] [머리카락] ...
+
+선택됨
+[상대 / 몸통] [자기 / 가슴]
+```
+
+사용자가 기대하는 흐름:
+
+```text
+잡기(grabbing) > 상대(another's) > 대상(torso)
+```
+
+동작 원칙:
+
+- 1-slot family는 현재처럼 바로 버튼 목록을 보여줘도 된다.
+  - 예: `arms_{position}`, `looking_{direction}`
+- 2-slot 이상 family는 slot 단계형 UI로 보여준다.
+  - 예: `grabbing_own_{target}`, `grabbing_another's_{target}`를 합친 구조
+  - 예: `spreading_own_{target}`, `spreading_another's_{target}`를 합친 구조
+- `allowed`는 최종 버튼 목록 생성이 아니라 다음 slot 후보 필터링에 사용한다.
+- 앞 slot 선택에 따라 뒤 slot 후보를 줄인다.
+- 모든 slot이 선택되면 최종 tag를 toggle한다.
+- 선택된 조합은 별도 chip/row로 보여주고, tooltip 또는 선택 요약에서 실제 tag text를 확인할 수 있게 한다.
+
+설계 메모:
+
+- 현재 schema/backend는 이미 단계형 UI를 만들 수 있는 데이터를 갖고 있다.
+- 추가로 필요한 것은 UI 내부의 draft state다.
+  - 예: `node.promptboardFamilyDraft[navigatorItemId] = { owner: "another's" }`
+- draft state는 template 저장 대상이 아니다.
+- 저장되는 값은 지금처럼 `$families.<familyId>.<targetId>[]`의 완료된 조합만 저장한다.
+- family가 사실상 `own`/`another's` 차이를 첫 slot으로 갖는다면, UI 라벨은 `주체`보다 `대상 관계` 또는 `방향`처럼 사용자가 이해하기 쉬운 이름을 검토한다.
+
+완료 기준:
+
+- `grabbing` 계열을 `잡기 > 자기/상대 > 대상` 흐름으로 선택할 수 있다.
+- 전체 등록된 family에서도 화면이 조합 버튼으로 폭발하지 않는다.
+- 기존 선택 상태와 template 저장값은 변경 없이 유지된다.
+- 1-slot family의 사용성은 후퇴하지 않는다.
+
+완료 결과:
+
+- 실제 다중 slot family는 slot 순서대로 단계형 버튼을 렌더링한다.
+- 현재 개인 YAML처럼 `grabbingOwn`/`grabbingAnother`, `spreadingOwn`/`spreadingAnother`가 나뉜 구조는 UI에서 자동으로 하나의 단계형 묶음으로 합친다.
+- 이번 단계의 자동 묶음 대상은 `grabbing`과 `spreading` 두 prefix로 제한한다.
+- 묶음 UI는 첫 단계에서 `자기`/`상대`를 선택하고, 다음 단계에서 대상 태그를 선택한다.
+- 저장 구조는 기존 `$families.<familyId>.<targetId>[]`를 그대로 사용한다.
+- 단계 선택에 쓰는 draft state는 UI 내부 상태이며 template 저장 대상이 아니다.
+- 검색으로 묶인 원본 family를 찾으면 해당 묶음 네비게이터로 이동한다.
+
+검증:
+
+- `node --check web/js/yaml_tag_board_split.js`
+- `node --check web/js/promptboard_tag_family_state.mjs`
+- `node --test tests/test_promptboard_tag_family_state.mjs tests/test_promptboard_yaml.mjs tests/test_promptboard_attribute_state.mjs`
+- `/Users/rociomini/Downloads/ComfyUI/.venv/bin/python -m unittest discover -s tests`
+- `/Users/rociomini/Downloads/ComfyUI/.venv/bin/python -m py_compile promptboard_yaml.py yaml_tag_nodes.py`
+- `git diff --check`
+
+### Phase 3.5: 선언형 UI 묶음 [완료]
+
+태그 구조 자체는 유지하되, 사용자에게는 여러 navigator 항목을 하나처럼 보여줘야 하는 경우가 있다. 예를 들어 `손` category와 `arms` family의 캐릭터 target은 YAML 구조상 다르지만, 사용자는 둘 다 `손/팔` 작업으로 인식한다.
+
+이를 위해 `_promptboard.uiComposites`를 추가한다.
+
+```yaml
+_promptboard:
+  schemaVersion: 2
+  uiComposites:
+    handArm:
+      label: 손/팔
+      uiGroup: 캐릭터
+      items:
+        - category: 손
+        - family: arms
+          target: girl
+```
+
+원칙:
+
+- YAML category나 family를 실제로 합치지 않는다.
+- composite는 navigator 표시, 선택 수 합산, 현재 항목 초기화만 담당한다.
+- 선택 상태, template 저장값, prompt 출력은 기존 category/family 구조를 그대로 사용한다.
+- 하드코딩 대신 YAML 선언으로 처리해 이후 다른 묶음을 추가할 때 코드 변경을 피한다.
 
 ### Phase 4: 정리 후보 검토
 

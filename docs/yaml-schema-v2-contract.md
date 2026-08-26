@@ -10,8 +10,8 @@ validation errors that the browser and Python implementations must share.
 - A YAML document without `_promptboard.schemaVersion` is schema v1.
 - Schema v1 consists of the existing top-level category mappings.
 - Schema v2 must declare `_promptboard.schemaVersion: 2`.
-- `tagSets`, `modifiers`, `attributeBoards`, and `tagFamilies` are valid only
-  in schema v2.
+- `tagSets`, `modifiers`, `attributeBoards`, `tagFamilies`, and
+  `uiComposites` are valid only in schema v2.
 - Declaring any v2 field without `schemaVersion: 2` is an error instead of
   silently treating the document as v1.
 - Unsupported explicit versions are errors. They do not fall back to v1.
@@ -73,8 +73,41 @@ When a document declares `_promptboard.tagFamilies`, the normalized root also
 contains a `tagFamilies` mapping. Documents without tag families omit that key
 to preserve existing normalized snapshots.
 
+When a document declares `_promptboard.uiComposites`, the normalized root also
+contains a `uiComposites` mapping. UI composites are presentation-only groups:
+they combine existing categories or tag-family targets in the board navigator
+without moving tags or changing prompt output.
+
 Mapping order is significant for categories, tag sets, boards, targets, and
 attributes. Implementations must preserve YAML declaration order.
+
+## Normalized UI Composite
+
+`_promptboard.uiComposites` lets the UI display several existing navigator
+items as one button. It is useful when two YAML concepts are distinct but feel
+like one user task, such as `손` and `팔 자세` displayed as `손/팔`.
+
+```yaml
+_promptboard:
+  schemaVersion: 2
+  uiComposites:
+    handArm:
+      label: 손/팔
+      uiGroup: 캐릭터
+      items:
+      - category: 손
+      - family: arms
+        target: girl
+```
+
+Rules:
+
+- `label` is the navigator button label.
+- `uiGroup` controls which top-level group shows the composite.
+- Each `items` entry must declare exactly one of `category` or `family`.
+- A category item references an existing top-level category key.
+- A family item references an existing `_promptboard.tagFamilies` id and target.
+- UI composites do not create, delete, rename, or reorder underlying tags.
 
 ## Normalized tag
 
