@@ -88,6 +88,19 @@
     "grabbing": {
       "label": "잡기",
       "placeholder": "<GIRL_POS>",
+      "uiGroup": "캐릭터",
+      "targets": {
+        "girl": {
+          "label": "캐릭터 잡기",
+          "placeholder": "<GIRL_POS>",
+          "uiGroup": "캐릭터"
+        },
+        "partner": {
+          "label": "파트너 잡기",
+          "placeholder": "<PARTNER>",
+          "uiGroup": "파트너"
+        }
+      },
       "pattern": "grabbing_{owner}_{target}",
       "slots": {
         "owner": {
@@ -113,6 +126,14 @@
     "looking": {
       "label": "시선",
       "placeholder": "<GIRL_FACE>",
+      "uiGroup": "",
+      "targets": {
+        "default": {
+          "label": "시선",
+          "placeholder": "<GIRL_FACE>",
+          "uiGroup": ""
+        }
+      },
       "pattern": "looking_{direction}",
       "slots": {
         "direction": {

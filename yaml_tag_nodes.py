@@ -645,30 +645,59 @@ def _compose_tag_family_targets(model, selected_state=None, warnings=None):
             warnings.append(f"{FAMILY_STATE_KEY}.{family_id} no longer exists and was removed.")
 
     for family_id, family in (model.get("tagFamilies") or {}).items():
-        raw_combinations = saved_root.get(family_id, [])
-        if raw_combinations is None:
-            raw_combinations = []
-        if not isinstance(raw_combinations, list):
-            warnings.append(f"{FAMILY_STATE_KEY}.{family_id} must be an array; the saved value was cleared.")
-            raw_combinations = []
+        family_targets = family.get("targets") if isinstance(family.get("targets"), dict) else {}
+        if not family_targets:
+            family_targets = {
+                "default": {
+                    "label": family.get("label", family_id),
+                    "placeholder": family.get("placeholder", ""),
+                    "uiGroup": family.get("uiGroup", ""),
+                }
+            }
+        first_target_id = next(iter(family_targets))
+        raw_family_value = saved_root.get(family_id)
+        if isinstance(raw_family_value, list):
+            target_root = {first_target_id: raw_family_value}
+        elif isinstance(raw_family_value, dict):
+            target_root = raw_family_value
+        elif raw_family_value is None:
+            target_root = {}
+        else:
+            warnings.append(f"{FAMILY_STATE_KEY}.{family_id} must be a target mapping; the saved value was cleared.")
+            target_root = {}
 
-        selected = []
-        seen = set()
-        for raw_combination in raw_combinations:
-            combination = _normalize_family_combination(model, family_id, family, raw_combination, warnings)
-            if combination is None:
-                continue
-            key = _family_allowed_key(family, combination)
-            if key in seen:
-                continue
-            seen.add(key)
-            selected.append(_compose_family_text(family, combination))
+        for target_id in target_root:
+            if target_id not in family_targets:
+                warnings.append(f"{FAMILY_STATE_KEY}.{family_id}.{target_id} no longer exists and was removed.")
 
-        targets[family_id] = {
-            "familyId": family_id,
-            "placeholder": family.get("placeholder", ""),
-            "selected": selected,
-        }
+        for target_id, target in family_targets.items():
+            raw_combinations = target_root.get(target_id, [])
+            if raw_combinations is None:
+                raw_combinations = []
+            if not isinstance(raw_combinations, list):
+                warnings.append(f"{FAMILY_STATE_KEY}.{family_id}.{target_id} must be an array; the saved value was cleared.")
+                raw_combinations = []
+
+            selected = []
+            seen = set()
+            for raw_combination in raw_combinations:
+                combination = _normalize_family_combination(model, family_id, family, raw_combination, warnings)
+                if combination is None:
+                    continue
+                key = _family_allowed_key(family, combination)
+                if key in seen:
+                    continue
+                seen.add(key)
+                selected.append(_compose_family_text(family, combination))
+
+            key = f"{family_id}.{target_id}"
+            targets[key] = {
+                "familyId": family_id,
+                "targetId": target_id,
+                "placeholder": target.get("placeholder", ""),
+                "uiGroup": target.get("uiGroup", ""),
+                "selected": selected,
+            }
 
     return targets
 
@@ -719,12 +748,17 @@ def _build_attribute_selection_payload(model, selected_state, warnings=None):
 def _build_family_selection_payload(model, selected_state, warnings=None):
     payload = {}
     selected_values = []
-    for family_id, item in _compose_tag_family_targets(model, selected_state, warnings).items():
+    for _key, item in _compose_tag_family_targets(model, selected_state, warnings).items():
         selected = item.get("selected") or []
-        entry_name = f"{FAMILY_ENTRY_PREFIX}{family_id}"
+        target_id = item.get("targetId", "default")
+        entry_name = (
+            f"{FAMILY_ENTRY_PREFIX}{item.get('familyId')}"
+            if target_id == "default"
+            else f"{FAMILY_ENTRY_PREFIX}{item.get('familyId')}:{target_id}"
+        )
         payload[entry_name] = {
             "placeholder": item["placeholder"],
-            "uiGroup": "",
+            "uiGroup": item.get("uiGroup", ""),
             "delimiter": FIXED_DELIMITER,
             "replaceInsideTags": False,
             "selected": selected,

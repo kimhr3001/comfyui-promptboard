@@ -484,10 +484,14 @@ _promptboard:
         selected_state = {
             "캐릭터포즈": ["standing"],
             "$families": {
-                "grabbing": [
-                    {"owner": "own", "target": "breast"},
-                    {"owner": "another's", "target": "hair"},
-                ],
+                "grabbing": {
+                    "girl": [
+                        {"owner": "own", "target": "breast"},
+                    ],
+                    "partner": [
+                        {"owner": "another's", "target": "hair"},
+                    ],
+                },
                 "looking": [
                     {"direction": "at_viewer"},
                 ],
@@ -497,35 +501,39 @@ _promptboard:
         selection_json, preview, selected_text, prompt_preview, replace_report = _select_tags_with_prompt_preview(
             yaml_text=source,
             selected_state=json.dumps(selected_state, ensure_ascii=False),
-            source_text="pos: <GIRL_POS>; face: <GIRL_FACE>",
+            source_text="pos: <GIRL_POS>; partner: <PARTNER>; face: <GIRL_FACE>",
         )
         payload = json.loads(selection_json)
 
         self.assertEqual(payload["캐릭터포즈"]["selected"], ["standing"])
         self.assertEqual(
-            payload["$family:grabbing"],
+            payload["$family:grabbing:girl"],
             {
                 "placeholder": "<GIRL_POS>",
-                "uiGroup": "",
+                "uiGroup": "캐릭터",
                 "delimiter": ",",
                 "replaceInsideTags": False,
-                "selected": ["grabbing_own_breast", "grabbing_another's_hair"],
+                "selected": ["grabbing_own_breast"],
             },
         )
+        self.assertEqual(payload["$family:grabbing:partner"]["placeholder"], "<PARTNER>")
+        self.assertEqual(payload["$family:grabbing:partner"]["uiGroup"], "파트너")
+        self.assertEqual(payload["$family:grabbing:partner"]["selected"], ["grabbing_another's_hair"])
         self.assertEqual(payload["$family:looking"]["selected"], ["looking_at_viewer"])
         self.assertEqual(
             preview,
             "\n".join(
                 [
-                    "<GIRL_POS>: standing,grabbing_own_breast,grabbing_another's_hair",
+                    "<GIRL_POS>: standing,grabbing_own_breast",
                     "<GIRL_FACE>: looking_at_viewer",
+                    "<PARTNER>: grabbing_another's_hair",
                 ]
             ),
         )
         self.assertEqual(selected_text, "standing,grabbing_own_breast,grabbing_another's_hair,looking_at_viewer")
         self.assertEqual(
             prompt_preview,
-            "pos: standing,grabbing_own_breast,grabbing_another's_hair; face: looking_at_viewer",
+            "pos: standing,grabbing_own_breast; partner: grabbing_another's_hair; face: looking_at_viewer",
         )
         self.assertEqual(replace_report, "")
 
@@ -533,10 +541,12 @@ _promptboard:
         source = read_text(FIXTURE_ROOT / "valid" / "schema_v2_tag_families.yaml")
         selected_state = {
             "$families": {
-                "grabbing": [
-                    {"owner": "own", "target": "hair"},
-                    {"owner": "own", "target": "breast"},
-                ],
+                "grabbing": {
+                    "girl": [
+                        {"owner": "own", "target": "hair"},
+                        {"owner": "own", "target": "breast"},
+                    ],
+                },
             },
         }
 
@@ -546,7 +556,7 @@ _promptboard:
         )
         payload = json.loads(selection_json)
 
-        self.assertEqual(payload["$family:grabbing"]["selected"], ["grabbing_own_breast"])
+        self.assertEqual(payload["$family:grabbing:girl"]["selected"], ["grabbing_own_breast"])
         self.assertEqual(selected_text, "grabbing_own_breast")
         self.assertIn("warning: $families.grabbing removed disallowed combination: grabbing_own_hair", preview)
 

@@ -396,12 +396,58 @@ function normalizeTagFamilyAllowed(value, path, familyId, slots, tagSets) {
   return allowed;
 }
 
-function normalizeTagFamily(value, path, familyId, tagSets) {
-  const family = assertMapping(value, path);
-  assertKnownFields(family, new Set(["label", "placeholder", "pattern", "slots", "allowed"]), path);
-  if (!hasOwn(family, "placeholder")) {
+function normalizeTagFamilyTarget(value, path, targetId) {
+  const target = assertMapping(value, path);
+  assertKnownFields(target, new Set(["label", "placeholder", "uiGroup"]), path);
+  if (!hasOwn(target, "placeholder")) {
     fail("missing_required_field", `${path}.placeholder`, `Missing required field: ${path}.placeholder`);
   }
+  return {
+    label: textValue(target.label, targetId) || targetId,
+    placeholder: assertPlaceholder(target.placeholder, `${path}.placeholder`),
+    uiGroup: textValue(target.uiGroup),
+  };
+}
+
+function normalizeTagFamilyTargets(family, path, familyId, familyLabel) {
+  const hasPlaceholder = hasOwn(family, "placeholder");
+  const hasTargets = hasOwn(family, "targets");
+  if (hasPlaceholder && hasTargets) {
+    fail(
+      "ambiguous_tag_family_target",
+      path,
+      `Tag family must declare either placeholder or targets, not both: ${familyId}`,
+    );
+  }
+  if (!hasPlaceholder && !hasTargets) {
+    fail("missing_required_field", `${path}.placeholder`, `Missing required field: ${path}.placeholder`);
+  }
+
+  if (hasPlaceholder) {
+    return {
+      default: {
+        label: familyLabel,
+        placeholder: assertPlaceholder(family.placeholder, `${path}.placeholder`),
+        uiGroup: textValue(family.uiGroup),
+      },
+    };
+  }
+
+  const rawTargets = assertMapping(family.targets, `${path}.targets`);
+  const targets = {};
+  for (const [rawTargetId, rawTarget] of Object.entries(rawTargets)) {
+    const targetId = assertIdentifier(rawTargetId, `${path}.targets.${rawTargetId}`);
+    targets[targetId] = normalizeTagFamilyTarget(rawTarget, `${path}.targets.${targetId}`, targetId);
+  }
+  if (!Object.keys(targets).length) {
+    fail("missing_required_field", `${path}.targets`, `Missing required field: ${path}.targets`);
+  }
+  return targets;
+}
+
+function normalizeTagFamily(value, path, familyId, tagSets) {
+  const family = assertMapping(value, path);
+  assertKnownFields(family, new Set(["label", "placeholder", "uiGroup", "targets", "pattern", "slots", "allowed"]), path);
   if (!hasOwn(family, "pattern")) {
     fail("missing_required_field", `${path}.pattern`, `Missing required field: ${path}.pattern`);
   }
@@ -409,7 +455,8 @@ function normalizeTagFamily(value, path, familyId, tagSets) {
     fail("missing_required_field", `${path}.slots`, `Missing required field: ${path}.slots`);
   }
 
-  const placeholder = assertPlaceholder(family.placeholder, `${path}.placeholder`);
+  const label = textValue(family.label, familyId) || familyId;
+  const targets = normalizeTagFamilyTargets(family, path, familyId, label);
   const pattern = textValue(family.pattern);
   if (!pattern) {
     fail("invalid_tag_family_pattern", `${path}.pattern`, `Pattern must not be empty: ${path}.pattern`);
@@ -432,9 +479,12 @@ function normalizeTagFamily(value, path, familyId, tagSets) {
   }
 
   const allowed = normalizeTagFamilyAllowed(family.allowed, `${path}.allowed`, familyId, slots, tagSets);
+  const firstTarget = Object.values(targets)[0];
   const normalized = {
-    label: textValue(family.label, familyId) || familyId,
-    placeholder,
+    label,
+    placeholder: firstTarget.placeholder,
+    uiGroup: firstTarget.uiGroup,
+    targets,
     pattern,
     slots,
   };

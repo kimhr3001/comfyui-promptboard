@@ -1,11 +1,12 @@
 # PromptBoard 태그 패밀리 개발 계획
 
-상태: Phase 2 완료
+상태: Phase 2.5 완료
 
 진행 상태:
 
 - 완료: Phase 1 / Schema와 Backend 조합
 - 완료: Phase 2 / 최소 UI
+- 완료: Phase 2.5 / 다중 target 노출
 - 다음: Phase 3 / 첫 YAML 패밀리
 
 ## 목적
@@ -115,7 +116,15 @@ _promptboard:
   tagFamilies:
     grabbing:
       label: 잡기
-      placeholder: <GIRL_POS>
+      targets:
+        girl:
+          label: 캐릭터 잡기
+          placeholder: <GIRL_POS>
+          uiGroup: 캐릭터
+        partner:
+          label: 파트너 잡기
+          placeholder: <PARTNER>
+          uiGroup: 파트너
       pattern: "grabbing_{owner}_{target}"
       slots:
         owner:
@@ -141,7 +150,11 @@ _promptboard:
 - 패밀리 id는 `tagSets`와 같은 식별자 규칙을 사용한다.
   - `^[A-Za-z][A-Za-z0-9_-]*$`
 - `label`이 없으면 패밀리 id를 표시명으로 사용한다.
-- `placeholder`는 필수이며 기존 placeholder 패턴과 일치해야 한다.
+- family는 `placeholder` 또는 `targets` 중 하나를 선언한다.
+- `placeholder`는 하위 호환용 단일 target 축약 문법이다.
+- `targets`는 같은 family pattern을 여러 placeholder/UI 위치에 노출하기 위한 mapping이다.
+- target id는 `tagSets`와 같은 식별자 규칙을 사용한다.
+- target의 `placeholder`는 필수이며 기존 placeholder 패턴과 일치해야 한다.
 - `pattern`은 필수이며 `{slotId}` 형태의 이름 있는 slot을 포함해야 한다.
 - `slots`는 필수다.
 - `pattern`에서 참조한 모든 slot id는 `slots`에 존재해야 한다.
@@ -158,6 +171,19 @@ _promptboard:
     "grabbing": {
       "label": "잡기",
       "placeholder": "<GIRL_POS>",
+      "uiGroup": "캐릭터",
+      "targets": {
+        "girl": {
+          "label": "캐릭터 잡기",
+          "placeholder": "<GIRL_POS>",
+          "uiGroup": "캐릭터"
+        },
+        "partner": {
+          "label": "파트너 잡기",
+          "placeholder": "<PARTNER>",
+          "uiGroup": "파트너"
+        }
+      },
       "pattern": "grabbing_{owner}_{target}",
       "slots": {
         "owner": {
@@ -184,16 +210,20 @@ _promptboard:
 ```json
 {
   "$families": {
-    "grabbing": [
-      {
-        "owner": "own",
-        "target": "breast"
-      },
-      {
-        "owner": "another's",
-        "target": "hair"
-      }
-    ]
+    "grabbing": {
+      "girl": [
+        {
+          "owner": "own",
+          "target": "breast"
+        }
+      ],
+      "partner": [
+        {
+          "owner": "another's",
+          "target": "hair"
+        }
+      ]
+    }
   }
 }
 ```
@@ -320,6 +350,37 @@ grabbing_own_breast
 
 - `node --test tests/test_promptboard_tag_family_state.mjs tests/test_promptboard_yaml.mjs tests/test_promptboard_attribute_state.mjs`
 - `/Users/rociomini/Downloads/ComfyUI/.venv/bin/python -m unittest discover -s tests`
+- `node --check web/js/yaml_tag_board_split.js`
+- `node --check web/js/promptboard_tag_family_state.mjs`
+- `node --check web/js/promptboard_yaml.mjs`
+
+### Phase 2.5: 다중 target 노출 [완료]
+
+`grabbing_own_*`, `grabbing_another's_*`처럼 캐릭터와 파트너 양쪽에서 쓸 수 있는 family를 복제하지 않기 위해 `targets` 구조를 추가한다.
+
+- `placeholder` 단일 구조는 하위 호환으로 유지한다.
+- `targets` mapping을 선언하면 family pattern과 allowed list는 한 번만 관리하고, target별 `placeholder`, `uiGroup`, `label`만 분리한다.
+- 선택 상태는 `$families.<familyId>.<targetId>[]`로 저장한다.
+- 기존 `$families.<familyId>[]` 배열은 첫 target 선택으로 마이그레이션한다.
+- UI navigator, 그룹 카운트, 검색, 선택 요약, clear는 target별 family item을 따로 다룬다.
+
+완료 기준:
+
+- 같은 family를 `<GIRL_POS>`와 `<PARTNER>`에 동시에 노출할 수 있다.
+- 캐릭터 target에서 선택한 조합이 파트너 target에 자동 출력되지 않는다.
+- 기존 `placeholder` 단일 family fixture와 저장 상태가 계속 동작한다.
+
+완료 결과:
+
+- Python/browser YAML parser가 `targets`를 정규화하고, legacy `placeholder`를 `default` target으로 변환한다.
+- backend selection payload는 다중 target을 `$family:<familyId>:<targetId>`로 출력하고, `default` target은 기존 `$family:<familyId>` key를 유지한다.
+- UI는 family target을 navigator item 단위로 렌더링한다.
+
+검증:
+
+- `node --test tests/test_promptboard_tag_family_state.mjs tests/test_promptboard_yaml.mjs tests/test_promptboard_attribute_state.mjs`
+- `/Users/rociomini/Downloads/ComfyUI/.venv/bin/python -m unittest discover -s tests -p 'test_promptboard_yaml_backend.py'`
+- `/Users/rociomini/Downloads/ComfyUI/.venv/bin/python -m unittest discover -s tests -p 'test_yaml_schema_contract.py'`
 - `node --check web/js/yaml_tag_board_split.js`
 - `node --check web/js/promptboard_tag_family_state.mjs`
 - `node --check web/js/promptboard_yaml.mjs`

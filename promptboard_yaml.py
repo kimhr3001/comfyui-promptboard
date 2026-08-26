@@ -394,17 +394,63 @@ def _normalize_tag_family_allowed(value, path, family_id, slots, tag_sets):
     return allowed
 
 
+def _normalize_tag_family_target(value, path, target_id):
+    target = _assert_mapping(value, path)
+    _assert_known_fields(target, {"label", "placeholder", "uiGroup"}, path)
+    if "placeholder" not in target:
+        _fail("missing_required_field", f"{path}.placeholder", f"Missing required field: {path}.placeholder")
+    return {
+        "label": _text_value(target.get("label"), target_id) or target_id,
+        "placeholder": _assert_placeholder(target["placeholder"], f"{path}.placeholder"),
+        "uiGroup": _text_value(target.get("uiGroup")),
+    }
+
+
+def _normalize_tag_family_targets(family, path, family_id, family_label):
+    has_placeholder = "placeholder" in family
+    has_targets = "targets" in family
+    if has_placeholder and has_targets:
+        _fail(
+            "ambiguous_tag_family_target",
+            path,
+            f"Tag family must declare either placeholder or targets, not both: {family_id}",
+        )
+    if not has_placeholder and not has_targets:
+        _fail("missing_required_field", f"{path}.placeholder", f"Missing required field: {path}.placeholder")
+
+    if has_placeholder:
+        return {
+            "default": {
+                "label": family_label,
+                "placeholder": _assert_placeholder(family["placeholder"], f"{path}.placeholder"),
+                "uiGroup": _text_value(family.get("uiGroup")),
+            }
+        }
+
+    raw_targets = _assert_mapping(family["targets"], f"{path}.targets")
+    targets = {}
+    for raw_target_id, raw_target in raw_targets.items():
+        target_id = _assert_identifier(raw_target_id, f"{path}.targets.{raw_target_id}")
+        targets[target_id] = _normalize_tag_family_target(
+            raw_target,
+            f"{path}.targets.{target_id}",
+            target_id,
+        )
+    if not targets:
+        _fail("missing_required_field", f"{path}.targets", f"Missing required field: {path}.targets")
+    return targets
+
+
 def _normalize_tag_family(value, path, family_id, tag_sets):
     family = _assert_mapping(value, path)
-    _assert_known_fields(family, {"label", "placeholder", "pattern", "slots", "allowed"}, path)
-    if "placeholder" not in family:
-        _fail("missing_required_field", f"{path}.placeholder", f"Missing required field: {path}.placeholder")
+    _assert_known_fields(family, {"label", "placeholder", "uiGroup", "targets", "pattern", "slots", "allowed"}, path)
     if "pattern" not in family:
         _fail("missing_required_field", f"{path}.pattern", f"Missing required field: {path}.pattern")
     if "slots" not in family:
         _fail("missing_required_field", f"{path}.slots", f"Missing required field: {path}.slots")
 
-    placeholder = _assert_placeholder(family["placeholder"], f"{path}.placeholder")
+    label = _text_value(family.get("label"), family_id) or family_id
+    targets = _normalize_tag_family_targets(family, path, family_id, label)
     pattern = _text_value(family.get("pattern"))
     if not pattern:
         _fail("invalid_tag_family_pattern", f"{path}.pattern", f"Pattern must not be empty: {path}.pattern")
@@ -427,9 +473,12 @@ def _normalize_tag_family(value, path, family_id, tag_sets):
             )
 
     allowed = _normalize_tag_family_allowed(family.get("allowed"), f"{path}.allowed", family_id, slots, tag_sets)
+    first_target = next(iter(targets.values()))
     normalized = {
-        "label": _text_value(family.get("label"), family_id) or family_id,
-        "placeholder": placeholder,
+        "label": label,
+        "placeholder": first_target["placeholder"],
+        "uiGroup": first_target.get("uiGroup", ""),
+        "targets": targets,
         "pattern": pattern,
         "slots": slots,
     }

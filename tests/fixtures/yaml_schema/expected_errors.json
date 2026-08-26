@@ -84,6 +84,12 @@
     "message": "Attribute target placeholder conflicts with category placeholder: <CLOTHES>"
   },
   {
+    "fixture": "ambiguous_tag_family_target.yaml",
+    "code": "ambiguous_tag_family_target",
+    "path": "_promptboard.tagFamilies.grabbing",
+    "message": "Tag family must declare either placeholder or targets, not both: grabbing"
+  },
+  {
     "fixture": "unknown_tag_family_slot.yaml",
     "code": "unknown_tag_family_slot",
     "path": "_promptboard.tagFamilies.grabbing.pattern",

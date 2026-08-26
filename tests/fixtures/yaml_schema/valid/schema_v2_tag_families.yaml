@@ -25,7 +25,15 @@ _promptboard:
   tagFamilies:
     grabbing:
       label: 잡기
-      placeholder: <GIRL_POS>
+      targets:
+        girl:
+          label: 캐릭터 잡기
+          placeholder: <GIRL_POS>
+          uiGroup: 캐릭터
+        partner:
+          label: 파트너 잡기
+          placeholder: <PARTNER>
+          uiGroup: 파트너
       pattern: "grabbing_{owner}_{target}"
       slots:
         owner:

@@ -257,6 +257,19 @@ on black wooden table
 {
   "label": "잡기",
   "placeholder": "<GIRL_POS>",
+  "uiGroup": "캐릭터",
+  "targets": {
+    "girl": {
+      "label": "캐릭터 잡기",
+      "placeholder": "<GIRL_POS>",
+      "uiGroup": "캐릭터"
+    },
+    "partner": {
+      "label": "파트너 잡기",
+      "placeholder": "<PARTNER>",
+      "uiGroup": "파트너"
+    }
+  },
   "pattern": "grabbing_{owner}_{target}",
   "slots": {
     "owner": {
@@ -280,8 +293,13 @@ on black wooden table
 Rules:
 
 - Tag-family identifiers use the same machine identifier rule as tag sets.
-- `placeholder`, `pattern`, and `slots` are required.
-- `placeholder` uses the normal placeholder syntax.
+- A family must declare either `placeholder` or `targets`, not both.
+- `placeholder` is a backward-compatible shorthand for one `default` target.
+- `targets` is a mapping of target identifiers to `label`, `placeholder`, and
+  optional `uiGroup`.
+- Target identifiers use the same machine identifier rule as tag sets.
+- Target `placeholder` values use the normal placeholder syntax.
+- `pattern` and `slots` are required.
 - `pattern` must contain at least one `{slotId}` reference.
 - Every slot referenced by `pattern` must exist in `slots`.
 - Every slot must declare a `source` that refers to an existing tag set.
@@ -293,7 +311,13 @@ Rules:
 Runtime behavior:
 
 - Family selections are stored under `$families` in `selected_state`.
-- Runtime selection entries are emitted with `$family:<familyId>` keys.
+- New family selections are stored by family and target:
+  `$families.<familyId>.<targetId>[]`.
+- Legacy `$families.<familyId>[]` arrays are treated as selections for the
+  first normalized target.
+- Runtime selection entries for non-default targets are emitted with
+  `$family:<familyId>:<targetId>` keys. The `default` target keeps the legacy
+  `$family:<familyId>` key.
 - Existing category selections are emitted before family selections. This
   preserves current category output and appends generated family tags to the
   same placeholder.

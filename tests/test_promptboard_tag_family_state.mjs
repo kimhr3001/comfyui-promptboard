@@ -33,18 +33,24 @@ test("normalizes tag family selections with allowed combinations only", async ()
   const state = {
     [FAMILY_STATE_KEY]: {
       removed: [{ owner: "own", target: "breast" }],
-      grabbing: [
-        { owner: "own", target: "hair" },
-        { owner: "own", target: "breast" },
-        { owner: "own", target: "breast" },
-      ],
+      grabbing: {
+        girl: [
+          { owner: "own", target: "hair" },
+          { owner: "own", target: "breast" },
+          { owner: "own", target: "breast" },
+        ],
+        partner: [
+          { owner: "another's", target: "hair" },
+        ],
+      },
     },
   };
 
   const normalized = normalizeTagFamilyState(model, state, warnings);
 
-  assert.deepEqual(normalized.grabbing, [{ owner: "own", target: "breast" }]);
-  assert.deepEqual(normalized.looking, []);
+  assert.deepEqual(normalized.grabbing.girl, [{ owner: "own", target: "breast" }]);
+  assert.deepEqual(normalized.grabbing.partner, [{ owner: "another's", target: "hair" }]);
+  assert.deepEqual(normalized.looking.default, []);
   assert.match(warnings.join("\n"), /\$families\.removed no longer exists/);
   assert.match(warnings.join("\n"), /removed disallowed combination: grabbing_own_hair/);
 });
@@ -61,9 +67,24 @@ test("toggles family combinations and composes display text", async () => {
   assert.equal(tagFamilyCombinationLabel(model, "grabbing", combination), "상대 / 머리카락");
   assert.equal(composeTagFamilyText(model.tagFamilies.grabbing, combination), "grabbing_another's_hair");
 
-  assert.equal(setTagFamilySelected(model, state, "grabbing", combination, true), true);
-  assert.deepEqual(tagFamilySelectedTexts(model, state, "grabbing"), ["grabbing_another's_hair"]);
+  assert.equal(setTagFamilySelected(model, state, "grabbing", "partner", combination, true), true);
+  assert.deepEqual(tagFamilySelectedTexts(model, state, "grabbing", "partner"), ["grabbing_another's_hair"]);
+  assert.deepEqual(tagFamilySelectedTexts(model, state, "grabbing", "girl"), []);
 
-  assert.equal(setTagFamilySelected(model, state, "grabbing", combination, false), true);
-  assert.deepEqual(tagFamilySelectedTexts(model, state, "grabbing"), []);
+  assert.equal(setTagFamilySelected(model, state, "grabbing", "partner", combination, false), true);
+  assert.deepEqual(tagFamilySelectedTexts(model, state, "grabbing", "partner"), []);
+});
+
+test("migrates legacy family arrays to the first target", async () => {
+  const model = await fixtureModel();
+  const normalized = normalizeTagFamilyState(model, {
+    [FAMILY_STATE_KEY]: {
+      grabbing: [
+        { owner: "own", target: "breast" },
+      ],
+    },
+  });
+
+  assert.deepEqual(normalized.grabbing.girl, [{ owner: "own", target: "breast" }]);
+  assert.deepEqual(normalized.grabbing.partner, []);
 });

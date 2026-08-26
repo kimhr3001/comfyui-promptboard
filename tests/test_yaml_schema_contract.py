@@ -137,6 +137,8 @@ class YamlSchemaContractFixtureTests(unittest.TestCase):
                     self.assertRegex(tag_set_id, identifier)
                 for family_id, family in normalized.get("tagFamilies", {}).items():
                     self.assertRegex(family_id, identifier)
+                    for target_id in family["targets"]:
+                        self.assertRegex(target_id, identifier)
                     for slot_id in family["slots"]:
                         self.assertRegex(slot_id, identifier)
                 for board_id, board in normalized["attributeBoards"].items():

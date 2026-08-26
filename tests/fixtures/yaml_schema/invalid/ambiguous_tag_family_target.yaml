@@ -1,0 +1,16 @@
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    grabTargets:
+      tags:
+      - breast
+  tagFamilies:
+    grabbing:
+      placeholder: <GIRL_POS>
+      targets:
+        partner:
+          placeholder: <PARTNER>
+      pattern: "grabbing_own_{target}"
+      slots:
+        target:
+          source: grabTargets
