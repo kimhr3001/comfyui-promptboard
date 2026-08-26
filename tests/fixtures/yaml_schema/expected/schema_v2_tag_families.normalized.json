@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 2,
+  "tagSets": {
+    "grabOwners": {
+      "label": "잡기 주체",
+      "tags": [
+        {
+          "text": "own",
+          "label": "자기",
+          "description": "",
+          "default": false
+        },
+        {
+          "text": "another's",
+          "label": "상대",
+          "description": "",
+          "default": false
+        }
+      ]
+    },
+    "grabTargets": {
+      "label": "잡기 대상",
+      "tags": [
+        {
+          "text": "breast",
+          "label": "가슴",
+          "description": "",
+          "default": false
+        },
+        {
+          "text": "hair",
+          "label": "머리카락",
+          "description": "",
+          "default": false
+        }
+      ]
+    },
+    "lookDirections": {
+      "label": "시선 방향",
+      "tags": [
+        {
+          "text": "at_viewer",
+          "label": "정면",
+          "description": "",
+          "default": false
+        },
+        {
+          "text": "up",
+          "label": "위",
+          "description": "",
+          "default": false
+        }
+      ]
+    }
+  },
+  "attributeBoards": {},
+  "categories": {
+    "캐릭터포즈": {
+      "placeholder": "<GIRL_POS>",
+      "uiGroup": "캐릭터",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "standing",
+          "label": "standing",
+          "description": "",
+          "default": false
+        }
+      ]
+    },
+    "캐릭터얼굴": {
+      "placeholder": "<GIRL_FACE>",
+      "uiGroup": "캐릭터",
+      "replaceInsideTags": false,
+      "tagSet": null,
+      "tags": [
+        {
+          "text": "smiling",
+          "label": "smiling",
+          "description": "",
+          "default": false
+        }
+      ]
+    }
+  },
+  "tagFamilies": {
+    "grabbing": {
+      "label": "잡기",
+      "placeholder": "<GIRL_POS>",
+      "uiGroup": "캐릭터",
+      "targets": {
+        "girl": {
+          "label": "캐릭터 잡기",
+          "placeholder": "<GIRL_POS>",
+          "uiGroup": "캐릭터"
+        },
+        "partner": {
+          "label": "파트너 잡기",
+          "placeholder": "<PARTNER>",
+          "uiGroup": "파트너"
+        }
+      },
+      "pattern": "grabbing_{owner}_{target}",
+      "slots": {
+        "owner": {
+          "label": "주체",
+          "source": "grabOwners"
+        },
+        "target": {
+          "label": "대상",
+          "source": "grabTargets"
+        }
+      },
+      "allowed": [
+        {
+          "owner": "own",
+          "target": "breast"
+        },
+        {
+          "owner": "another's",
+          "target": "hair"
+        }
+      ]
+    },
+    "looking": {
+      "label": "시선",
+      "placeholder": "<GIRL_FACE>",
+      "uiGroup": "",
+      "targets": {
+        "default": {
+          "label": "시선",
+          "placeholder": "<GIRL_FACE>",
+          "uiGroup": ""
+        }
+      },
+      "pattern": "looking_{direction}",
+      "slots": {
+        "direction": {
+          "label": "방향",
+          "source": "lookDirections"
+        }
+      }
+    }
+  },
+  "uiComposites": {
+    "handArm": {
+      "label": "손/팔",
+      "uiGroup": "캐릭터",
+      "items": [
+        {
+          "kind": "category",
+          "category": "캐릭터포즈"
+        },
+        {
+          "kind": "family",
+          "family": "looking",
+          "target": "default"
+        }
+      ]
+    }
+  }
+}

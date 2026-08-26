@@ -1,0 +1,77 @@
+_promptboard:
+  schemaVersion: 2
+  tagSets:
+    grabOwners:
+      label: 잡기 주체
+      tags:
+      - text: own
+        label: 자기
+      - text: another's
+        label: 상대
+    grabTargets:
+      label: 잡기 대상
+      tags:
+      - text: breast
+        label: 가슴
+      - text: hair
+        label: 머리카락
+    lookDirections:
+      label: 시선 방향
+      tags:
+      - text: at_viewer
+        label: 정면
+      - text: up
+        label: 위
+  tagFamilies:
+    grabbing:
+      label: 잡기
+      targets:
+        girl:
+          label: 캐릭터 잡기
+          placeholder: <GIRL_POS>
+          uiGroup: 캐릭터
+        partner:
+          label: 파트너 잡기
+          placeholder: <PARTNER>
+          uiGroup: 파트너
+      pattern: "grabbing_{owner}_{target}"
+      slots:
+        owner:
+          label: 주체
+          source: grabOwners
+        target:
+          label: 대상
+          source: grabTargets
+      allowed:
+      - owner: own
+        target: breast
+      - owner: another's
+        target: hair
+    looking:
+      label: 시선
+      placeholder: <GIRL_FACE>
+      pattern: "looking_{direction}"
+      slots:
+        direction:
+          label: 방향
+          source: lookDirections
+  uiComposites:
+    handArm:
+      label: 손/팔
+      uiGroup: 캐릭터
+      items:
+      - category: 캐릭터포즈
+      - family: looking
+        target: default
+
+캐릭터포즈:
+  placeholder: <GIRL_POS>
+  uiGroup: 캐릭터
+  tags:
+  - standing
+
+캐릭터얼굴:
+  placeholder: <GIRL_FACE>
+  uiGroup: 캐릭터
+  tags:
+  - smiling

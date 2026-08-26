@@ -5,6 +5,8 @@ const PLACEHOLDER_PATTERN = /^<[A-Za-z0-9_:-]+>$/;
 const RESERVED_CATEGORY_NAMES = new Set(["_promptboard", "$attributes"]);
 const RESERVED_IDENTIFIERS = new Set(["_promptboard", "$attributes"]);
 const ATTRIBUTE_ENTRY_PREFIX = "$attribute:";
+const FAMILY_STATE_KEY = "$families";
+const FAMILY_ENTRY_PREFIX = "$family:";
 
 export class PromptBoardYamlError extends Error {
   constructor(code, path, message, options = {}) {
@@ -45,6 +47,13 @@ function assertMapping(value, path) {
   return value;
 }
 
+function assertList(value, path) {
+  if (!Array.isArray(value)) {
+    fail("invalid_schema_type", path, `Expected a list at ${path}`);
+  }
+  return value;
+}
+
 function assertKnownFields(value, fields, path) {
   for (const key of Object.keys(value)) {
     if (!fields.has(key)) {
@@ -55,7 +64,11 @@ function assertKnownFields(value, fields, path) {
 
 function assertIdentifier(value, path) {
   const identifier = textValue(value);
-  if (RESERVED_IDENTIFIERS.has(identifier) || identifier.startsWith(ATTRIBUTE_ENTRY_PREFIX)) {
+  if (
+    RESERVED_IDENTIFIERS.has(identifier)
+    || identifier.startsWith(ATTRIBUTE_ENTRY_PREFIX)
+    || identifier.startsWith(FAMILY_ENTRY_PREFIX)
+  ) {
     fail("reserved_identifier", path, `Reserved identifier: ${identifier}`);
   }
   if (!IDENTIFIER_PATTERN.test(identifier)) {
@@ -102,13 +115,17 @@ function sourceVersion(root) {
   }
 
   const settings = assertMapping(settingsValue, "_promptboard");
-  const hasV2Fields = hasOwn(settings, "tagSets") || hasOwn(settings, "attributeBoards") || hasOwn(settings, "modifiers");
+  const hasV2Fields = hasOwn(settings, "tagSets")
+    || hasOwn(settings, "attributeBoards")
+    || hasOwn(settings, "modifiers")
+    || hasOwn(settings, "tagFamilies")
+    || hasOwn(settings, "uiComposites");
   if (!hasOwn(settings, "schemaVersion")) {
     if (hasV2Fields) {
       fail(
         "schema_version_required",
         "_promptboard.schemaVersion",
-        "schemaVersion: 2 is required for tagSets, modifiers, or attributeBoards",
+        "schemaVersion: 2 is required for tagSets, modifiers, attributeBoards, tagFamilies, or uiComposites",
       );
     }
     return { schemaVersion: 1, settings };
@@ -293,6 +310,213 @@ function normalizeModifiers(settings, schemaVersion, tagSets) {
   return modifiers;
 }
 
+function patternSlotIds(pattern, path) {
+  const slotIds = [...pattern.matchAll(/{([A-Za-z][A-Za-z0-9_-]*)}/g)].map((match) => match[1]);
+  if (slotIds.length === 0) {
+    fail("invalid_tag_family_pattern", path, `Pattern must contain at least one slot: ${path}`);
+  }
+  const leftover = pattern.replaceAll(/{[A-Za-z][A-Za-z0-9_-]*}/g, "");
+  if (leftover.includes("{") || leftover.includes("}")) {
+    fail("invalid_tag_family_pattern", path, `Pattern contains an invalid slot reference: ${path}`);
+  }
+  return slotIds;
+}
+
+function normalizeTagFamilySlot(value, path, slotId, tagSets) {
+  const slot = assertMapping(value, path);
+  assertKnownFields(slot, new Set(["label", "source"]), path);
+  if (!hasOwn(slot, "source")) {
+    fail("missing_required_field", `${path}.source`, `Missing required field: ${path}.source`);
+  }
+  const source = assertIdentifier(slot.source, `${path}.source`);
+  if (!hasOwn(tagSets, source)) {
+    fail("unknown_tag_set", `${path}.source`, `Unknown tag set: ${source}`);
+  }
+  return {
+    label: textValue(slot.label, slotId) || slotId,
+    source,
+  };
+}
+
+function tagSetValues(tagSets, tagSetId) {
+  return new Set((tagSets?.[tagSetId]?.tags ?? []).map((tag) => tag.text));
+}
+
+function normalizeTagFamilyAllowed(value, path, familyId, slots, tagSets) {
+  if (value == null) {
+    return null;
+  }
+  if (!Array.isArray(value)) {
+    fail("invalid_schema_type", path, `Expected a sequence at ${path}`);
+  }
+  const allowed = [];
+  const seen = new Set();
+  const slotIds = Object.keys(slots);
+  const slotIdSet = new Set(slotIds);
+
+  for (const [index, rawCombination] of value.entries()) {
+    const combinationPath = `${path}[${index}]`;
+    const combination = assertMapping(rawCombination, combinationPath);
+    const combinationKeys = Object.keys(combination);
+    const missing = slotIds.filter((slotId) => !combinationKeys.includes(slotId));
+    const extra = combinationKeys.filter((slotId) => !slotIdSet.has(slotId)).sort();
+    if (missing.length) {
+      fail(
+        "invalid_tag_family_allowed",
+        combinationPath,
+        `Allowed combination is missing slot: ${missing[0]}`,
+      );
+    }
+    if (extra.length) {
+      fail(
+        "invalid_tag_family_allowed",
+        `${combinationPath}.${extra[0]}`,
+        `Allowed combination has unknown slot: ${extra[0]}`,
+      );
+    }
+
+    const normalized = {};
+    for (const slotId of slotIds) {
+      const slotValue = textValue(combination[slotId]);
+      const source = slots[slotId].source;
+      if (!tagSetValues(tagSets, source).has(slotValue)) {
+        fail(
+          "invalid_tag_family_allowed",
+          `${combinationPath}.${slotId}`,
+          `Allowed value is not in tag set ${source}: ${slotValue || "<empty>"}`,
+        );
+      }
+      normalized[slotId] = slotValue;
+    }
+
+    const key = JSON.stringify(slotIds.map((slotId) => normalized[slotId]));
+    if (seen.has(key)) {
+      fail(
+        "duplicate_tag_family_allowed",
+        combinationPath,
+        `Duplicate allowed combination in tag family: ${familyId}`,
+      );
+    }
+    seen.add(key);
+    allowed.push(normalized);
+  }
+
+  return allowed;
+}
+
+function normalizeTagFamilyTarget(value, path, targetId) {
+  const target = assertMapping(value, path);
+  assertKnownFields(target, new Set(["label", "placeholder", "uiGroup"]), path);
+  if (!hasOwn(target, "placeholder")) {
+    fail("missing_required_field", `${path}.placeholder`, `Missing required field: ${path}.placeholder`);
+  }
+  return {
+    label: textValue(target.label, targetId) || targetId,
+    placeholder: assertPlaceholder(target.placeholder, `${path}.placeholder`),
+    uiGroup: textValue(target.uiGroup),
+  };
+}
+
+function normalizeTagFamilyTargets(family, path, familyId, familyLabel) {
+  const hasPlaceholder = hasOwn(family, "placeholder");
+  const hasTargets = hasOwn(family, "targets");
+  if (hasPlaceholder && hasTargets) {
+    fail(
+      "ambiguous_tag_family_target",
+      path,
+      `Tag family must declare either placeholder or targets, not both: ${familyId}`,
+    );
+  }
+  if (!hasPlaceholder && !hasTargets) {
+    fail("missing_required_field", `${path}.placeholder`, `Missing required field: ${path}.placeholder`);
+  }
+
+  if (hasPlaceholder) {
+    return {
+      default: {
+        label: familyLabel,
+        placeholder: assertPlaceholder(family.placeholder, `${path}.placeholder`),
+        uiGroup: textValue(family.uiGroup),
+      },
+    };
+  }
+
+  const rawTargets = assertMapping(family.targets, `${path}.targets`);
+  const targets = {};
+  for (const [rawTargetId, rawTarget] of Object.entries(rawTargets)) {
+    const targetId = assertIdentifier(rawTargetId, `${path}.targets.${rawTargetId}`);
+    targets[targetId] = normalizeTagFamilyTarget(rawTarget, `${path}.targets.${targetId}`, targetId);
+  }
+  if (!Object.keys(targets).length) {
+    fail("missing_required_field", `${path}.targets`, `Missing required field: ${path}.targets`);
+  }
+  return targets;
+}
+
+function normalizeTagFamily(value, path, familyId, tagSets) {
+  const family = assertMapping(value, path);
+  assertKnownFields(family, new Set(["label", "placeholder", "uiGroup", "targets", "pattern", "slots", "allowed"]), path);
+  if (!hasOwn(family, "pattern")) {
+    fail("missing_required_field", `${path}.pattern`, `Missing required field: ${path}.pattern`);
+  }
+  if (!hasOwn(family, "slots")) {
+    fail("missing_required_field", `${path}.slots`, `Missing required field: ${path}.slots`);
+  }
+
+  const label = textValue(family.label, familyId) || familyId;
+  const targets = normalizeTagFamilyTargets(family, path, familyId, label);
+  const pattern = textValue(family.pattern);
+  if (!pattern) {
+    fail("invalid_tag_family_pattern", `${path}.pattern`, `Pattern must not be empty: ${path}.pattern`);
+  }
+
+  const rawSlots = assertMapping(family.slots, `${path}.slots`);
+  const slots = {};
+  for (const [rawSlotId, rawSlot] of Object.entries(rawSlots)) {
+    const slotId = assertIdentifier(rawSlotId, `${path}.slots.${rawSlotId}`);
+    slots[slotId] = normalizeTagFamilySlot(rawSlot, `${path}.slots.${slotId}`, slotId, tagSets);
+  }
+  if (!Object.keys(slots).length) {
+    fail("missing_required_field", `${path}.slots`, `Missing required field: ${path}.slots`);
+  }
+
+  for (const slotId of patternSlotIds(pattern, `${path}.pattern`)) {
+    if (!hasOwn(slots, slotId)) {
+      fail("unknown_tag_family_slot", `${path}.pattern`, `Pattern references unknown slot: ${slotId}`);
+    }
+  }
+
+  const allowed = normalizeTagFamilyAllowed(family.allowed, `${path}.allowed`, familyId, slots, tagSets);
+  const firstTarget = Object.values(targets)[0];
+  const normalized = {
+    label,
+    placeholder: firstTarget.placeholder,
+    uiGroup: firstTarget.uiGroup,
+    targets,
+    pattern,
+    slots,
+  };
+  if (allowed != null) {
+    normalized.allowed = allowed;
+  }
+  return normalized;
+}
+
+function normalizeTagFamilies(settings, schemaVersion, tagSets) {
+  if (schemaVersion !== 2 || !hasOwn(settings, "tagFamilies")) {
+    return {};
+  }
+  const source = assertMapping(settings.tagFamilies, "_promptboard.tagFamilies");
+  const tagFamilies = {};
+
+  for (const [rawId, rawValue] of Object.entries(source)) {
+    const id = assertIdentifier(rawId, `_promptboard.tagFamilies.${rawId}`);
+    const path = `_promptboard.tagFamilies.${id}`;
+    tagFamilies[id] = normalizeTagFamily(rawValue, path, id, tagSets);
+  }
+  return tagFamilies;
+}
+
 function normalizeCategory(category, rawValue, schemaVersion, tagSets, modifiers) {
   const path = category;
   const value = assertMapping(rawValue, path);
@@ -362,7 +586,12 @@ function normalizeCategories(root, schemaVersion, tagSets, modifiers) {
     if (!category) {
       continue;
     }
-    if (RESERVED_CATEGORY_NAMES.has(category) || category.startsWith(ATTRIBUTE_ENTRY_PREFIX)) {
+    if (
+      RESERVED_CATEGORY_NAMES.has(category)
+      || category === FAMILY_STATE_KEY
+      || category.startsWith(ATTRIBUTE_ENTRY_PREFIX)
+      || category.startsWith(FAMILY_ENTRY_PREFIX)
+    ) {
       fail("reserved_category_name", category, `Reserved category name: ${category}`);
     }
     if (!isMapping(rawValue)) {
@@ -483,20 +712,99 @@ function normalizeAttributeBoards(settings, schemaVersion, tagSets, categories) 
   return attributeBoards;
 }
 
+function normalizeUiCompositeItem(value, path, categories, tagFamilies) {
+  const item = assertMapping(value, path);
+  assertKnownFields(item, new Set(["category", "family", "target"]), path);
+  const hasCategory = hasOwn(item, "category");
+  const hasFamily = hasOwn(item, "family");
+  if (hasCategory === hasFamily) {
+    fail(
+      "invalid_ui_composite_item",
+      path,
+      `UI composite item must declare exactly one of category or family: ${path}`,
+    );
+  }
+  if (hasCategory) {
+    const category = textValue(item.category);
+    if (!hasOwn(categories, category)) {
+      fail("unknown_ui_composite_category", `${path}.category`, `Unknown category: ${category}`);
+    }
+    if (hasOwn(item, "target")) {
+      fail(
+        "invalid_ui_composite_item",
+        `${path}.target`,
+        "Category UI composite items must not declare target",
+      );
+    }
+    return { kind: "category", category };
+  }
+
+  const family = assertIdentifier(item.family, `${path}.family`);
+  if (!hasOwn(tagFamilies, family)) {
+    fail("unknown_ui_composite_family", `${path}.family`, `Unknown tag family: ${family}`);
+  }
+  const target = textValue(item.target, "default") || "default";
+  if (!hasOwn(tagFamilies[family].targets ?? {}, target)) {
+    fail("unknown_ui_composite_target", `${path}.target`, `Unknown tag family target: ${target}`);
+  }
+  return { kind: "family", family, target };
+}
+
+function normalizeUiComposites(settings, schemaVersion, categories, tagFamilies) {
+  if (schemaVersion !== 2 || !hasOwn(settings, "uiComposites")) {
+    return {};
+  }
+  const source = assertMapping(settings.uiComposites, "_promptboard.uiComposites");
+  const composites = {};
+  for (const [rawCompositeId, rawComposite] of Object.entries(source)) {
+    const compositeId = assertIdentifier(rawCompositeId, `_promptboard.uiComposites.${rawCompositeId}`);
+    const path = `_promptboard.uiComposites.${compositeId}`;
+    const composite = assertMapping(rawComposite, path);
+    assertKnownFields(composite, new Set(["label", "uiGroup", "items"]), path);
+    if (!hasOwn(composite, "items")) {
+      fail("missing_required_field", `${path}.items`, `Missing required field: ${path}.items`);
+    }
+    const rawItems = assertList(composite.items, `${path}.items`);
+    if (!rawItems.length) {
+      fail("invalid_ui_composite_item", `${path}.items`, `UI composite must contain at least one item: ${path}`);
+    }
+    composites[compositeId] = {
+      label: textValue(composite.label, compositeId) || compositeId,
+      uiGroup: textValue(composite.uiGroup),
+      items: rawItems.map((item, index) =>
+        normalizeUiCompositeItem(item, `${path}.items[${index}]`, categories, tagFamilies),
+      ),
+    };
+  }
+  return composites;
+}
+
 export function normalizeYamlDocument(yamlText) {
   const root = parseYamlSource(yamlText);
   const { schemaVersion, settings } = sourceVersion(root);
   if (hasOwn(root, "_promptboard") && root._promptboard != null) {
-    assertKnownFields(settings, new Set(["schemaVersion", "tagSets", "attributeBoards", "modifiers"]), "_promptboard");
+    assertKnownFields(
+      settings,
+      new Set(["schemaVersion", "tagSets", "attributeBoards", "modifiers", "tagFamilies", "uiComposites"]),
+      "_promptboard",
+    );
   }
 
   const tagSets = normalizeTagSets(settings, schemaVersion);
   const modifiers = normalizeModifiers(settings, schemaVersion, tagSets);
+  const tagFamilies = normalizeTagFamilies(settings, schemaVersion, tagSets);
   const categories = normalizeCategories(root, schemaVersion, tagSets, modifiers);
   const attributeBoards = normalizeAttributeBoards(settings, schemaVersion, tagSets, categories);
+  const uiComposites = normalizeUiComposites(settings, schemaVersion, categories, tagFamilies);
   const normalized = { schemaVersion, tagSets, attributeBoards, categories };
   if (Object.keys(modifiers).length) {
     normalized.modifiers = modifiers;
+  }
+  if (Object.keys(tagFamilies).length) {
+    normalized.tagFamilies = tagFamilies;
+  }
+  if (Object.keys(uiComposites).length) {
+    normalized.uiComposites = uiComposites;
   }
   return normalized;
 }

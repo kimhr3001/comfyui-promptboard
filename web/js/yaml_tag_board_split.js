@@ -9,14 +9,29 @@ import {
   normalizeAttributeState,
   setAttributeSelected,
 } from "./promptboard_attribute_state.mjs";
+import {
+  FAMILY_STATE_KEY,
+  composeTagFamilyText,
+  emptyTagFamilyState,
+  normalizeTagFamilyState,
+  setTagFamilySelected,
+  tagFamilyAllowedCombinations,
+  tagFamilyCombinationLabel,
+  tagFamilyCombinationSelected,
+  tagFamilySelectedCombinations,
+  tagFamilySlotIds,
+  tagFamilySlotTags,
+  tagFamilyTargetEntries,
+} from "./promptboard_tag_family_state.mjs";
 import { normalizeYamlDocument } from "./promptboard_yaml.mjs";
 
 const NODE_NAME = "PromptBoard";
 const LAYOUT_WIDGET = "split_layout";
-const RESET_BUTTON = "선택 초기화";
-const SAVE_TEMPLATE_BUTTON = "Save";
-const SAVE_TEMPLATE_NEW_BUTTON = "Save (New)";
-const DELETE_TEMPLATE_BUTTON = "Delete";
+const RESET_BUTTON = "초기화 ▾";
+const TEMPLATE_ACTION_BUTTON = "템플릿 ▾";
+const SAVE_TEMPLATE_BUTTON = "저장";
+const SAVE_TEMPLATE_NEW_BUTTON = "새로 저장";
+const DELETE_TEMPLATE_BUTTON = "삭제";
 const TEMPLATE_SAVE_MODE_SAVE = "save";
 const TEMPLATE_SAVE_MODE_NEW = "new";
 const DEFAULT_YAML_FILE = "default.yaml";
@@ -37,10 +52,9 @@ const TEMPLATE_STORAGE_PREFIX = "promptboard:template:v1";
 const SEARCH_DEBOUNCE_MS = 150;
 const YAML_RELOAD_EVENT = "promptboard:yaml-reloaded";
 const YAML_RELOAD_SOURCE = "promptboard";
-const GROUP_ALL = "전체";
+const LEGACY_GROUP_ALL = "전체";
 const DEFAULT_UI_GROUP = "기타";
 const UI_GROUP_ACCENTS = {
-  [GROUP_ALL]: "#8c98a4",
   "구도": "#5a8fd8",
   "포즈": "#8da66a",
   "몸": "#6aa66a",
@@ -64,6 +78,9 @@ const NAVIGATOR_LABEL_ACCENTS = {
   "조명": "#d6b84a",
 };
 const FALLBACK_ACCENTS = ["#5a8fd8", "#38a6b9", "#6aa66a", "#9b7ad0", "#d6a94a", "#c77b7b", "#8c98a4"];
+const RELATION_FAMILY_GROUP_PREFIXES = new Set(["grabbing", "spreading"]);
+const TOOLBAR_ACTION_WIDTH = "116px";
+const UI_GROUP_ORDER = ["캐릭터", "의상", "세트의상", "색상", "구도", "파트너", "화면/장소", "기타"];
 const PLACEHOLDER_UI_GROUPS = {
   "<PHOTOSHOT>": "구도",
   "<INTER>": "구도",
@@ -594,6 +611,14 @@ function findYamlTagSetMatch(text, tagSetId, tagText) {
   return yamlLineMatch(lines, tagSetBlock.start);
 }
 
+function findYamlTagFamilyMatch(text, familyId) {
+  const lines = String(text ?? "").split("\n");
+  const rootBlock = findTopLevelYamlBlock(lines, "_promptboard");
+  const familiesBlock = findNestedYamlBlock(lines, rootBlock, "tagFamilies");
+  const familyBlock = findNestedYamlBlock(lines, familiesBlock, familyId);
+  return familyBlock ? yamlLineMatch(lines, familyBlock.start) : null;
+}
+
 function focusYamlSourceMatch(node, match) {
   if (!isYamlPanelOpen(node) || !match) {
     return;
@@ -622,7 +647,15 @@ function focusYamlAttributeTag(node, boardId, targetId, attributeId, tagText) {
   focusYamlSourceMatch(node, findYamlTagSetMatch(widgetValue(node, "yaml_text", ""), source, tagText));
 }
 
+function focusYamlTagFamily(node, familyId) {
+  focusYamlSourceMatch(node, findYamlTagFamilyMatch(widgetValue(node, "yaml_text", ""), familyId));
+}
+
 function focusYamlNavigatorItem(node, item) {
+  if (item?.kind === "composite") {
+    focusYamlNavigatorItem(node, item.children?.[0]);
+    return;
+  }
   if (item?.kind === "attribute") {
     focusYamlAttributeTag(node, item.boardId, item.targetId, item.attributeId, "");
     return;
@@ -630,6 +663,14 @@ function focusYamlNavigatorItem(node, item) {
   if (item?.kind === "attributeTarget") {
     const attributeId = Object.keys(item.attributes ?? {})[0] ?? "";
     focusYamlAttributeTag(node, item.boardId, item.targetId, attributeId, "");
+    return;
+  }
+  if (item?.kind === "family") {
+    focusYamlTagFamily(node, item.familyId);
+    return;
+  }
+  if (item?.kind === "familyGroup") {
+    focusYamlTagFamily(node, item.group.members[0]?.familyId);
     return;
   }
   if (item?.kind === "category") {
@@ -643,6 +684,8 @@ function focusYamlBoardSearchMatch(node, match) {
   }
   if (match.kind === "attribute") {
     focusYamlAttributeTag(node, match.boardId, match.targetId, match.attributeId, match.tagText);
+  } else if (match.kind === "family") {
+    focusYamlTagFamily(node, match.familyId);
   } else if (match.tagText) {
     focusYamlCategoryTag(node, match.category, match.tagText);
   } else {
@@ -904,8 +947,146 @@ function categoryLabel(category, item) {
   return prefix && suffix.length ? suffix.join("/") : String(category ?? "");
 }
 
+function escapeRegexText(text) {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function attributeBoardUiGroup(board) {
   return normalizeUiGroup(board?.uiGroup) || DEFAULT_UI_GROUP;
+}
+
+function tagFamilyUiGroup(family, target = null) {
+  return normalizeUiGroup(target?.uiGroup) || inferUiGroup(target || family);
+}
+
+function trimTargetPrefix(label, uiGroup) {
+  let text = String(label || "").trim();
+  const group = String(uiGroup || "").trim();
+  if (group) {
+    text = text.replace(new RegExp(`^${escapeRegexText(group)}\\s+`), "").trim();
+  }
+  return text.replace(/^(캐릭터|파트너)\s+/, "").trim();
+}
+
+function tagFamilyTargetLabel(familyId, family, targetId, target) {
+  const familyLabel = family?.label || familyId;
+  const targetLabel = String(target?.label || "").trim();
+  const uiGroup = tagFamilyUiGroup(family, target);
+  const displayLabel = trimTargetPrefix(targetLabel, uiGroup) || familyLabel;
+  if (!targetLabel || targetLabel === familyLabel || targetId === "default") {
+    return `${uiGroup} > ${familyLabel}`;
+  }
+  return `${uiGroup} > ${displayLabel}`;
+}
+
+function tagFamilyTargetItems(tagFamilies = {}) {
+  const items = [];
+  for (const [familyId, family] of Object.entries(tagFamilies ?? {})) {
+    for (const [targetId, target] of tagFamilyTargetEntries(family)) {
+      items.push({ familyId, family, targetId, target });
+    }
+  }
+  return items;
+}
+
+function stripRelationPrefix(label) {
+  return String(label || "")
+    .replace(/^(자기|상대|캐릭터|파트너)\s+/, "")
+    .trim();
+}
+
+function relationFamilyInfo(familyId, family) {
+  const slotIds = tagFamilySlotIds(family);
+  if (slotIds.length !== 1) {
+    return null;
+  }
+
+  const pattern = String(family?.pattern || "");
+  const ownMarker = "_own_";
+  const anotherMarker = "_another's_";
+  const marker = pattern.includes(ownMarker)
+    ? ownMarker
+    : pattern.includes(anotherMarker) ? anotherMarker : "";
+  if (!marker) {
+    return null;
+  }
+
+  const [prefix] = pattern.split(marker);
+  if (!prefix || !RELATION_FAMILY_GROUP_PREFIXES.has(prefix)) {
+    return null;
+  }
+
+  const relation = marker === ownMarker
+    ? { value: "own", label: "자기", order: 0 }
+    : { value: "another's", label: "상대", order: 1 };
+  const baseLabel = stripRelationPrefix(family?.label) || prefix.replaceAll("_", " ");
+  const baseId = familyId.replace(/(?:Own|Another)$/, "") || prefix.replace(/[^A-Za-z0-9_]/g, "");
+
+  return {
+    baseId,
+    baseLabel,
+    prefix,
+    relation,
+    slotId: slotIds[0],
+  };
+}
+
+function familyTargetsSignature(family) {
+  return tagFamilyTargetEntries(family)
+    .map(([targetId, target]) => `${targetId}:${target?.placeholder || ""}:${tagFamilyUiGroup(family, target)}`)
+    .join("|");
+}
+
+function groupedRelationFamilies(tagFamilies = {}) {
+  const buckets = new Map();
+
+  for (const [familyId, family] of Object.entries(tagFamilies ?? {})) {
+    const info = relationFamilyInfo(familyId, family);
+    if (!info) {
+      continue;
+    }
+    const key = `${info.prefix}\u0000${info.slotId}\u0000${familyTargetsSignature(family)}`;
+    const bucket = buckets.get(key) || {
+      groupId: info.baseId,
+      label: info.baseLabel,
+      prefix: info.prefix,
+      slotId: info.slotId,
+      members: [],
+      familyIds: new Set(),
+    };
+    bucket.members.push({ familyId, family, info });
+    bucket.familyIds.add(familyId);
+    bucket.label = bucket.label || info.baseLabel;
+    buckets.set(key, bucket);
+  }
+
+  return [...buckets.values()]
+    .filter((bucket) => bucket.members.length > 1)
+    .map((bucket) => {
+      bucket.members.sort((left, right) => left.info.relation.order - right.info.relation.order);
+      return bucket;
+    });
+}
+
+function groupedRelationFamilyIds(tagFamilies = {}) {
+  const ids = new Set();
+  for (const group of groupedRelationFamilies(tagFamilies)) {
+    for (const familyId of group.familyIds) {
+      ids.add(familyId);
+    }
+  }
+  return ids;
+}
+
+function familyGroupTargetItems(tagFamilies = {}) {
+  const items = [];
+  for (const group of groupedRelationFamilies(tagFamilies)) {
+    const firstFamily = group.members[0]?.family;
+    for (const [targetId, target] of tagFamilyTargetEntries(firstFamily)) {
+      items.push({ group, targetId, target });
+    }
+  }
+  return items;
 }
 
 function navigatorItemAccent(item) {
@@ -919,30 +1100,51 @@ function navigatorItemAccent(item) {
   return accentForLabel(item.uiGroup || item.context);
 }
 
-function availableUiGroups(config, attributeBoards = {}) {
+function availableUiGroups(config, attributeBoards = {}, tagFamilies = {}, uiComposites = {}) {
   const groups = new Set();
   for (const item of Object.values(config ?? {})) {
     groups.add(categoryUiGroup(item));
   }
+  for (const { family, target } of tagFamilyTargetItems(tagFamilies)) {
+    groups.add(tagFamilyUiGroup(family, target));
+  }
+  for (const { group, target } of familyGroupTargetItems(tagFamilies)) {
+    const family = group.members[0]?.family;
+    groups.add(tagFamilyUiGroup(family, target));
+  }
   for (const board of Object.values(attributeBoards ?? {})) {
     groups.add(attributeBoardUiGroup(board));
   }
-  return [...groups];
+  for (const composite of Object.values(uiComposites ?? {})) {
+    const group = normalizeUiGroup(composite?.uiGroup);
+    if (group) {
+      groups.add(group);
+    }
+  }
+  const ordered = UI_GROUP_ORDER.filter((group) => groups.has(group));
+  const remaining = [...groups].filter((group) => !UI_GROUP_ORDER.includes(group));
+  return [...ordered, ...remaining];
 }
 
 function activeUiGroup(node, config = node.promptboardConfig ?? {}) {
-  const groups = availableUiGroups(config, node.promptboardYamlModel?.attributeBoards);
-  const active = normalizeUiGroup(node.promptboardActiveUiGroup) || GROUP_ALL;
-  if (active === GROUP_ALL || groups.includes(active)) {
+  const groups = availableUiGroups(
+    config,
+    node.promptboardYamlModel?.attributeBoards,
+    node.promptboardYamlModel?.tagFamilies,
+    node.promptboardYamlModel?.uiComposites,
+  );
+  const active = normalizeUiGroup(node.promptboardActiveUiGroup);
+  if (active && active !== LEGACY_GROUP_ALL && groups.includes(active)) {
     return active;
   }
-  node.promptboardActiveUiGroup = GROUP_ALL;
-  return GROUP_ALL;
+  const fallback = groups[0] || "";
+  node.promptboardActiveUiGroup = fallback;
+  return fallback;
 }
 
 function categoryMatchesActiveUiGroup(node, item) {
   const active = activeUiGroup(node);
-  return active === GROUP_ALL || categoryUiGroup(item) === active;
+  return categoryUiGroup(item) === active;
 }
 
 function visibleCategoryEntries(node) {
@@ -957,7 +1159,7 @@ function allCategoryEntries(node) {
 function visibleAttributeBoardEntries(node) {
   const active = activeUiGroup(node);
   return Object.entries(node.promptboardYamlModel?.attributeBoards ?? {}).filter(([, board]) =>
-    active === GROUP_ALL || attributeBoardUiGroup(board) === active,
+    attributeBoardUiGroup(board) === active,
   );
 }
 
@@ -965,23 +1167,117 @@ function allAttributeBoardEntries(node) {
   return Object.entries(node.promptboardYamlModel?.attributeBoards ?? {});
 }
 
+function visibleTagFamilyEntries(node) {
+  const active = activeUiGroup(node);
+  const groupedIds = groupedRelationFamilyIds(node.promptboardYamlModel?.tagFamilies);
+  return tagFamilyTargetItems(node.promptboardYamlModel?.tagFamilies).filter(({ familyId, family, target }) =>
+    !groupedIds.has(familyId) && tagFamilyUiGroup(family, target) === active,
+  );
+}
+
+function visibleFamilyGroupEntries(node) {
+  const active = activeUiGroup(node);
+  return familyGroupTargetItems(node.promptboardYamlModel?.tagFamilies).filter(({ group, target }) => {
+    const family = group.members[0]?.family;
+    return tagFamilyUiGroup(family, target) === active;
+  });
+}
+
+function allTagFamilyEntries(node) {
+  return tagFamilyTargetItems(node.promptboardYamlModel?.tagFamilies);
+}
+
 function navigatorItemId(item) {
   if (!item) {
     return "";
   }
+  if (item.kind === "composite") {
+    return `composite\u0000${item.compositeId}`;
+  }
   if (item.kind === "attribute" || item.kind === "attributeTarget") {
     return `attributeTarget\u0000${item.boardId}\u0000${item.targetId}`;
+  }
+  if (item.kind === "family") {
+    return `family\u0000${item.familyId}\u0000${item.targetId || "default"}`;
+  }
+  if (item.kind === "familyGroup") {
+    return `familyGroup\u0000${item.groupId}\u0000${item.targetId || "default"}`;
   }
   return `category\u0000${item.category}`;
 }
 
-function navigatorItemFromMatch(match) {
+function familyGroupItemForFamily(node, familyId, targetId) {
+  for (const { group, targetId: candidateTargetId, target } of familyGroupTargetItems(node.promptboardYamlModel?.tagFamilies)) {
+    if (!group.familyIds.has(familyId)) {
+      continue;
+    }
+    const resolvedTargetId = targetId || candidateTargetId;
+    if (candidateTargetId !== resolvedTargetId) {
+      continue;
+    }
+    return {
+      kind: "familyGroup",
+      groupId: group.groupId,
+      group,
+      targetId: resolvedTargetId,
+      label: group.label,
+      context: tagFamilyUiGroup(group.members[0]?.family, target),
+      uiGroup: tagFamilyUiGroup(group.members[0]?.family, target),
+      placeholder: target?.placeholder,
+    };
+  }
+  return null;
+}
+
+function compositeItemForMatch(node, match) {
+  if (!node || !match) {
+    return null;
+  }
+  return navigatorItems(node).find((item) =>
+    item.kind === "composite" && item.children?.some((child) => {
+      if (match.kind === "category") {
+        return child.kind === "category" && child.category === match.category;
+      }
+      if (match.kind === "family") {
+        return child.kind === "family" &&
+          child.familyId === match.familyId &&
+          (child.targetId || "default") === (match.targetId || "default");
+      }
+      return false;
+    }),
+  ) || null;
+}
+
+function navigatorItemFromMatch(match, node = null) {
   if (!match) {
     return "";
   }
-  return match.kind === "attribute"
-    ? navigatorItemId({ kind: "attributeTarget", boardId: match.boardId, targetId: match.targetId })
-    : navigatorItemId({ kind: "category", category: match.category });
+  if (match.kind === "attribute") {
+    return navigatorItemId({ kind: "attributeTarget", boardId: match.boardId, targetId: match.targetId });
+  }
+  if (match.kind === "family") {
+    if (node) {
+      const compositeItem = compositeItemForMatch(node, match);
+      if (compositeItem) {
+        return navigatorItemId(compositeItem);
+      }
+      const groupItem = familyGroupItemForFamily(node, match.familyId, match.targetId);
+      if (groupItem) {
+        return navigatorItemId(groupItem);
+      }
+    }
+    return navigatorItemId({ kind: "family", familyId: match.familyId, targetId: match.targetId });
+  }
+  if (match.kind === "familyGroup") {
+    return navigatorItemId({ kind: "familyGroup", groupId: match.groupId, targetId: match.targetId });
+  }
+  if (node) {
+    const compositeItem = compositeItemForMatch(node, match);
+    if (compositeItem) {
+      return navigatorItemId(compositeItem);
+    }
+  }
+  return navigatorItemId({ kind: "category", category: match.category });
 }
 
 function tagDisplayLabel(tag) {
@@ -1029,6 +1325,88 @@ function tagItemsForTagSet(tagSet) {
   return tagItemsForTags(tagSet?.tags ?? [], tagSet?.tagItems);
 }
 
+function compositeChildKey(child) {
+  if (child?.kind === "category") {
+    return `category\u0000${child.category}`;
+  }
+  if (child?.kind === "family") {
+    return `family\u0000${child.family}\u0000${child.target || "default"}`;
+  }
+  return "";
+}
+
+function navigatorCompositeKey(item) {
+  if (item?.kind === "category") {
+    return `category\u0000${item.category}`;
+  }
+  if (item?.kind === "family") {
+    return `family\u0000${item.familyId}\u0000${item.targetId || "default"}`;
+  }
+  return "";
+}
+
+function createCompositeNavigatorItem(compositeId, composite, children) {
+  const uiGroup = normalizeUiGroup(composite?.uiGroup) || children[0]?.uiGroup || DEFAULT_UI_GROUP;
+  return {
+    kind: "composite",
+    compositeId,
+    label: composite?.label || compositeId,
+    context: uiGroup,
+    uiGroup,
+    children,
+  };
+}
+
+function mergeNavigatorItems(items, uiComposites = {}) {
+  const compositeEntries = Object.entries(uiComposites ?? {});
+  if (!compositeEntries.length) {
+    return items;
+  }
+
+  const consumed = new Set();
+  const insertions = new Map();
+  for (const [compositeId, composite] of compositeEntries) {
+    const childKeys = (composite.items ?? []).map(compositeChildKey).filter(Boolean);
+    if (!childKeys.length) {
+      continue;
+    }
+    const matches = [];
+    for (const childKey of childKeys) {
+      const index = items.findIndex((item, itemIndex) =>
+        !consumed.has(itemIndex) && navigatorCompositeKey(item) === childKey,
+      );
+      if (index < 0) {
+        matches.length = 0;
+        break;
+      }
+      matches.push({ index, item: items[index] });
+    }
+    if (matches.length !== childKeys.length) {
+      continue;
+    }
+    const firstIndex = Math.min(...matches.map((match) => match.index));
+    for (const match of matches) {
+      consumed.add(match.index);
+    }
+    insertions.set(firstIndex, createCompositeNavigatorItem(
+      compositeId,
+      composite,
+      matches.sort((left, right) => left.index - right.index).map((match) => match.item),
+    ));
+  }
+
+  const merged = [];
+  for (let index = 0; index < items.length; index += 1) {
+    if (insertions.has(index)) {
+      merged.push(insertions.get(index));
+    }
+    if (!consumed.has(index)) {
+      merged.push(items[index]);
+    }
+  }
+  return merged;
+}
+
 function navigatorItems(node) {
   const items = [];
   for (const [category, item] of visibleCategoryEntries(node)) {
@@ -1041,6 +1419,32 @@ function navigatorItems(node) {
       uiGroup,
       tags: item.tags ?? [],
       tagItems: tagItemsForCategory(item),
+    });
+  }
+  for (const { familyId, family, targetId, target } of visibleTagFamilyEntries(node)) {
+    const uiGroup = tagFamilyUiGroup(family, target);
+    items.push({
+      kind: "family",
+      familyId,
+      targetId,
+      label: tagFamilyTargetLabel(familyId, family, targetId, target),
+      context: uiGroup,
+      uiGroup,
+      placeholder: target.placeholder,
+    });
+  }
+  for (const { group, targetId, target } of visibleFamilyGroupEntries(node)) {
+    const family = group.members[0]?.family;
+    const uiGroup = tagFamilyUiGroup(family, target);
+    items.push({
+      kind: "familyGroup",
+      groupId: group.groupId,
+      group,
+      targetId,
+      label: group.label,
+      context: uiGroup,
+      uiGroup,
+      placeholder: target.placeholder,
     });
   }
   for (const [boardId, board] of visibleAttributeBoardEntries(node)) {
@@ -1057,17 +1461,29 @@ function navigatorItems(node) {
       });
     }
   }
-  return items;
+  return mergeNavigatorItems(items, node.promptboardYamlModel?.uiComposites);
 }
 
 function navigatorItemCount(node, item) {
   const state = node.promptboardState ?? {};
+  if (item?.kind === "composite") {
+    return item.children.reduce((total, child) => total + navigatorItemCount(node, child), 0);
+  }
   if (item?.kind === "attribute") {
     return attributeSelectedTexts(state, item.boardId, item.targetId, item.attributeId).length;
   }
   if (item?.kind === "attributeTarget") {
     const target = node.promptboardYamlModel?.attributeBoards?.[item.boardId]?.targets?.[item.targetId];
     return attributeCountForTarget(state, item.boardId, item.targetId, target);
+  }
+  if (item?.kind === "family") {
+    return tagFamilySelectedCombinations(state, item.familyId, item.targetId).length;
+  }
+  if (item?.kind === "familyGroup") {
+    return item.group.members.reduce(
+      (total, member) => total + tagFamilySelectedCombinations(state, member.familyId, item.targetId).length,
+      0,
+    );
   }
   return selectedCount(state, item?.category, item?.tags ?? []);
 }
@@ -1207,6 +1623,9 @@ function pruneSelectedState(model, selectedState, warnings = []) {
   if (Object.keys(model.attributeBoards ?? {}).length) {
     nextState[ATTRIBUTE_STATE_KEY] = normalizeAttributeState(model, selectedState, warnings);
   }
+  if (Object.keys(model.tagFamilies ?? {}).length) {
+    nextState[FAMILY_STATE_KEY] = normalizeTagFamilyState(model, selectedState, warnings);
+  }
   return nextState;
 }
 
@@ -1215,12 +1634,11 @@ function selectedCount(state, category, tags) {
   return tags.filter((tag) => selected.has(tag.text)).length;
 }
 
-function selectedCountsByUiGroup(config, attributeBoards, state) {
-  const counts = { [GROUP_ALL]: 0 };
+function selectedCountsByUiGroup(config, attributeBoards, tagFamilies, state) {
+  const counts = {};
   for (const [category, item] of Object.entries(config ?? {})) {
     const count = selectedCount(state, category, item.tags ?? []);
     const group = categoryUiGroup(item);
-    counts[GROUP_ALL] += count;
     counts[group] = (counts[group] ?? 0) + count;
   }
   for (const [boardId, board] of Object.entries(attributeBoards ?? {})) {
@@ -1230,10 +1648,19 @@ function selectedCountsByUiGroup(config, attributeBoards, state) {
       0,
     );
     const group = attributeBoardUiGroup(board);
-    counts[GROUP_ALL] += count;
+    counts[group] = (counts[group] ?? 0) + count;
+  }
+  for (const { familyId, family, targetId, target } of tagFamilyTargetItems(tagFamilies)) {
+    const count = tagFamilySelectedCombinations(state, familyId, targetId).length;
+    const group = tagFamilyUiGroup(family, target);
     counts[group] = (counts[group] ?? 0) + count;
   }
   return counts;
+}
+
+function selectedTotalCount(config, attributeBoards, tagFamilies, state) {
+  return Object.values(selectedCountsByUiGroup(config, attributeBoards, tagFamilies, state))
+    .reduce((total, count) => total + count, 0);
 }
 
 function setSelected(state, category, tagText, enabled) {
@@ -1354,6 +1781,9 @@ function resetSelection(node) {
   if (Object.keys(node.promptboardYamlModel?.attributeBoards ?? {}).length) {
     Object.assign(state, emptyAttributeState(node.promptboardYamlModel));
   }
+  if (Object.keys(node.promptboardYamlModel?.tagFamilies ?? {}).length) {
+    Object.assign(state, emptyTagFamilyState(node.promptboardYamlModel));
+  }
 
   syncState(node, state);
   renderCards(node);
@@ -1418,13 +1848,50 @@ function collectBoardSearchMatches(node, regex) {
       }
     }
   }
+  for (const { familyId, family, targetId, target } of allTagFamilyEntries(node)) {
+    const uiGroup = tagFamilyUiGroup(family, target);
+    const familyLabel = tagFamilyTargetLabel(familyId, family, targetId, target);
+    if (regex.test(familyId) || regex.test(familyLabel) || regex.test(targetId)) {
+      matches.push({
+        kind: "family",
+        familyId,
+        targetId,
+        tagText: "",
+        label: String(familyLabel),
+        description: "",
+        uiGroup,
+        context: uiGroup,
+      });
+    }
+    for (const combination of tagFamilyAllowedCombinations(node.promptboardYamlModel, familyId)) {
+      const tagText = composeTagFamilyText(family, combination);
+      const label = tagFamilyCombinationLabel(node.promptboardYamlModel, familyId, combination) || tagText;
+      if (regex.test(label) || regex.test(tagText)) {
+        matches.push({
+          kind: "family",
+          familyId,
+          targetId,
+          combination,
+          tagText,
+          label,
+          description: tagText,
+          uiGroup,
+          context: familyLabel,
+        });
+      }
+    }
+  }
   return matches;
 }
 
 function boardSearchMatchKey(match) {
-  return match?.kind === "attribute"
-    ? `attribute\u0000${match.boardId}\u0000${match.targetId}\u0000${match.attributeId}\u0000${match.tagText}`
-    : `category\u0000${match?.category}\u0000${match?.tagText}`;
+  if (match?.kind === "attribute") {
+    return `attribute\u0000${match.boardId}\u0000${match.targetId}\u0000${match.attributeId}\u0000${match.tagText}`;
+  }
+  if (match?.kind === "family") {
+    return `family\u0000${match.familyId}\u0000${match.targetId || "default"}\u0000${match.tagText}`;
+  }
+  return `category\u0000${match?.category}\u0000${match?.tagText}`;
 }
 
 function currentBoardSearchMatch(node) {
@@ -1498,6 +1965,17 @@ function boardSearchMatchSelected(node, match) {
       match.targetId,
       match.attributeId,
     ).includes(match.tagText);
+  }
+  if (match.kind === "family") {
+    return match.combination
+      ? tagFamilyCombinationSelected(
+          node.promptboardYamlModel,
+          node.promptboardState,
+          match.familyId,
+          match.targetId,
+          match.combination,
+        )
+      : tagFamilySelectedCombinations(node.promptboardState, match.familyId, match.targetId).length > 0;
   }
   return categorySelectedArray(node.promptboardState, match.category).includes(match.tagText);
 }
@@ -1594,6 +2072,16 @@ function findBoardSearchElement(node, match) {
     return null;
   }
   const roots = [scroll, node.promptboardNavigatorRailHost].filter(Boolean);
+  const compositeItem = compositeItemForMatch(node, match);
+  if (compositeItem && !match.tagText) {
+    for (const root of roots) {
+      for (const element of root.querySelectorAll(".promptboard-navigator-category")) {
+        if (element.dataset.compositeId === compositeItem.compositeId) {
+          return element;
+        }
+      }
+    }
+  }
 
   if (match.kind === "attribute") {
     for (const element of scroll.querySelectorAll(".promptboard-tag")) {
@@ -1604,6 +2092,36 @@ function findBoardSearchElement(node, match) {
         element.dataset.tagText === match.tagText
       ) {
         return element;
+      }
+    }
+    return null;
+  }
+  if (match.kind === "family") {
+    const groupItem = familyGroupItemForFamily(node, match.familyId, match.targetId);
+    if (groupItem && !match.tagText) {
+      for (const root of roots) {
+        for (const element of root.querySelectorAll(".promptboard-navigator-category")) {
+          if (
+            element.dataset.familyGroupId === groupItem.groupId &&
+            element.dataset.targetId === groupItem.targetId
+          ) {
+            return element;
+          }
+        }
+      }
+    }
+    const selector = match.tagText ? ".promptboard-tag" : ".promptboard-navigator-category";
+    for (const root of roots) {
+      for (const element of root.querySelectorAll(selector)) {
+        if (element.dataset.familyId !== match.familyId) {
+          continue;
+        }
+        if (element.dataset.targetId !== match.targetId) {
+          continue;
+        }
+        if (!match.tagText || element.dataset.tagText === match.tagText) {
+          return element;
+        }
       }
     }
     return null;
@@ -1646,7 +2164,15 @@ function navigateToBoardSearchMatch(node, index) {
   if (match?.uiGroup) {
     node.promptboardActiveUiGroup = match.uiGroup;
   }
-  setActiveNavigatorItem(node, navigatorItemFromMatch(match));
+  const navigatorId = navigatorItemFromMatch(match, node);
+  setActiveNavigatorItem(node, navigatorId);
+  if (match.kind === "family") {
+    const groupItem = familyGroupItemForFamily(node, match.familyId, match.targetId);
+    if (groupItem) {
+      const draft = ensureFamilyDraft(node);
+      draft[navigatorId] = { ...(draft[navigatorId] || {}), memberFamilyId: match.familyId };
+    }
+  }
   setBoardSearchCount(node, state.index + 1, state.matches.length);
   renderCards(node);
   hideBoardSearchMenu(node);
@@ -1882,28 +2408,21 @@ function ensureStyles() {
 
     .promptboard-toolbar {
       display: grid;
-      grid-template-rows: auto auto auto;
-      gap: 4px;
-      min-width: 0;
-    }
-
-    .promptboard-toolbar-yaml-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(84px, 96px);
+      grid-template-rows: auto auto;
       gap: 4px;
       min-width: 0;
     }
 
     .promptboard-toolbar-template-row {
       display: grid;
-      grid-template-columns: minmax(104px, 0.95fr) minmax(118px, 1.35fr) minmax(70px, 88px) minmax(58px, 76px);
+      grid-template-columns: minmax(150px, 1.15fr) minmax(112px, 0.8fr) minmax(128px, 1fr) ${TOOLBAR_ACTION_WIDTH};
       gap: 4px;
       min-width: 0;
     }
 
     .promptboard-toolbar-search-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(96px, 128px);
+      grid-template-columns: minmax(0, 1fr) ${TOOLBAR_ACTION_WIDTH};
       gap: 4px;
       min-width: 0;
     }
@@ -2146,6 +2665,60 @@ function ensureStyles() {
       color: #fff1f1;
     }
 
+    .promptboard-reset-menu {
+      position: relative;
+      min-width: 0;
+    }
+
+    .promptboard-reset-menu > .promptboard-button {
+      width: 100%;
+    }
+
+    .promptboard-reset-menu-list {
+      box-sizing: border-box;
+      position: absolute;
+      z-index: 20;
+      top: calc(100% + 3px);
+      right: 0;
+      display: none;
+      width: max(170px, 100%);
+      padding: 4px;
+      border: 1px solid rgba(112, 112, 112, 0.9);
+      border-radius: 4px;
+      background: rgba(24, 24, 24, 0.98);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.38);
+    }
+
+    .promptboard-reset-menu.is-open .promptboard-reset-menu-list {
+      display: grid;
+      gap: 3px;
+    }
+
+    .promptboard-reset-menu-item {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 24px;
+      padding: 4px 7px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      background: transparent;
+      color: #e5d3d3;
+      font: 11px Arial, sans-serif;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .promptboard-reset-menu-item:not(:disabled):hover {
+      border-color: rgba(176, 108, 108, 0.72);
+      background: rgba(76, 42, 42, 0.92);
+      color: #fff1f1;
+    }
+
+    .promptboard-reset-menu-item:disabled {
+      color: rgba(218, 206, 206, 0.42);
+      cursor: default;
+    }
+
     .promptboard-button.is-done {
       border-color: rgba(92, 173, 112, 0.95);
       background: rgba(45, 112, 65, 0.92);
@@ -2172,51 +2745,68 @@ function ensureStyles() {
       font-size: 10px;
     }
 
-    .promptboard-save-combo {
+    .promptboard-template-action-menu {
       position: relative;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 24px;
       min-width: 0;
     }
 
-    .promptboard-save-combo::after {
-      content: "▾";
-      position: absolute;
-      right: 7px;
-      top: 50%;
-      transform: translateY(-54%);
-      color: #d8d8d8;
-      font: 11px Arial, sans-serif;
-      line-height: 1;
-      pointer-events: none;
+    .promptboard-template-action-menu > .promptboard-button {
+      width: 100%;
     }
 
-    .promptboard-save-combo .promptboard-button {
-      border-radius: 3px 0 0 3px;
-      border-right: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .promptboard-save-mode {
-      appearance: none;
-      -webkit-appearance: none;
+    .promptboard-template-action-list {
       box-sizing: border-box;
-      width: 24px;
-      height: 22px;
-      padding: 0;
-      border: 1px solid rgba(120, 120, 120, 0.78);
-      border-radius: 0 3px 3px 0;
-      background: rgba(28, 28, 28, 0.96);
-      color: transparent;
+      position: absolute;
+      z-index: 22;
+      top: calc(100% + 3px);
+      right: 0;
+      display: none;
+      width: max(150px, 100%);
+      padding: 4px;
+      border: 1px solid rgba(112, 112, 112, 0.9);
+      border-radius: 4px;
+      background: rgba(24, 24, 24, 0.98);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.38);
+    }
+
+    .promptboard-template-action-menu.is-open .promptboard-template-action-list {
+      display: grid;
+      gap: 3px;
+    }
+
+    .promptboard-template-action-item {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 24px;
+      padding: 4px 7px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      background: transparent;
+      color: #e0e0e0;
       font: 11px Arial, sans-serif;
+      text-align: left;
       cursor: pointer;
     }
 
-    .promptboard-save-mode:hover {
-      border-color: #888;
-      background: rgba(48, 48, 48, 0.96);
+    .promptboard-template-action-item:not(:disabled):hover {
+      border-color: rgba(116, 156, 196, 0.72);
+      background: rgba(42, 58, 76, 0.92);
+      color: #f3f8ff;
+    }
+
+    .promptboard-template-action-item.is-danger {
+      color: #f0d8d8;
+    }
+
+    .promptboard-template-action-item.is-danger:not(:disabled):hover {
+      border-color: rgba(176, 108, 108, 0.72);
+      background: rgba(76, 42, 42, 0.92);
+      color: #fff1f1;
+    }
+
+    .promptboard-template-action-item:disabled {
+      color: rgba(218, 218, 218, 0.42);
+      cursor: default;
     }
 
 	    .promptboard-editor {
@@ -2275,7 +2865,7 @@ function ensureStyles() {
 	    .promptboard-navigator-rail-host {
 	      box-sizing: border-box;
 	      display: grid;
-	      grid-template-columns: 52px minmax(0, 1fr);
+	      grid-template-columns: minmax(0, 1fr);
 	      align-items: start;
 	      gap: 5px;
 	      min-width: 0;
@@ -2396,36 +2986,6 @@ function ensureStyles() {
 	    .promptboard-navigator-category.is-active .promptboard-navigator-category-count {
 	      background: color-mix(in srgb, var(--promptboard-accent) 36%, rgba(154, 196, 236, 0.32));
 	      color: #ffffff;
-	    }
-
-	    .promptboard-navigator-action-row {
-	      display: flex;
-	      justify-content: flex-start;
-	      min-width: 0;
-	      margin: 0;
-	    }
-
-	    .promptboard-navigator-clear {
-	      box-sizing: border-box;
-	      width: 52px;
-	      height: 24px;
-	      border: 1px solid rgba(120, 120, 120, 0.72);
-	      border-radius: 3px;
-	      background: rgba(48, 36, 36, 0.92);
-	      color: #decaca;
-	      font: 10px Arial, sans-serif;
-	      cursor: pointer;
-	    }
-
-	    .promptboard-navigator-clear:not(:disabled):hover {
-	      border-color: rgba(176, 108, 108, 0.95);
-	      background: rgba(76, 42, 42, 0.96);
-	      color: #fff0f0;
-	    }
-
-	    .promptboard-navigator-clear:disabled {
-	      cursor: default;
-	      opacity: 0.45;
 	    }
 
 	    .promptboard-navigator-path {
@@ -2707,12 +3267,150 @@ function createButton(text, title, onClick) {
   return button;
 }
 
-function createResetButton(node) {
-  const button = createButton(RESET_BUTTON, "선택된 태그 모두 해제", () => {
-    resetSelection(node);
+function resetMenuMetrics(node) {
+  const config = node.promptboardConfig ?? {};
+  const attributeBoards = node.promptboardYamlModel?.attributeBoards ?? {};
+  const tagFamilies = node.promptboardYamlModel?.tagFamilies ?? {};
+  const state = node.promptboardState ?? {};
+  const items = navigatorItems(node);
+  const active = activeNavigatorItem(node, items);
+  const group = activeUiGroup(node, config);
+  const counts = selectedCountsByUiGroup(config, attributeBoards, tagFamilies, state);
+  return {
+    active,
+    activeCount: active ? navigatorItemCount(node, active) : 0,
+    group,
+    groupCount: counts[group] ?? 0,
+    totalCount: selectedTotalCount(config, attributeBoards, tagFamilies, state),
+  };
+}
+
+function resetMenuItem(label, disabled, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "promptboard-reset-menu-item";
+  button.textContent = label;
+  button.disabled = disabled;
+  stopCanvasEvents(button);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!button.disabled) {
+      onClick();
+    }
   });
-  button.classList.add("promptboard-clear-selection");
   return button;
+}
+
+function createResetMenu(node) {
+  const root = document.createElement("div");
+  const trigger = createButton(RESET_BUTTON, "선택 초기화 메뉴", () => {
+    root.classList.toggle("is-open");
+  });
+  const menu = document.createElement("div");
+
+  root.className = "promptboard-reset-menu";
+  trigger.classList.add("promptboard-clear-selection");
+  menu.className = "promptboard-reset-menu-list";
+  root.append(trigger, menu);
+
+  const renderMenu = () => {
+    const metrics = resetMenuMetrics(node);
+    const activeLabel = metrics.active?.label || "현재 항목";
+    const groupLabel = metrics.group || "현재 그룹";
+    menu.replaceChildren(
+      resetMenuItem(`${activeLabel} 초기화`, !metrics.activeCount, () => {
+        root.classList.remove("is-open");
+        clearNavigatorItemSelection(node, metrics.active);
+      }),
+      resetMenuItem(`${groupLabel} 초기화`, !metrics.groupCount, () => {
+        root.classList.remove("is-open");
+        resetCurrentGroupSelection(node);
+      }),
+      resetMenuItem("전체 초기화", !metrics.totalCount, () => {
+        root.classList.remove("is-open");
+        resetSelection(node);
+      }),
+    );
+    trigger.disabled = !metrics.totalCount;
+  };
+
+  node.promptboardUpdateResetMenu = renderMenu;
+  trigger.addEventListener("click", renderMenu);
+  root.addEventListener("focusout", () => {
+    window.setTimeout(() => {
+      if (!root.contains(document.activeElement)) {
+        root.classList.remove("is-open");
+      }
+    }, 80);
+  });
+  root.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      root.classList.remove("is-open");
+      trigger.focus();
+    }
+  });
+  renderMenu();
+  return root;
+}
+
+function templateActionItem(label, className, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `promptboard-template-action-item${className ? ` ${className}` : ""}`;
+  button.textContent = label;
+  stopCanvasEvents(button);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onClick();
+  });
+  return button;
+}
+
+function createTemplateActionMenu(node) {
+  const root = document.createElement("div");
+  const trigger = createButton(TEMPLATE_ACTION_BUTTON, "템플릿 작업", () => {
+    root.classList.toggle("is-open");
+  });
+  const menu = document.createElement("div");
+
+  root.className = "promptboard-template-action-menu";
+  menu.className = "promptboard-template-action-list";
+  menu.append(
+    templateActionItem(SAVE_TEMPLATE_BUTTON, "", () => {
+      root.classList.remove("is-open");
+      saveBoardTemplate(node, node.promptboardTemplateInput?.value ?? node.promptboardTemplateName ?? "");
+    }),
+    templateActionItem(SAVE_TEMPLATE_NEW_BUTTON, "", () => {
+      root.classList.remove("is-open");
+      saveBoardTemplateNew(node, node.promptboardTemplateInput?.value ?? node.promptboardTemplateName ?? "");
+    }),
+    templateActionItem(DELETE_TEMPLATE_BUTTON, "is-danger", () => {
+      root.classList.remove("is-open");
+      deleteBoardTemplate(node, node.promptboardTemplateInput?.value ?? node.promptboardTemplateName ?? "");
+    }),
+  );
+  root.append(trigger, menu);
+  root.addEventListener("focusout", () => {
+    window.setTimeout(() => {
+      if (!root.contains(document.activeElement)) {
+        root.classList.remove("is-open");
+      }
+    }, 80);
+  });
+  root.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      root.classList.remove("is-open");
+      trigger.focus();
+    }
+  });
+  node.promptboardTemplateActionButton = trigger;
+  return root;
 }
 
 function setYamlPanelOpen(node, open) {
@@ -2770,8 +3468,7 @@ function createGroupFilterButton(node, label, active, count) {
   button.type = "button";
   button.className = `promptboard-group-button${active ? " is-active" : ""}`;
   setAccent(button, accentForLabel(label));
-  button.title =
-    label === GROUP_ALL ? `Show all groups (${count} selected)` : `Show ${label} group (${count} selected)`;
+  button.title = `Show ${label} group (${count} selected)`;
   button.dataset.group = label;
   name.className = "promptboard-group-label";
   name.textContent = label;
@@ -2804,12 +3501,14 @@ function renderGroupFilter(node) {
 
   const config = node.promptboardConfig ?? {};
   const attributeBoards = node.promptboardYamlModel?.attributeBoards ?? {};
+  const tagFamilies = node.promptboardYamlModel?.tagFamilies ?? {};
+  const uiComposites = node.promptboardYamlModel?.uiComposites ?? {};
   const state = node.promptboardState ?? {};
-  const groups = availableUiGroups(config, attributeBoards);
+  const groups = availableUiGroups(config, attributeBoards, tagFamilies, uiComposites);
   const active = activeUiGroup(node, config);
-  const counts = selectedCountsByUiGroup(config, attributeBoards, state);
+  const counts = selectedCountsByUiGroup(config, attributeBoards, tagFamilies, state);
   container.replaceChildren();
-  for (const group of [GROUP_ALL, ...groups]) {
+  for (const group of groups) {
     container.append(createGroupFilterButton(node, group, group === active, counts[group] ?? 0));
   }
 }
@@ -2822,18 +3521,18 @@ function updateGroupFilterCounts(node) {
 
   const config = node.promptboardConfig ?? {};
   const attributeBoards = node.promptboardYamlModel?.attributeBoards ?? {};
+  const tagFamilies = node.promptboardYamlModel?.tagFamilies ?? {};
   const state = node.promptboardState ?? {};
-  const counts = selectedCountsByUiGroup(config, attributeBoards, state);
+  const counts = selectedCountsByUiGroup(config, attributeBoards, tagFamilies, state);
 
   for (const button of container.querySelectorAll(".promptboard-group-button")) {
-    const group = button.dataset.group || GROUP_ALL;
+    const group = button.dataset.group || "";
     const count = counts[group] ?? 0;
     const countLabel = button.querySelector(".promptboard-group-count");
     if (countLabel) {
       countLabel.textContent = String(count);
     }
-    button.title =
-      group === GROUP_ALL ? `Show all groups (${count} selected)` : `Show ${group} group (${count} selected)`;
+    button.title = `Show ${group} group (${count} selected)`;
   }
 }
 
@@ -2926,6 +3625,252 @@ function createAttributeTagButton(node, state, boardId, targetId, attributeId, t
     focusYamlAttributeTag(node, boardId, targetId, attributeId, tagText);
   });
   return button;
+}
+
+function createTagFamilyButton(node, state, familyId, targetId, combination, accent = null) {
+  const family = node.promptboardYamlModel?.tagFamilies?.[familyId];
+  const tagText = composeTagFamilyText(family, combination);
+  const displayLabel = tagFamilyCombinationLabel(node.promptboardYamlModel, familyId, combination) || tagText;
+  const selected = tagFamilyCombinationSelected(node.promptboardYamlModel, state, familyId, targetId, combination);
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+  const stateLabel = document.createElement("span");
+
+  button.type = "button";
+  button.className = `promptboard-tag${selected ? " is-on" : ""}`;
+  setAccent(button, accent);
+  button.title = tagText;
+  button.dataset.familyId = familyId;
+  button.dataset.targetId = targetId;
+  button.dataset.tagText = tagText;
+  button.setAttribute("aria-pressed", String(selected));
+  button.classList.toggle(
+    "is-search-match",
+    boardSearchMatchKey(currentBoardSearchMatch(node)) === boardSearchMatchKey({
+      kind: "family",
+      familyId,
+      targetId,
+      tagText,
+    }),
+  );
+  stopCanvasEvents(button);
+  label.className = "promptboard-tag-label";
+  label.textContent = displayLabel;
+  stateLabel.className = "promptboard-tag-state";
+  stateLabel.textContent = selected ? "on" : "off";
+  button.append(label, stateLabel);
+
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setTagFamilySelected(node.promptboardYamlModel, state, familyId, targetId, combination, !selected);
+    requestBoardFocus(node, { kind: "family", familyId, targetId, tagText });
+    syncState(node, state);
+    renderCards(node);
+    focusYamlTagFamily(node, familyId);
+  });
+  return button;
+}
+
+function ensureFamilyDraft(node) {
+  if (!node.promptboardFamilyDraft || typeof node.promptboardFamilyDraft !== "object") {
+    node.promptboardFamilyDraft = {};
+  }
+  return node.promptboardFamilyDraft;
+}
+
+function familyDraftForItem(node, item) {
+  const draft = ensureFamilyDraft(node);
+  const key = navigatorItemId(item);
+  if (!draft[key] || typeof draft[key] !== "object") {
+    draft[key] = {};
+  }
+  return draft[key];
+}
+
+function familySlotLabel(family, slotId) {
+  return String(family?.slots?.[slotId]?.label || slotId);
+}
+
+function tagSetOptionLabel(tag) {
+  return String(tag?.label || tag?.text || "");
+}
+
+function familyAllowedForPrefix(family, combinations, prefix, slotIds) {
+  return combinations.filter((combination) =>
+    slotIds.every((slotId) => !prefix[slotId] || combination?.[slotId] === prefix[slotId]),
+  );
+}
+
+function familySlotOptionsForStep(model, family, combinations, slotId, prefix, priorSlotIds) {
+  const allowed = familyAllowedForPrefix(family, combinations, prefix, priorSlotIds);
+  const allowedValues = new Set(allowed.map((combination) => combination?.[slotId]).filter(Boolean));
+  return tagFamilySlotTags(model, family, slotId).filter((tag) => allowedValues.has(tag.text));
+}
+
+function selectedFamilyGroupMember(item, state, draft) {
+  if (draft.memberFamilyId) {
+    const member = item.group.members.find((candidate) => candidate.familyId === draft.memberFamilyId);
+    if (member) {
+      return member;
+    }
+  }
+  const selectedMember = item.group.members.find((member) =>
+    tagFamilySelectedCombinations(state, member.familyId, item.targetId).length > 0,
+  );
+  return selectedMember || item.group.members[0] || null;
+}
+
+function createFamilyDraftOptionButton(labelText, title, selected, accent, onClick) {
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+  const stateLabel = document.createElement("span");
+
+  button.type = "button";
+  button.className = `promptboard-tag promptboard-family-step-option${selected ? " is-on" : ""}`;
+  setAccent(button, accent);
+  button.title = title || labelText;
+  button.setAttribute("aria-pressed", String(selected));
+  stopCanvasEvents(button);
+  label.className = "promptboard-tag-label";
+  label.textContent = labelText;
+  stateLabel.className = "promptboard-tag-state";
+  stateLabel.textContent = selected ? "on" : "off";
+  button.append(label, stateLabel);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onClick();
+  });
+  return button;
+}
+
+function appendFamilySlotStepItems(container, node, state, item, accent) {
+  const model = node.promptboardYamlModel;
+  const family = model?.tagFamilies?.[item.familyId];
+  const slotIds = tagFamilySlotIds(family);
+  const combinations = tagFamilyAllowedCombinations(model, item.familyId);
+  const draft = familyDraftForItem(node, item);
+
+  if (slotIds.length <= 1) {
+    if (combinations.length) {
+      container.append(createTagSection(item.label || family?.label || item.familyId));
+    }
+    for (const combination of combinations) {
+      container.append(createTagFamilyButton(node, state, item.familyId, item.targetId, combination, accent));
+    }
+    if (!combinations.length) {
+      const empty = document.createElement("div");
+      empty.className = "promptboard-empty";
+      empty.textContent = "No allowed combinations";
+      container.append(empty);
+    }
+    return;
+  }
+
+  if (!combinations.length) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-empty";
+    empty.textContent = "No allowed combinations";
+    container.append(empty);
+    return;
+  }
+
+  for (let index = 0; index < slotIds.length; index += 1) {
+    const slotId = slotIds[index];
+    const priorSlotIds = slotIds.slice(0, index);
+    const prefix = {};
+    for (const priorSlotId of priorSlotIds) {
+      if (draft[priorSlotId]) {
+        prefix[priorSlotId] = draft[priorSlotId];
+      }
+    }
+
+    container.append(createTagSection(familySlotLabel(family, slotId)));
+    if (priorSlotIds.some((priorSlotId) => !draft[priorSlotId])) {
+      const empty = document.createElement("div");
+      empty.className = "promptboard-empty promptboard-family-step-empty";
+      empty.textContent = `먼저 ${familySlotLabel(family, priorSlotIds.find((priorSlotId) => !draft[priorSlotId]))} 선택`;
+      container.append(empty);
+      break;
+    }
+
+    for (const option of familySlotOptionsForStep(model, family, combinations, slotId, prefix, priorSlotIds)) {
+      const nextCombination = { ...prefix, [slotId]: option.text };
+      const isFinalSlot = index === slotIds.length - 1;
+      const selected = isFinalSlot
+        ? tagFamilyCombinationSelected(model, state, item.familyId, item.targetId, nextCombination)
+        : draft[slotId] === option.text;
+      container.append(createFamilyDraftOptionButton(
+        tagSetOptionLabel(option),
+        option.description || option.text,
+        selected,
+        accent,
+        () => {
+          if (isFinalSlot) {
+            setTagFamilySelected(model, state, item.familyId, item.targetId, nextCombination, !selected);
+            requestBoardFocus(node, {
+              kind: "family",
+              familyId: item.familyId,
+              targetId: item.targetId,
+              tagText: composeTagFamilyText(family, nextCombination),
+            });
+            syncState(node, state);
+            focusYamlTagFamily(node, item.familyId);
+          } else {
+            draft[slotId] = option.text;
+            for (const followingSlotId of slotIds.slice(index + 1)) {
+              delete draft[followingSlotId];
+            }
+          }
+          renderCards(node);
+        },
+      ));
+    }
+  }
+}
+
+function appendFamilyGroupStepItems(container, node, state, item, accent) {
+  const draft = familyDraftForItem(node, item);
+  const member = selectedFamilyGroupMember(item, state, draft);
+  if (!member) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-empty";
+    empty.textContent = "No family group members";
+    container.append(empty);
+    return;
+  }
+
+  draft.memberFamilyId = member.familyId;
+  container.append(createTagSection("대상 관계"));
+  for (const candidate of item.group.members) {
+    const selected = candidate.familyId === draft.memberFamilyId;
+    container.append(createFamilyDraftOptionButton(
+      candidate.info.relation.label,
+      candidate.info.relation.value,
+      selected,
+      accent,
+      () => {
+        draft.memberFamilyId = candidate.familyId;
+        renderCards(node);
+        focusYamlTagFamily(node, candidate.familyId);
+      },
+    ));
+  }
+
+  const slotId = member.info.slotId;
+  const family = member.family;
+  const combinations = tagFamilyAllowedCombinations(node.promptboardYamlModel, member.familyId);
+  container.append(createTagSection(familySlotLabel(family, slotId)));
+  for (const combination of combinations) {
+    container.append(createTagFamilyButton(node, state, member.familyId, item.targetId, combination, accent));
+  }
+  if (!combinations.length) {
+    const empty = document.createElement("div");
+    empty.className = "promptboard-empty";
+    empty.textContent = "No allowed combinations";
+    container.append(empty);
+  }
 }
 
 function createTagModifierOptionButton(node, state, category, tag, modifierId, option, accent = null) {
@@ -3071,6 +4016,20 @@ function appendAttributeTagItems(container, node, state, boardId, targetId, attr
 
 function appendNavigatorTagItems(container, node, state, item) {
   const accent = navigatorItemAccent(item);
+  if (item?.kind === "composite") {
+    for (const child of item.children ?? []) {
+      appendNavigatorTagItems(container, node, state, child);
+    }
+    return;
+  }
+  if (item?.kind === "family") {
+    appendFamilySlotStepItems(container, node, state, item, accent);
+    return;
+  }
+  if (item?.kind === "familyGroup") {
+    appendFamilyGroupStepItems(container, node, state, item, accent);
+    return;
+  }
   if (item?.kind === "attributeTarget") {
     const target = node.promptboardYamlModel?.attributeBoards?.[item.boardId]?.targets?.[item.targetId];
     for (const [attributeId, attribute] of Object.entries(target?.attributes ?? {})) {
@@ -3107,6 +4066,16 @@ function findPendingBoardFocusElement(node, identity) {
     return null;
   }
   for (const element of scroll.querySelectorAll(".promptboard-tag")) {
+    if (identity.kind === "family") {
+      if (
+        element.dataset.familyId === identity.familyId &&
+        element.dataset.targetId === identity.targetId &&
+        element.dataset.tagText === identity.tagText
+      ) {
+        return element;
+      }
+      continue;
+    }
     if (element.dataset.boardId !== identity.boardId || element.dataset.targetId !== identity.targetId) {
       continue;
     }
@@ -3132,12 +4101,15 @@ function restorePendingBoardFocus(node) {
   });
 }
 
-function clearNavigatorItemSelection(node, item) {
-  const state = node.promptboardState ?? {};
-  if (item?.kind === "attribute") {
+function clearNavigatorItemState(model, state, item) {
+  if (item?.kind === "composite") {
+    for (const child of item.children ?? []) {
+      clearNavigatorItemState(model, state, child);
+    }
+  } else if (item?.kind === "attribute") {
     for (const text of attributeSelectedTexts(state, item.boardId, item.targetId, item.attributeId)) {
       setAttributeSelected(
-        node.promptboardYamlModel,
+        model,
         state,
         item.boardId,
         item.targetId,
@@ -3147,11 +4119,11 @@ function clearNavigatorItemSelection(node, item) {
       );
     }
   } else if (item?.kind === "attributeTarget") {
-    const target = node.promptboardYamlModel?.attributeBoards?.[item.boardId]?.targets?.[item.targetId];
+    const target = model?.attributeBoards?.[item.boardId]?.targets?.[item.targetId];
     for (const attributeId of Object.keys(target?.attributes ?? {})) {
       for (const text of attributeSelectedTexts(state, item.boardId, item.targetId, attributeId)) {
         setAttributeSelected(
-          node.promptboardYamlModel,
+          model,
           state,
           item.boardId,
           item.targetId,
@@ -3163,9 +4135,44 @@ function clearNavigatorItemSelection(node, item) {
     }
   } else if (item?.kind === "category") {
     state[item.category] = [];
+  } else if (item?.kind === "family") {
+    if (!state[FAMILY_STATE_KEY] || typeof state[FAMILY_STATE_KEY] !== "object" || Array.isArray(state[FAMILY_STATE_KEY])) {
+      state[FAMILY_STATE_KEY] = {};
+    }
+    if (!state[FAMILY_STATE_KEY][item.familyId] || typeof state[FAMILY_STATE_KEY][item.familyId] !== "object" || Array.isArray(state[FAMILY_STATE_KEY][item.familyId])) {
+      state[FAMILY_STATE_KEY][item.familyId] = {};
+    }
+    state[FAMILY_STATE_KEY][item.familyId][item.targetId] = [];
+  } else if (item?.kind === "familyGroup") {
+    if (!state[FAMILY_STATE_KEY] || typeof state[FAMILY_STATE_KEY] !== "object" || Array.isArray(state[FAMILY_STATE_KEY])) {
+      state[FAMILY_STATE_KEY] = {};
+    }
+    for (const member of item.group.members) {
+      if (!state[FAMILY_STATE_KEY][member.familyId] || typeof state[FAMILY_STATE_KEY][member.familyId] !== "object" || Array.isArray(state[FAMILY_STATE_KEY][member.familyId])) {
+        state[FAMILY_STATE_KEY][member.familyId] = {};
+      }
+      state[FAMILY_STATE_KEY][member.familyId][item.targetId] = [];
+    }
+  }
+}
+
+function clearNavigatorItemSelection(node, item) {
+  const state = node.promptboardState ?? {};
+  clearNavigatorItemState(node.promptboardYamlModel, state, item);
+  syncState(node, state);
+  renderCards(node);
+}
+
+function resetCurrentGroupSelection(node) {
+  const state = node.promptboardState ?? {};
+  for (const item of navigatorItems(node)) {
+    clearNavigatorItemState(node.promptboardYamlModel, state, item);
   }
   syncState(node, state);
   renderCards(node);
+  if (node.promptboardScroll) {
+    node.promptboardScroll.scrollTop = 0;
+  }
 }
 
 function createNavigatorTagButton(node, state, item, tag, accent = null) {
@@ -3175,19 +4182,37 @@ function createNavigatorTagButton(node, state, item, tag, accent = null) {
   return createTagButton(node, state, item.category, tag, accent);
 }
 
+function navigatorButtonLabel(item) {
+  const label = String(item?.label || "").trim();
+  const context = String(item?.context || "").trim();
+  if (!context) {
+    return label;
+  }
+  return label.replace(new RegExp(`^${escapeRegexText(context)}\\s*>\\s*`), "").trim() || label;
+}
+
 function createNavigatorCategoryButton(node, item, active) {
   const button = document.createElement("button");
   const label = document.createElement("span");
   const count = document.createElement("span");
   const selectedCountValue = navigatorItemCount(node, item);
+  const displayLabel = navigatorButtonLabel(item);
 
   button.type = "button";
   button.className = `promptboard-navigator-category${active ? " is-active" : ""}`;
   setAccent(button, navigatorItemAccent(item));
-  if (item.kind === "category") {
+  if (item.kind === "composite") {
+    button.dataset.compositeId = item.compositeId;
+  } else if (item.kind === "category") {
     button.dataset.category = item.category;
   } else if (item.kind === "attributeTarget") {
     button.dataset.boardId = item.boardId;
+    button.dataset.targetId = item.targetId;
+  } else if (item.kind === "family") {
+    button.dataset.familyId = item.familyId;
+    button.dataset.targetId = item.targetId;
+  } else if (item.kind === "familyGroup") {
+    button.dataset.familyGroupId = item.groupId;
     button.dataset.targetId = item.targetId;
   }
   button.title = item.kind === "category" && item.label !== item.category
@@ -3195,7 +4220,7 @@ function createNavigatorCategoryButton(node, item, active) {
     : `${item.context} > ${item.label} (${selectedCountValue} selected)`;
   button.setAttribute("aria-pressed", String(active));
   label.className = "promptboard-navigator-category-label";
-  label.textContent = item.label;
+  label.textContent = displayLabel;
   count.className = "promptboard-navigator-category-count";
   count.textContent = String(selectedCountValue);
   button.append(label, count);
@@ -3251,6 +4276,15 @@ function createSelectedSummaryButton(node, state, entry) {
         entry.text,
         false,
       );
+    } else if (entry.kind === "family") {
+      setTagFamilySelected(
+        node.promptboardYamlModel,
+        state,
+        entry.familyId,
+        entry.targetId,
+        entry.combination,
+        false,
+      );
     } else {
       setSelected(state, entry.category, entry.text, false);
     }
@@ -3258,6 +4292,8 @@ function createSelectedSummaryButton(node, state, entry) {
     renderCards(node);
     if (entry.kind === "attribute") {
       focusYamlAttributeTag(node, entry.boardId, entry.targetId, entry.attributeId, entry.text);
+    } else if (entry.kind === "family") {
+      focusYamlTagFamily(node, entry.familyId);
     } else {
       focusYamlCategoryTag(node, entry.category, entry.text);
     }
@@ -3305,6 +4341,23 @@ function selectedSummaryEntries(node, state) {
       }
     }
   }
+  for (const { familyId, family, targetId, target } of tagFamilyTargetItems(node.promptboardYamlModel?.tagFamilies)) {
+    for (const combination of tagFamilySelectedCombinations(state, familyId, targetId)) {
+      const text = composeTagFamilyText(family, combination);
+      const uiGroup = tagFamilyUiGroup(family, target);
+      entries.push({
+        kind: "family",
+        familyId,
+        targetId,
+        combination,
+        label: tagFamilyTargetLabel(familyId, family, targetId, target),
+        context: uiGroup,
+        accent: accentForLabel(uiGroup),
+        text,
+        display: tagFamilyCombinationLabel(node.promptboardYamlModel, familyId, combination) || text,
+      });
+    }
+  }
   return entries;
 }
 
@@ -3339,15 +4392,11 @@ function renderNavigator(node, scroll, state) {
   const shell = document.createElement("div");
   const main = document.createElement("section");
   const content = document.createElement("div");
-  const actionRow = document.createElement("div");
-  const clearButton = document.createElement("button");
   const tags = document.createElement("div");
-  const count = active ? navigatorItemCount(node, active) : 0;
 
   shell.className = "promptboard-navigator";
   main.className = "promptboard-navigator-main";
   content.className = "promptboard-navigator-content";
-  actionRow.className = "promptboard-navigator-action-row";
   tags.className = "promptboard-navigator-tags";
   if (active?.kind === "attributeTarget") {
     main.classList.add("is-attribute-target");
@@ -3370,18 +4419,6 @@ function renderNavigator(node, scroll, state) {
     return;
   }
 
-  clearButton.type = "button";
-  clearButton.className = "promptboard-navigator-clear";
-  clearButton.textContent = count ? "clear" : "clear";
-  clearButton.disabled = !count;
-  clearButton.title = "Clear current selection";
-  stopCanvasEvents(clearButton);
-  clearButton.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    clearNavigatorItemSelection(node, active);
-  });
-  actionRow.append(clearButton);
   appendNavigatorTagItems(tags, node, state, active);
   if (active.kind === "category" && !active.tags?.length) {
     const empty = document.createElement("div");
@@ -3391,9 +4428,7 @@ function renderNavigator(node, scroll, state) {
   }
 
   if (railHost) {
-    railHost.append(actionRow, createNavigatorCategoryRail(node, items, active));
-  } else {
-    content.append(actionRow);
+    railHost.append(createNavigatorCategoryRail(node, items, active));
   }
   content.append(tags);
   main.append(content);
@@ -3409,6 +4444,7 @@ function renderCards(node) {
     return;
   }
   renderGroupFilter(node);
+  node.promptboardUpdateResetMenu?.();
   node.promptboardNavigatorRailHost?.replaceChildren();
   node.promptboardNavigatorRailHost?.classList.add("is-empty");
   scroll.replaceChildren();
@@ -3464,9 +4500,7 @@ function yamlErrorMessage(error) {
 function updateTemplateControls(node) {
   const select = node.promptboardTemplateSelect;
   const nameInput = node.promptboardTemplateInput;
-  const saveButton = node.promptboardTemplateSaveButton;
-  const saveModeSelect = node.promptboardTemplateSaveModeSelect;
-  const deleteButton = node.promptboardTemplateDeleteButton;
+  const actionButton = node.promptboardTemplateActionButton;
   const status = node.promptboardTemplateStatusElement;
 
   if (select) {
@@ -3489,31 +4523,15 @@ function updateTemplateControls(node) {
     nameInput.value = node.promptboardTemplateName ?? "";
   }
 
-  const saveMode =
-    node.promptboardTemplateSaveMode === TEMPLATE_SAVE_MODE_NEW
-      ? TEMPLATE_SAVE_MODE_NEW
-      : TEMPLATE_SAVE_MODE_SAVE;
-
-  if (saveModeSelect) {
-    saveModeSelect.value = saveMode;
-  }
-
-  if (saveButton) {
+  if (actionButton) {
+    const saveMode = node.promptboardTemplateSaveDoneTarget || TEMPLATE_SAVE_MODE_SAVE;
     const saveDone =
       node.promptboardTemplateSaveDoneTarget === saveMode &&
       Number(node.promptboardTemplateSaveDoneUntil ?? 0) > Date.now();
-    saveButton.textContent = saveDone
-      ? "완료"
-      : saveMode === TEMPLATE_SAVE_MODE_NEW
-        ? SAVE_TEMPLATE_NEW_BUTTON
-        : SAVE_TEMPLATE_BUTTON;
-    saveButton.classList.toggle("is-done", saveDone);
-  }
-
-  if (deleteButton) {
     const deleteDone = Number(node.promptboardTemplateDeleteDoneUntil ?? 0) > Date.now();
-    deleteButton.textContent = deleteDone ? "완료" : DELETE_TEMPLATE_BUTTON;
-    deleteButton.classList.toggle("is-delete-done", deleteDone);
+    actionButton.textContent = saveDone || deleteDone ? "완료" : TEMPLATE_ACTION_BUTTON;
+    actionButton.classList.toggle("is-done", saveDone);
+    actionButton.classList.toggle("is-delete-done", deleteDone);
   }
 
   if (status) {
@@ -3720,10 +4738,6 @@ async function saveBoardTemplateNew(node, rawName) {
 }
 
 function saveBoardTemplateWithSelectedMode(node, rawName) {
-  if (node.promptboardTemplateSaveMode === TEMPLATE_SAVE_MODE_NEW) {
-    saveBoardTemplateNew(node, rawName);
-    return;
-  }
   saveBoardTemplate(node, rawName);
 }
 
@@ -3825,13 +4839,6 @@ async function loadSelectedYaml(node, options = {}) {
   }
 }
 
-async function reloadSelectedYaml(node) {
-  const loaded = await loadSelectedYaml(node, { resetState: false, broadcast: true });
-  if (loaded) {
-    setTemporaryStatus(node, "Reloaded YAML");
-  }
-}
-
 async function saveSelectedYaml(node) {
   const yamlFile = syncSelectedYamlFile(node);
   if (!yamlFile || yamlFile === INLINE_YAML_OPTION) {
@@ -3877,8 +4884,6 @@ function createSplitElement(node) {
   const save = document.createElement("button");
   const status = document.createElement("div");
   const toolbar = document.createElement("div");
-  const toolbarYamlRow = document.createElement("div");
-  const reloadYaml = document.createElement("button");
   const templateSelect = document.createElement("select");
   const toolbarTemplateRow = document.createElement("div");
   const toolbarSearchRow = document.createElement("div");
@@ -3888,10 +4893,7 @@ function createSplitElement(node) {
   const boardSearchMenu = document.createElement("div");
   const groupFilter = document.createElement("div");
   const templateInput = document.createElement("input");
-  const templateSaveCombo = document.createElement("div");
-  const templateSave = document.createElement("button");
-  const templateSaveMode = document.createElement("select");
-  const templateDelete = document.createElement("button");
+  const templateActionMenu = createTemplateActionMenu(node);
   const templateStatus = document.createElement("div");
   const navigatorRailHost = document.createElement("div");
   const scroll = document.createElement("div");
@@ -3911,8 +4913,6 @@ function createSplitElement(node) {
   save.className = "promptboard-button";
   status.className = "promptboard-status";
   toolbar.className = "promptboard-toolbar";
-  toolbarYamlRow.className = "promptboard-toolbar-yaml-row";
-  reloadYaml.className = "promptboard-button";
   toolbarTemplateRow.className = "promptboard-toolbar-template-row";
   toolbarSearchRow.className = "promptboard-toolbar-search-row";
   boardSearchRow.className = "promptboard-search-row";
@@ -3922,10 +4922,6 @@ function createSplitElement(node) {
   boardSearchCount.className = "promptboard-search-count";
   boardSearchMenu.className = "promptboard-search-menu";
   templateInput.className = "promptboard-input";
-  templateSaveCombo.className = "promptboard-save-combo";
-  templateSave.className = "promptboard-button";
-  templateSaveMode.className = "promptboard-save-mode";
-  templateDelete.className = "promptboard-button";
   templateStatus.className = "promptboard-template-status";
   navigatorRailHost.className = "promptboard-navigator-rail-host is-empty";
   scroll.className = "promptboard-scroll";
@@ -3946,33 +4942,15 @@ function createSplitElement(node) {
   boardSearchMenu.setAttribute("role", "listbox");
   boardSearch.setAttribute("aria-controls", boardSearchMenu.id);
   boardSearchCount.textContent = "";
-  reloadYaml.type = "button";
-  reloadYaml.textContent = "Reload YAML";
   templateInput.type = "text";
   templateInput.placeholder = "template name";
   templateInput.value = node.promptboardTemplateName ?? "";
   save.type = "button";
   save.textContent = "Save YAML";
-  templateSave.type = "button";
-  templateSave.textContent = SAVE_TEMPLATE_BUTTON;
-  templateSaveMode.title = "Save mode";
-  templateSaveMode.ariaLabel = "Save mode";
-  for (const [value, label] of [
-    [TEMPLATE_SAVE_MODE_SAVE, SAVE_TEMPLATE_BUTTON],
-    [TEMPLATE_SAVE_MODE_NEW, SAVE_TEMPLATE_NEW_BUTTON],
-  ]) {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = label;
-    templateSaveMode.append(option);
-  }
-  templateDelete.type = "button";
-  templateDelete.textContent = DELETE_TEMPLATE_BUTTON;
   status.textContent = node.promptboardStatus ?? "";
   templateStatus.textContent = node.promptboardTemplateStatus ?? "";
 
   stopCanvasEvents(select);
-  stopCanvasEvents(reloadYaml);
   stopCanvasEvents(yamlSearch);
   stopCanvasEvents(textarea);
   stopCanvasEvents(templateSelect);
@@ -3980,9 +4958,6 @@ function createSplitElement(node) {
   stopCanvasEvents(boardSearchMenu);
   stopCanvasEvents(groupFilter);
   stopCanvasEvents(templateInput);
-  stopCanvasEvents(templateSave);
-  stopCanvasEvents(templateSaveMode);
-  stopCanvasEvents(templateDelete);
   stopCanvasEvents(navigatorRailHost);
   stopWheelEvents(groupFilter);
   stopWheelEvents(scroll);
@@ -3994,11 +4969,6 @@ function createSplitElement(node) {
     writeStoredTemplateState(node);
     updateTemplateControls(node);
     loadSelectedYaml(node, { broadcast: true });
-  });
-  reloadYaml.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    reloadSelectedYaml(node);
   });
   yamlSearch.addEventListener("input", () => {
     node.promptboardYamlSearchState = null;
@@ -4096,14 +5066,6 @@ function createSplitElement(node) {
       saveBoardTemplateWithSelectedMode(node, templateInput.value);
     }
   });
-  templateSaveMode.addEventListener("change", () => {
-    node.promptboardTemplateSaveMode =
-      templateSaveMode.value === TEMPLATE_SAVE_MODE_NEW ? TEMPLATE_SAVE_MODE_NEW : TEMPLATE_SAVE_MODE_SAVE;
-    updateTemplateControls(node);
-  });
-  templateSaveMode.addEventListener("keydown", (event) => {
-    handleTemplateSaveShortcut(event, node);
-  });
   textarea.addEventListener("input", () => {
     updateYamlTextFromEditor(node, textarea.value);
   });
@@ -4115,29 +5077,10 @@ function createSplitElement(node) {
     event.stopPropagation();
     saveSelectedYaml(node);
   });
-  templateSave.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    saveBoardTemplateWithSelectedMode(node, templateInput.value);
-  });
-  templateSave.addEventListener("keydown", (event) => {
-    handleTemplateSaveShortcut(event, node);
-  });
-  templateDelete.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    deleteBoardTemplate(node, templateInput.value);
-  });
-  templateDelete.addEventListener("keydown", (event) => {
-    handleTemplateSaveShortcut(event, node);
-  });
-
-  toolbarYamlRow.append(select, reloadYaml);
-  templateSaveCombo.append(templateSave, templateSaveMode);
-  toolbarTemplateRow.append(templateSelect, templateInput, templateSaveCombo, templateDelete);
+  toolbarTemplateRow.append(select, templateSelect, templateInput, templateActionMenu);
   boardSearchRow.append(boardSearch, boardSearchCount);
-  toolbarSearchRow.append(boardSearchRow, createResetButton(node));
-  toolbar.append(toolbarYamlRow, toolbarTemplateRow, toolbarSearchRow);
+  toolbarSearchRow.append(boardSearchRow, createResetMenu(node));
+  toolbar.append(toolbarTemplateRow, toolbarSearchRow);
   right.append(toolbar, templateStatus, groupFilter, navigatorRailHost, scroll);
   root.append(right);
   if (YAML_SOURCE_PANEL_ENABLED) {
@@ -4165,9 +5108,6 @@ function createSplitElement(node) {
   node.promptboardBoardSearchMenu = boardSearchMenu;
   node.promptboardGroupFilter = groupFilter;
   node.promptboardTemplateInput = templateInput;
-  node.promptboardTemplateSaveButton = templateSave;
-  node.promptboardTemplateSaveModeSelect = templateSaveMode;
-  node.promptboardTemplateDeleteButton = templateDelete;
   node.promptboardTemplateStatusElement = templateStatus;
   node.promptboardNavigatorRailHost = navigatorRailHost;
   node.promptboardScroll = scroll;
