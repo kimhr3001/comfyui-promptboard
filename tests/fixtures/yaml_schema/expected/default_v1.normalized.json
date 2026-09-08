@@ -71,78 +71,6 @@
           "default": false
         },
         {
-          "text": "navy",
-          "label": "네이비",
-          "description": "짙은 남색 계열의 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "teal",
-          "label": "청록색",
-          "description": "푸른빛과 초록빛이 섞인 청록색 계열의 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "burgundy",
-          "label": "버건디",
-          "description": "짙은 와인색 계열의 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "cream",
-          "label": "크림색",
-          "description": "부드러운 크림색 계열의 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "beige",
-          "label": "베이지",
-          "description": "연한 갈색빛의 베이지 계열 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "gold",
-          "label": "금색",
-          "description": "금빛이 도는 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "silver",
-          "label": "은색",
-          "description": "은빛이 도는 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "ivory",
-          "label": "아이보리",
-          "description": "따뜻한 흰색에 가까운 아이보리 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "charcoal",
-          "label": "차콜",
-          "description": "검정에 가까운 짙은 회색 계열 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "khaki",
-          "label": "카키",
-          "description": "군복이나 캐주얼 의상에 자주 쓰이는 카키 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "olive",
-          "label": "올리브",
-          "description": "녹색과 갈색이 섞인 올리브 계열 색상입니다.",
-          "default": false
-        },
-        {
-          "text": "lavender",
-          "label": "라벤더",
-          "description": "연보라빛이 도는 부드러운 라벤더 색상입니다.",
-          "default": false
-        },
-        {
           "text": "two-tone",
           "label": "투톤",
           "description": "두 가지 색이 배색된 색상 효과입니다.",
@@ -286,122 +214,6 @@
             "text": "purple",
             "label": "보라색",
             "description": "보라색 계열의 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "중성/고급색"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "navy",
-            "label": "네이비",
-            "description": "짙은 남색 계열의 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "teal",
-            "label": "청록색",
-            "description": "푸른빛과 초록빛이 섞인 청록색 계열의 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "burgundy",
-            "label": "버건디",
-            "description": "짙은 와인색 계열의 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "cream",
-            "label": "크림색",
-            "description": "부드러운 크림색 계열의 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "beige",
-            "label": "베이지",
-            "description": "연한 갈색빛의 베이지 계열 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "gold",
-            "label": "금색",
-            "description": "금빛이 도는 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "silver",
-            "label": "은색",
-            "description": "은빛이 도는 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "section",
-          "label": "세부 색상"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "ivory",
-            "label": "아이보리",
-            "description": "따뜻한 흰색에 가까운 아이보리 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "charcoal",
-            "label": "차콜",
-            "description": "검정에 가까운 짙은 회색 계열 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "khaki",
-            "label": "카키",
-            "description": "군복이나 캐주얼 의상에 자주 쓰이는 카키 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "olive",
-            "label": "올리브",
-            "description": "녹색과 갈색이 섞인 올리브 계열 색상입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "lavender",
-            "label": "라벤더",
-            "description": "연보라빛이 도는 부드러운 라벤더 색상입니다.",
             "default": false
           }
         },
@@ -844,12 +656,6 @@
           "default": false
         },
         {
-          "text": "graphic_print",
-          "label": "그래픽 프린트",
-          "description": "그래픽 이미지나 문양이 인쇄된 패턴입니다.",
-          "default": false
-        },
-        {
           "text": "embroidered",
           "label": "자수",
           "description": "실로 수놓은 자수 장식 패턴입니다.",
@@ -967,15 +773,6 @@
             "text": "star_pattern",
             "label": "별 패턴",
             "description": "별 모양이 반복되는 패턴입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "graphic_print",
-            "label": "그래픽 프린트",
-            "description": "그래픽 이미지나 문양이 인쇄된 패턴입니다.",
             "default": false
           }
         },
@@ -5074,15 +4871,9 @@
           "default": false
         },
         {
-          "text": "loose_clothes",
-          "label": "루즈핏",
-          "description": "몸에 붙지 않는 넉넉한 옷차림입니다.",
-          "default": false
-        },
-        {
-          "text": "oversized",
+          "text": "oversized_clothes",
           "label": "오버사이즈",
-          "description": "체형보다 큰 옷을 입은 상태입니다.",
+          "description": "몸에 붙지 않고 체형보다 큰 넉넉한 옷차림입니다.",
           "default": false
         },
         {
@@ -5179,18 +4970,9 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "loose_clothes",
-            "label": "루즈핏",
-            "description": "몸에 붙지 않는 넉넉한 옷차림입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "oversized",
+            "text": "oversized_clothes",
             "label": "오버사이즈",
-            "description": "체형보다 큰 옷을 입은 상태입니다.",
+            "description": "몸에 붙지 않고 체형보다 큰 넉넉한 옷차림입니다.",
             "default": false
           }
         },
@@ -5559,7 +5341,7 @@
           "default": false
         },
         {
-          "text": "off-shoulder",
+          "text": "off_shoulder",
           "label": "오프숄더 상의",
           "description": "어깨선을 내려 입는 오프숄더 상의 디자인",
           "default": false
@@ -5601,63 +5383,21 @@
           "default": false
         },
         {
-          "text": "sheer fabric",
+          "text": "sheer_fabric",
           "label": "시어 소재",
           "description": "얇고 비치는 상의 소재감",
           "default": false
         },
         {
-          "text": "lace trim",
+          "text": "lace_trim",
           "label": "레이스 트리밍",
           "description": "가장자리에 레이스가 달린 디자인",
           "default": false
         },
         {
-          "text": "silk fabric",
-          "label": "실크",
-          "description": "매끄럽고 광택 있는 상의 소재감",
-          "default": false
-        },
-        {
-          "text": "knit texture",
-          "label": "니트",
-          "description": "니트 짜임이 보이는 상의 소재감",
-          "default": false
-        },
-        {
-          "text": "denim fabric",
-          "label": "데님",
-          "description": "데님 소재의 상의 질감",
-          "default": false
-        },
-        {
-          "text": "flannel fabric",
+          "text": "flannel",
           "label": "플란넬",
           "description": "플란넬 소재의 상의 질감",
-          "default": false
-        },
-        {
-          "text": "ruffled trim",
-          "label": "러플",
-          "description": "주름진 러플 장식",
-          "default": false
-        },
-        {
-          "text": "frilled trim",
-          "label": "프릴",
-          "description": "옷 가장자리에 주름진 장식이 있습니다.",
-          "default": false
-        },
-        {
-          "text": "graphic print",
-          "label": "프린트",
-          "description": "옷 표면에 그래픽이 인쇄되어 있습니다.",
-          "default": false
-        },
-        {
-          "text": "wrap style",
-          "label": "랩 스타일",
-          "description": "옷을 몸에 감싸서 입는 형태입니다.",
           "default": false
         },
         {
@@ -5684,7 +5424,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "off-shoulder",
+            "text": "off_shoulder",
             "label": "오프숄더 상의",
             "description": "어깨선을 내려 입는 오프숄더 상의 디자인",
             "default": false
@@ -5751,7 +5491,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "sheer fabric",
+            "text": "sheer_fabric",
             "label": "시어 소재",
             "description": "얇고 비치는 상의 소재감",
             "default": false
@@ -5760,7 +5500,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "lace trim",
+            "text": "lace_trim",
             "label": "레이스 트리밍",
             "description": "가장자리에 레이스가 달린 디자인",
             "default": false
@@ -5769,34 +5509,7 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "silk fabric",
-            "label": "실크",
-            "description": "매끄럽고 광택 있는 상의 소재감",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "knit texture",
-            "label": "니트",
-            "description": "니트 짜임이 보이는 상의 소재감",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "denim fabric",
-            "label": "데님",
-            "description": "데님 소재의 상의 질감",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "flannel fabric",
+            "text": "flannel",
             "label": "플란넬",
             "description": "플란넬 소재의 상의 질감",
             "default": false
@@ -5805,42 +5518,6 @@
         {
           "kind": "section",
           "label": "장식/핏"
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "ruffled trim",
-            "label": "러플",
-            "description": "주름진 러플 장식",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "frilled trim",
-            "label": "프릴",
-            "description": "옷 가장자리에 주름진 장식이 있습니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "graphic print",
-            "label": "프린트",
-            "description": "옷 표면에 그래픽이 인쇄되어 있습니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "wrap style",
-            "label": "랩 스타일",
-            "description": "옷을 몸에 감싸서 입는 형태입니다.",
-            "default": false
-          }
         },
         {
           "kind": "tag",
@@ -5878,33 +5555,9 @@
           "default": false
         },
         {
-          "text": "short_skirt",
-          "label": "미니스커트",
-          "description": "짧은 길이의 스커트입니다.",
-          "default": false
-        },
-        {
-          "text": "knee-length_skirt",
-          "label": "무릎 길이 스커트",
-          "description": "무릎까지 오는 길이의 스커트입니다.",
-          "default": false
-        },
-        {
-          "text": "midi_skirt",
-          "label": "미디 스커트",
-          "description": "종아리까지 오는 중간 길이의 스커트입니다.",
-          "default": false
-        },
-        {
           "text": "long_skirt",
           "label": "롱 스커트",
           "description": "발목까지 내려오는 긴 스커트입니다.",
-          "default": false
-        },
-        {
-          "text": "maxi_skirt",
-          "label": "맥시 스커트",
-          "description": "발목까지 오는 긴 스커트입니다.",
           "default": false
         },
         {
@@ -5935,18 +5588,6 @@
           "text": "flare_skirt",
           "label": "플레어 스커트",
           "description": "밑단이 넓게 퍼지는 스커트",
-          "default": false
-        },
-        {
-          "text": "a-line_skirt",
-          "label": "A라인 스커트",
-          "description": "A자 실루엣의 스커트",
-          "default": false
-        },
-        {
-          "text": "tiered_skirt",
-          "label": "티어드 스커트",
-          "description": "층층이 겹쳐진 디자인의 스커트",
           "default": false
         },
         {
@@ -6004,12 +5645,6 @@
           "default": false
         },
         {
-          "text": "ruffled_skirt",
-          "label": "러플 스커트",
-          "description": "물결 모양의 장식이 있는 스커트입니다.",
-          "default": false
-        },
-        {
           "text": "slit_skirt, side_slit",
           "label": "슬릿 스커트",
           "description": "옆면이 트여 있는 스커트입니다.",
@@ -6019,12 +5654,6 @@
           "text": "transparent_skirt, see-through",
           "label": "시스루 스커트",
           "description": "안이 비치는 투명한 스커트입니다.",
-          "default": false
-        },
-        {
-          "text": "micro tight skirt",
-          "label": "마이크로 스커트",
-          "description": "몸에 딱 붙는 아주 짧은 치마",
           "default": false
         }
       ],
@@ -6063,45 +5692,9 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "short_skirt",
-            "label": "미니스커트",
-            "description": "짧은 길이의 스커트입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "knee-length_skirt",
-            "label": "무릎 길이 스커트",
-            "description": "무릎까지 오는 길이의 스커트입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "midi_skirt",
-            "label": "미디 스커트",
-            "description": "종아리까지 오는 중간 길이의 스커트입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
             "text": "long_skirt",
             "label": "롱 스커트",
             "description": "발목까지 내려오는 긴 스커트입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "maxi_skirt",
-            "label": "맥시 스커트",
-            "description": "발목까지 오는 긴 스커트입니다.",
             "default": false
           }
         },
@@ -6151,24 +5744,6 @@
             "text": "flare_skirt",
             "label": "플레어 스커트",
             "description": "밑단이 넓게 퍼지는 스커트",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "a-line_skirt",
-            "label": "A라인 스커트",
-            "description": "A자 실루엣의 스커트",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "tiered_skirt",
-            "label": "티어드 스커트",
-            "description": "층층이 겹쳐진 디자인의 스커트",
             "default": false
           }
         },
@@ -6264,15 +5839,6 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "ruffled_skirt",
-            "label": "러플 스커트",
-            "description": "물결 모양의 장식이 있는 스커트입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
             "text": "slit_skirt, side_slit",
             "label": "슬릿 스커트",
             "description": "옆면이 트여 있는 스커트입니다.",
@@ -6285,15 +5851,6 @@
             "text": "transparent_skirt, see-through",
             "label": "시스루 스커트",
             "description": "안이 비치는 투명한 스커트입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "micro tight skirt",
-            "label": "마이크로 스커트",
-            "description": "몸에 딱 붙는 아주 짧은 치마",
             "default": false
           }
         }
@@ -6366,9 +5923,9 @@
           "default": false
         },
         {
-          "text": "off_shoulder",
-          "label": "오프숄더",
-          "description": "어깨가 드러나도록 옷을 내려 입었습니다.",
+          "text": "off_shoulder_jacket",
+          "label": "오프숄더 재킷",
+          "description": "재킷을 어깨 아래로 내려 입은 상태입니다.",
           "default": false
         },
         {
@@ -6498,9 +6055,9 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "off_shoulder",
-            "label": "오프숄더",
-            "description": "어깨가 드러나도록 옷을 내려 입었습니다.",
+            "text": "off_shoulder_jacket",
+            "label": "오프숄더 재킷",
+            "description": "재킷을 어깨 아래로 내려 입은 상태입니다.",
             "default": false
           }
         },
@@ -6639,18 +6196,6 @@
           "default": false
         },
         {
-          "text": "palazzo_pants",
-          "label": "팔라초 팬츠",
-          "description": "통이 매우 넓어 치마처럼 보이는 와이드 팬츠",
-          "default": false
-        },
-        {
-          "text": "culottes",
-          "label": "큐로트",
-          "description": "짧은 길이의 넓은 통을 가진 반바지 스타일",
-          "default": false
-        },
-        {
           "text": "jogger_pants",
           "label": "조거 팬츠",
           "description": "발목에 시보리가 있는 조거 스타일의 바지",
@@ -6663,12 +6208,6 @@
           "default": false
         },
         {
-          "text": "tailored_trousers",
-          "label": "슬랙스",
-          "description": "핏이 잡힌 정장 스타일의 바지",
-          "default": false
-        },
-        {
           "text": "ripped_jeans",
           "label": "찢어진 청바지",
           "description": "데미지가 들어간 데님 팬츠",
@@ -6678,12 +6217,6 @@
           "text": "denim_jeans",
           "label": "청바지",
           "description": "데님 소재의 청바지",
-          "default": false
-        },
-        {
-          "text": "slim_fit_pants",
-          "label": "슬림 팬츠",
-          "description": "몸에 붙는 슬림한 바지",
           "default": false
         }
       ],
@@ -6834,24 +6367,6 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "palazzo_pants",
-            "label": "팔라초 팬츠",
-            "description": "통이 매우 넓어 치마처럼 보이는 와이드 팬츠",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "culottes",
-            "label": "큐로트",
-            "description": "짧은 길이의 넓은 통을 가진 반바지 스타일",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
             "text": "jogger_pants",
             "label": "조거 팬츠",
             "description": "발목에 시보리가 있는 조거 스타일의 바지",
@@ -6870,15 +6385,6 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "tailored_trousers",
-            "label": "슬랙스",
-            "description": "핏이 잡힌 정장 스타일의 바지",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
             "text": "ripped_jeans",
             "label": "찢어진 청바지",
             "description": "데미지가 들어간 데님 팬츠",
@@ -6891,15 +6397,6 @@
             "text": "denim_jeans",
             "label": "청바지",
             "description": "데님 소재의 청바지",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "slim_fit_pants",
-            "label": "슬림 팬츠",
-            "description": "몸에 붙는 슬림한 바지",
             "default": false
           }
         }
@@ -6921,12 +6418,6 @@
           "text": "thighhighs",
           "label": "사이하이삭스",
           "description": "허벅지까지 오는 긴 양말",
-          "default": false
-        },
-        {
-          "text": "fishnets",
-          "label": "망사",
-          "description": "그물 형태의 의상",
           "default": false
         },
         {
@@ -6984,15 +6475,6 @@
             "text": "thighhighs",
             "label": "사이하이삭스",
             "description": "허벅지까지 오는 긴 양말",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "fishnets",
-            "label": "망사",
-            "description": "그물 형태의 의상",
             "default": false
           }
         },
@@ -7149,18 +6631,6 @@
           "text": "<SHC> strappy_sandals",
           "label": "스트랩 샌들",
           "description": "끈으로 발등을 감싸는 형태의 샌들",
-          "default": false
-        },
-        {
-          "text": "<SHC> heeled_sandals",
-          "label": "힐 샌들",
-          "description": "높은 굽이 있는 샌들",
-          "default": false
-        },
-        {
-          "text": "<SHC> fashion_sneakers",
-          "label": "패션 스니커즈",
-          "description": "스타일리시한 디자인의 운동화입니다.",
           "default": false
         },
         {
@@ -7367,24 +6837,6 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "<SHC> heeled_sandals",
-            "label": "힐 샌들",
-            "description": "높은 굽이 있는 샌들",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "<SHC> fashion_sneakers",
-            "label": "패션 스니커즈",
-            "description": "스타일리시한 디자인의 운동화입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
             "text": "<SHC> sneakers",
             "label": "스니커즈",
             "description": "캐주얼한 운동화",
@@ -7494,12 +6946,6 @@
           "default": false
         },
         {
-          "text": "crochet_bikini",
-          "label": "크로셰 비키니",
-          "description": "뜨개질 패턴의 비키니",
-          "default": false
-        },
-        {
           "text": "high-waist_bikini",
           "label": "하이웨이스트 비키니",
           "description": "밑위가 높은 비키니",
@@ -7515,18 +6961,6 @@
           "text": "bandeau_bikini",
           "label": "밴도 비키니",
           "description": "끈 없는 튜브탑 형태의 비키니",
-          "default": false
-        },
-        {
-          "text": "sporty_bikini",
-          "label": "스포티 비키니",
-          "description": "스포티한 디자인의 비키니입니다.",
-          "default": false
-        },
-        {
-          "text": "vintage_bikini",
-          "label": "빈티지 비키니",
-          "description": "클래식한 스타일의 비키니입니다.",
           "default": false
         },
         {
@@ -7661,15 +7095,6 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "crochet_bikini",
-            "label": "크로셰 비키니",
-            "description": "뜨개질 패턴의 비키니",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
             "text": "high-waist_bikini",
             "label": "하이웨이스트 비키니",
             "description": "밑위가 높은 비키니",
@@ -7691,24 +7116,6 @@
             "text": "bandeau_bikini",
             "label": "밴도 비키니",
             "description": "끈 없는 튜브탑 형태의 비키니",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "sporty_bikini",
-            "label": "스포티 비키니",
-            "description": "스포티한 디자인의 비키니입니다.",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "vintage_bikini",
-            "label": "빈티지 비키니",
-            "description": "클래식한 스타일의 비키니입니다.",
             "default": false
           }
         },
@@ -10169,15 +9576,9 @@
       "tagSet": null,
       "tags": [
         {
-          "text": "undone_tie",
-          "label": "풀린 넥타이",
-          "description": "매듭이 느슨하게 풀린 넥타이",
-          "default": false
-        },
-        {
-          "text": "loosened_tie",
-          "label": "풀린 넥타이",
-          "description": "매듭이 느슨하게 풀린 넥타이",
+          "text": "undone_necktie",
+          "label": "느슨한 넥타이",
+          "description": "매듭이 느슨하게 풀린 넥타이.",
           "default": false
         },
         {
@@ -10249,18 +9650,9 @@
         {
           "kind": "tag",
           "tag": {
-            "text": "undone_tie",
-            "label": "풀린 넥타이",
-            "description": "매듭이 느슨하게 풀린 넥타이",
-            "default": false
-          }
-        },
-        {
-          "kind": "tag",
-          "tag": {
-            "text": "loosened_tie",
-            "label": "풀린 넥타이",
-            "description": "매듭이 느슨하게 풀린 넥타이",
+            "text": "undone_necktie",
+            "label": "느슨한 넥타이",
+            "description": "매듭이 느슨하게 풀린 넥타이.",
             "default": false
           }
         },

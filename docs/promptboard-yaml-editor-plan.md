@@ -21,7 +21,7 @@
 - 그룹 필터
 - 태그 선택
 - 선택 초기화
-- `selection_json`, `preview_text`, `prompt_preview`, `replace_report` 출력
+- `preview_text`, `prompt_preview` 출력
 
 `PromptBoard`에는 YAML 원문 편집 UI를 노출하지 않는다. YAML 원문 수정은 `PromptBoard YAML Editor`에서 처리한다.
 
@@ -60,6 +60,8 @@
 `PromptBoard`와 `PromptBoard YAML Editor`는 각각 독립적인 YAML 선택창을 가진다.
 
 Editor에서 저장해도 기존 `PromptBoard` 노드는 자동으로 다시 읽지 않는다. 저장된 내용을 `PromptBoard`에 반영하려면 `PromptBoard`에서 `Reload YAML`을 누르거나 YAML 파일을 다시 선택한다.
+
+`PromptBoard` 또는 `PromptBoard YAML Editor`에서 YAML 파일을 다시 load하면, 같은 YAML 파일을 열고 있는 다른 쪽 노드도 조용히 다시 load한다.
 
 이 원칙은 하나의 workflow에 여러 `PromptBoard` 노드가 있을 때 의도치 않은 동시 변경을 막기 위한 것이다.
 

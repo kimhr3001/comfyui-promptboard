@@ -38,44 +38,6 @@ _promptboard:
         - text: purple
           label: 보라색
           description: 보라색 계열의 색상입니다.
-        - section: 중성/고급색
-        - text: navy
-          label: 네이비
-          description: 짙은 남색 계열의 색상입니다.
-        - text: teal
-          label: 청록색
-          description: 푸른빛과 초록빛이 섞인 청록색 계열의 색상입니다.
-        - text: burgundy
-          label: 버건디
-          description: 짙은 와인색 계열의 색상입니다.
-        - text: cream
-          label: 크림색
-          description: 부드러운 크림색 계열의 색상입니다.
-        - text: beige
-          label: 베이지
-          description: 연한 갈색빛의 베이지 계열 색상입니다.
-        - text: gold
-          label: 금색
-          description: 금빛이 도는 색상입니다.
-        - text: silver
-          label: 은색
-          description: 은빛이 도는 색상입니다.
-        - section: 세부 색상
-        - text: ivory
-          label: 아이보리
-          description: 따뜻한 흰색에 가까운 아이보리 색상입니다.
-        - text: charcoal
-          label: 차콜
-          description: 검정에 가까운 짙은 회색 계열 색상입니다.
-        - text: khaki
-          label: 카키
-          description: 군복이나 캐주얼 의상에 자주 쓰이는 카키 색상입니다.
-        - text: olive
-          label: 올리브
-          description: 녹색과 갈색이 섞인 올리브 계열 색상입니다.
-        - text: lavender
-          label: 라벤더
-          description: 연보라빛이 도는 부드러운 라벤더 색상입니다.
         - section: 복합/효과색
         - text: two-tone
           label: 투톤
@@ -198,9 +160,6 @@ _promptboard:
         - text: star_pattern
           label: 별 패턴
           description: 별 모양이 반복되는 패턴입니다.
-        - text: graphic_print
-          label: 그래픽 프린트
-          description: 그래픽 이미지나 문양이 인쇄된 패턴입니다.
         - text: embroidered
           label: 자수
           description: 실로 수놓은 자수 장식 패턴입니다.
@@ -1162,12 +1121,9 @@ _promptboard:
       label: 찢어진 옷
       description: 옷이 여기저기 헤지고 찢어진 상태
     - section: 핏/실루엣
-    - text: loose_clothes
-      label: 루즈핏
-      description: 몸에 붙지 않는 넉넉한 옷차림입니다.
-    - text: oversized
+    - text: oversized_clothes
       label: 오버사이즈
-      description: 체형보다 큰 옷을 입은 상태입니다.
+      description: 몸에 붙지 않고 체형보다 큰 넉넉한 옷차림입니다.
     - text: skindentation
       label: 살 눌림
       description: 의상에 의해 살이 눌린 모습입니다.
@@ -1256,7 +1212,7 @@ _promptboard:
     - text: sleeveless
       label: 민소매
       description: 소매가 없는 스타일입니다.
-    - text: off-shoulder
+    - text: off_shoulder
       label: 오프숄더 상의
       description: 어깨선을 내려 입는 오프숄더 상의 디자인
     - text: halter_neck
@@ -1278,37 +1234,16 @@ _promptboard:
       label: 백리스
       description: 등 부분이 크게 파인 상의 디자인
     - section: 소재
-    - text: sheer fabric
+    - text: sheer_fabric
       label: 시어 소재
       description: 얇고 비치는 상의 소재감
-    - text: lace trim
+    - text: lace_trim
       label: 레이스 트리밍
       description: 가장자리에 레이스가 달린 디자인
-    - text: silk fabric
-      label: 실크
-      description: 매끄럽고 광택 있는 상의 소재감
-    - text: knit texture
-      label: 니트
-      description: 니트 짜임이 보이는 상의 소재감
-    - text: denim fabric
-      label: 데님
-      description: 데님 소재의 상의 질감
-    - text: flannel fabric
+    - text: flannel
       label: 플란넬
       description: 플란넬 소재의 상의 질감
     - section: 장식/핏
-    - text: ruffled trim
-      label: 러플
-      description: 주름진 러플 장식
-    - text: frilled trim
-      label: 프릴
-      description: 옷 가장자리에 주름진 장식이 있습니다.
-    - text: graphic print
-      label: 프린트
-      description: 옷 표면에 그래픽이 인쇄되어 있습니다.
-    - text: wrap style
-      label: 랩 스타일
-      description: 옷을 몸에 감싸서 입는 형태입니다.
     - text: short hoodie
       label: 크롭 후드
       description: 길이가 짧은 후드 티셔츠입니다.
@@ -1326,21 +1261,9 @@ _promptboard:
     - text: miniskirt
       label: 미니스커트
       description: 짧은 길이의 스커트
-    - text: short_skirt
-      label: 미니스커트
-      description: 짧은 길이의 스커트입니다.
-    - text: knee-length_skirt
-      label: 무릎 길이 스커트
-      description: 무릎까지 오는 길이의 스커트입니다.
-    - text: midi_skirt
-      label: 미디 스커트
-      description: 종아리까지 오는 중간 길이의 스커트입니다.
     - text: long_skirt
       label: 롱 스커트
       description: 발목까지 내려오는 긴 스커트입니다.
-    - text: maxi_skirt
-      label: 맥시 스커트
-      description: 발목까지 오는 긴 스커트입니다.
     - section: 실루엣
     - text: pleated_skirt
       label: 주름 스커트
@@ -1357,12 +1280,6 @@ _promptboard:
     - text: flare_skirt
       label: 플레어 스커트
       description: 밑단이 넓게 퍼지는 스커트
-    - text: a-line_skirt
-      label: A라인 스커트
-      description: A자 실루엣의 스커트
-    - text: tiered_skirt
-      label: 티어드 스커트
-      description: 층층이 겹쳐진 디자인의 스커트
     - text: bubble_skirt
       label: 벌룬 스커트
       description: 풍성하게 부풀어 오른 형태의 스커트입니다.
@@ -1392,18 +1309,12 @@ _promptboard:
     - text: frilled_skirt
       label: 프릴 스커트
       description: 끝단에 주름 장식이 달린 스커트입니다.
-    - text: ruffled_skirt
-      label: 러플 스커트
-      description: 물결 모양의 장식이 있는 스커트입니다.
     - text: slit_skirt, side_slit
       label: 슬릿 스커트
       description: 옆면이 트여 있는 스커트입니다.
     - text: transparent_skirt, see-through
       label: 시스루 스커트
       description: 안이 비치는 투명한 스커트입니다.
-    - text: micro tight skirt
-      label: 마이크로 스커트
-      description: 몸에 딱 붙는 아주 짧은 치마
 아우터:
   placeholder: <CLOTHES>
   uiGroup: 의상
@@ -1440,9 +1351,9 @@ _promptboard:
     - text: jacket_around_waist
       label: 허리에 묶은 재킷
       description: 재킷을 허리 라인에 둘러 묶었습니다.
-    - text: off_shoulder
-      label: 오프숄더
-      description: 어깨가 드러나도록 옷을 내려 입었습니다.
+    - text: off_shoulder_jacket
+      label: 오프숄더 재킷
+      description: 재킷을 어깨 아래로 내려 입은 상태입니다.
     - text: unbuttoned
       label: 단추 풀림
       description: 단추가 풀려 옷이 열린 상태
@@ -1506,30 +1417,18 @@ _promptboard:
     - text: flare_jeans
       label: 부츠컷 진
       description: 무릎 아래로 갈수록 넓어지는 형태의 청바지
-    - text: palazzo_pants
-      label: 팔라초 팬츠
-      description: 통이 매우 넓어 치마처럼 보이는 와이드 팬츠
-    - text: culottes
-      label: 큐로트
-      description: 짧은 길이의 넓은 통을 가진 반바지 스타일
     - text: jogger_pants
       label: 조거 팬츠
       description: 발목에 시보리가 있는 조거 스타일의 바지
     - text: corduroy_pants
       label: 코듀로이 팬츠
       description: 골이 있는 골덴 소재의 바지
-    - text: tailored_trousers
-      label: 슬랙스
-      description: 핏이 잡힌 정장 스타일의 바지
     - text: ripped_jeans
       label: 찢어진 청바지
       description: 데미지가 들어간 데님 팬츠
     - text: denim_jeans
       label: 청바지
       description: 데님 소재의 청바지
-    - text: slim_fit_pants
-      label: 슬림 팬츠
-      description: 몸에 붙는 슬림한 바지
 레그웨어:
   placeholder: <CLOTHES>
   uiGroup: 의상
@@ -1542,9 +1441,6 @@ _promptboard:
     - text: thighhighs
       label: 사이하이삭스
       description: 허벅지까지 오는 긴 양말
-    - text: fishnets
-      label: 망사
-      description: 그물 형태의 의상
     - text: fishnet_stockings
       label: 망사 스타킹
       description: 그물 형태의 스타킹
@@ -1619,12 +1515,6 @@ _promptboard:
     - text: <SHC> strappy_sandals
       label: 스트랩 샌들
       description: 끈으로 발등을 감싸는 형태의 샌들
-    - text: <SHC> heeled_sandals
-      label: 힐 샌들
-      description: 높은 굽이 있는 샌들
-    - text: <SHC> fashion_sneakers
-      label: 패션 스니커즈
-      description: 스타일리시한 디자인의 운동화입니다.
     - text: <SHC> sneakers
       label: 스니커즈
       description: 캐주얼한 운동화
@@ -1673,9 +1563,6 @@ _promptboard:
     - text: floral_bikini
       label: 플로럴 비키니
       description: 꽃무늬 패턴이 들어간 비키니입니다.
-    - text: crochet_bikini
-      label: 크로셰 비키니
-      description: 뜨개질 패턴의 비키니
     - text: high-waist_bikini
       label: 하이웨이스트 비키니
       description: 밑위가 높은 비키니
@@ -1685,12 +1572,6 @@ _promptboard:
     - text: bandeau_bikini
       label: 밴도 비키니
       description: 끈 없는 튜브탑 형태의 비키니
-    - text: sporty_bikini
-      label: 스포티 비키니
-      description: 스포티한 디자인의 비키니입니다.
-    - text: vintage_bikini
-      label: 빈티지 비키니
-      description: 클래식한 스타일의 비키니입니다.
     - section: 원피스/특수
     - text: <TCO> swimsuit
       label: 수영복
@@ -2209,12 +2090,9 @@ _promptboard:
   uiGroup: 의상
   tags:
     - section: 넥웨어
-    - text: undone_tie
-      label: 풀린 넥타이
-      description: 매듭이 느슨하게 풀린 넥타이
-    - text: loosened_tie
-      label: 풀린 넥타이
-      description: 매듭이 느슨하게 풀린 넥타이
+    - text: undone_necktie
+      label: 느슨한 넥타이
+      description: 매듭이 느슨하게 풀린 넥타이.
     - text: <ACC> necktie
       label: 넥타이
       description: 목에 착용한 넥타이

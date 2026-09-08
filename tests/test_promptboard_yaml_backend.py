@@ -17,6 +17,7 @@ from yaml_tag_nodes import (
     _yaml_validation_error,
 )
 from yaml_editor_nodes import PromptBoardYamlEditor
+from yaml_tag_board_split_nodes import PromptBoard
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -331,6 +332,19 @@ STYLE:
             ),
             ("custom.yaml",),
         )
+
+    def test_prompt_board_node_outputs_preview_only(self):
+        source = read_text(FIXTURE_ROOT / "valid" / "legacy_v1.yaml")
+
+        outputs = PromptBoard().select_tags(
+            yaml_text=source,
+            selected_state=json.dumps({"STYLE": ["cinematic"]}, ensure_ascii=False),
+            source_text="style: <STYLE>",
+        )
+
+        self.assertEqual(PromptBoard.RETURN_TYPES, ("STRING", "STRING"))
+        self.assertEqual(PromptBoard.RETURN_NAMES, ("preview_text", "prompt_preview"))
+        self.assertEqual(outputs, ("<STYLE>: cinematic", "style: cinematic"))
 
     def test_yaml_editor_node_falls_back_to_default_yaml_file_output(self):
         self.assertEqual(

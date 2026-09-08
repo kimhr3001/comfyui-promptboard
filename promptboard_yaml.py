@@ -506,6 +506,37 @@ def _normalize_tag_families(settings, schema_version, tag_sets):
     return tag_families
 
 
+def _normalize_category_ui_panel(value, path):
+    panel = _assert_mapping(value, path)
+    _assert_known_fields(panel, {"type", "board", "target"}, path)
+    panel_type = _text_value(panel.get("type"))
+    if panel_type != "attributeTarget":
+        _fail(
+            "unsupported_ui_panel_type",
+            f"{path}.type",
+            f"Unsupported UI panel type: {panel_type or '<empty>'}",
+        )
+    if "board" not in panel:
+        _fail("missing_required_field", f"{path}.board", f"Missing required field: {path}.board")
+    if "target" not in panel:
+        _fail("missing_required_field", f"{path}.target", f"Missing required field: {path}.target")
+    return {
+        "type": panel_type,
+        "board": _assert_identifier(panel["board"], f"{path}.board"),
+        "target": _assert_identifier(panel["target"], f"{path}.target"),
+    }
+
+
+def _normalize_category_ui_panels(value, path):
+    if value is None:
+        return []
+    raw_panels = _assert_list(value, path)
+    return [
+        _normalize_category_ui_panel(panel, f"{path}[{index}]")
+        for index, panel in enumerate(raw_panels)
+    ]
+
+
 def _normalize_category(category, raw_value, schema_version, tag_sets, modifiers):
     path = category
     value = _assert_mapping(raw_value, path)
@@ -513,7 +544,7 @@ def _normalize_category(category, raw_value, schema_version, tag_sets, modifiers
     if strict:
         _assert_known_fields(
             value,
-            {"label", "placeholder", "uiGroup", "replaceInsideTags", "tags", "tagSet"},
+            {"label", "placeholder", "uiGroup", "replaceInsideTags", "tags", "tagSet", "uiPanels"},
             path,
         )
 
@@ -556,6 +587,9 @@ def _normalize_category(category, raw_value, schema_version, tag_sets, modifiers
     tag_items = direct_tags["tagItems"] if has_tags else tag_set_items
     if tag_items:
         normalized["tagItems"] = tag_items
+    ui_panels = _normalize_category_ui_panels(value.get("uiPanels"), f"{path}.uiPanels")
+    if ui_panels:
+        normalized["uiPanels"] = ui_panels
     label = _text_value(value.get("label"))
     if label:
         normalized["label"] = label
@@ -663,7 +697,7 @@ def _normalize_attribute_boards(settings, schema_version, tag_sets, categories):
         board_id = _assert_identifier(raw_board_id, f"_promptboard.attributeBoards.{raw_board_id}")
         board_path = f"_promptboard.attributeBoards.{board_id}"
         board = _assert_mapping(raw_board, board_path)
-        _assert_known_fields(board, {"label", "uiGroup", "targets"}, board_path)
+        _assert_known_fields(board, {"label", "uiGroup", "uiStandalone", "targets"}, board_path)
         targets_value = board.get("targets")
         raw_targets = {} if targets_value is None else _assert_mapping(targets_value, f"{board_path}.targets")
         targets = {}
@@ -686,12 +720,34 @@ def _normalize_attribute_boards(settings, schema_version, tag_sets, categories):
             target_placeholders.add(target["placeholder"])
             targets[target_id] = target
 
-        attribute_boards[board_id] = {
+        normalized_board = {
             "label": _text_value(board.get("label"), board_id) or board_id,
             "uiGroup": _text_value(board.get("uiGroup")),
             "targets": targets,
         }
+        if "uiStandalone" in board:
+            normalized_board["uiStandalone"] = _normalize_bool(board.get("uiStandalone", True))
+        attribute_boards[board_id] = normalized_board
     return attribute_boards
+
+
+def _validate_category_ui_panels(categories, attribute_boards):
+    for category, item in categories.items():
+        for index, panel in enumerate(item.get("uiPanels") or []):
+            if panel["type"] != "attributeTarget":
+                continue
+            board_id = panel["board"]
+            target_id = panel["target"]
+            board = attribute_boards.get(board_id)
+            path = f"{category}.uiPanels[{index}]"
+            if board is None:
+                _fail("unknown_ui_panel_board", f"{path}.board", f"Unknown attribute board: {board_id}")
+            if target_id not in (board.get("targets") or {}):
+                _fail(
+                    "unknown_ui_panel_target",
+                    f"{path}.target",
+                    f"Unknown attribute target: {target_id}",
+                )
 
 
 def _normalize_ui_composite_item(value, path, categories, tag_families):
@@ -769,6 +825,7 @@ def normalize_yaml_document(yaml_text):
     tag_families = _normalize_tag_families(settings, schema_version, tag_sets)
     categories = _normalize_categories(root, schema_version, tag_sets, modifiers)
     attribute_boards = _normalize_attribute_boards(settings, schema_version, tag_sets, categories)
+    _validate_category_ui_panels(categories, attribute_boards)
     ui_composites = _normalize_ui_composites(settings, schema_version, categories, tag_families)
     normalized = {
         "schemaVersion": schema_version,

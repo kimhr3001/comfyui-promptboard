@@ -14,10 +14,8 @@ It also includes a multi-LoRA loader and a shared checkpoint/LoRA model info dia
 
 Outputs:
 
-- `selection_json`: structured selection data for downstream replacement
 - `preview_text`: a readable preview of selected placeholders and values
 - `prompt_preview`: source prompt text after applying the current selection
-- `replace_report`: replacement warnings such as unknown placeholders or cycles
 
 Main features:
 
@@ -59,11 +57,13 @@ Shortcuts:
 - `Cmd+F` / `Ctrl+F`: focus YAML source search
 - `Cmd+S` / `Ctrl+S`: save the current YAML file
 
-Saving in `PromptBoard YAML Editor` does not automatically change an existing `Prompt Board` node. Use `Reload YAML` on `Prompt Board` when you want the board to read the saved file again.
+Saving in `PromptBoard YAML Editor` writes the selected YAML file and creates a backup first.
+
+When `PromptBoard YAML Editor` or `Prompt Board` reloads a YAML file, other open nodes that are already using the same YAML file reload it as well.
 
 ### Prompt Board Replace
 
-`Prompt Board Replace` takes source text plus `selection_json` from `Prompt Board`, then replaces matching placeholders.
+`Prompt Board Replace` is a legacy utility node for advanced workflows that provide `selection_json` manually. The normal workflow should pass source prompt text into `Prompt Board` and use its `prompt_preview` output.
 
 Example source text:
 
@@ -71,7 +71,7 @@ Example source text:
 <SUBJECT>, <STYLE>, <LIGHTING>, <CAMERA>, <COLOR>, <DETAIL>
 ```
 
-If the board selects `portrait`, `cinematic`, and `soft light`, the replace node writes those values into the matching placeholders.
+If the provided selection payload contains `portrait`, `cinematic`, and `soft light`, the replace node writes those values into the matching placeholders.
 
 ### PromptBoard LoRA Loader
 
@@ -159,7 +159,7 @@ COLOR:
 
 Each top-level key is a board category.
 
-- `placeholder`: the placeholder replaced by `Prompt Board Replace`
+- `placeholder`: the placeholder replaced when `Prompt Board` builds `prompt_preview`
 - `uiGroup`: the board filter group shown above the cards
 - `tags`: selectable prompt fragments for the category
 
@@ -305,8 +305,8 @@ It is not written as a normal category.
 }
 ```
 
-When the board builds `selection_json`, each target becomes an internal `$attribute:` entry.
-`Prompt Board Replace` uses the same replacement path as normal categories, so `<TOP_COLOR> shirt` becomes `black shirt`.
+When the board builds its internal selection payload, each target becomes an internal `$attribute:` entry.
+The replacement path is shared with normal categories, so `<TOP_COLOR> shirt` becomes `black shirt`.
 
 `migrateFrom` is only a read-compatibility bridge. If a saved template still has `TOP_COLOR: ["black"]` but no `$attributes.clothingColors.top.color`, PromptBoard reads the old value into the new attribute. Once the template is saved again, the new `$attributes` state is preserved.
 
@@ -346,7 +346,7 @@ MATERIAL:
     description: Polished stone with natural veining.
 ```
 
-If `OBJECT` selects `<MATERIAL> sculpture` and `MATERIAL` selects `glass`, `Prompt Board Replace` resolves the selected object as `glass sculpture`.
+If `OBJECT` selects `<MATERIAL> sculpture` and `MATERIAL` selects `glass`, the replacement resolver returns `glass sculpture`.
 
 `replaceInsideTags` is still useful for ordinary categories that provide a nested placeholder value.
 `attributeBoards` are for target-specific UI state and reusable tag sets. Prefer `attributeBoards` when one shared candidate list needs separate selections for several targets.

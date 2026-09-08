@@ -77,7 +77,8 @@
             }
           }
         }
-      }
+      },
+      "uiStandalone": false
     }
   },
   "categories": {
@@ -93,6 +94,13 @@
           "description": "",
           "default": false
         }
+      ],
+      "uiPanels": [
+        {
+          "type": "attributeTarget",
+          "board": "clothing",
+          "target": "top"
+        }
       ]
     },
     "하의": {
@@ -106,6 +114,13 @@
           "label": "치마",
           "description": "",
           "default": false
+        }
+      ],
+      "uiPanels": [
+        {
+          "type": "attributeTarget",
+          "board": "clothing",
+          "target": "bottom"
         }
       ]
     }

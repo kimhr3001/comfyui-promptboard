@@ -80,7 +80,19 @@ const NAVIGATOR_LABEL_ACCENTS = {
 const FALLBACK_ACCENTS = ["#5a8fd8", "#38a6b9", "#6aa66a", "#9b7ad0", "#d6a94a", "#c77b7b", "#8c98a4"];
 const RELATION_FAMILY_GROUP_PREFIXES = new Set(["grabbing", "spreading"]);
 const TOOLBAR_ACTION_WIDTH = "116px";
-const UI_GROUP_ORDER = ["캐릭터", "의상", "세트의상", "색상", "구도", "파트너", "화면/장소", "기타"];
+const UI_GROUP_ORDER = ["캐릭터", "색상", "구도", "파트너", "의상", "세트의상", "화면/장소", "기타"];
+const BLANK_CANVAS_DRAG_INTERACTIVE_SELECTOR = [
+  "a",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "[role='button']",
+  "[role='option']",
+  ".cm-editor",
+  ".promptboard-search-menu",
+  ".promptboard-tag-modifiers",
+].join(",");
 const PLACEHOLDER_UI_GROUPS = {
   "<PHOTOSHOT>": "구도",
   "<INTER>": "구도",
@@ -148,6 +160,11 @@ function dispatchYamlReload(node, yamlFile) {
       sourceNode: node,
     },
   }));
+}
+
+function noCacheUrl(path) {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}_=${Date.now()}`;
 }
 
 function installYamlReloadListener(node) {
@@ -955,6 +972,10 @@ function attributeBoardUiGroup(board) {
   return normalizeUiGroup(board?.uiGroup) || DEFAULT_UI_GROUP;
 }
 
+function attributeBoardStandalone(board) {
+  return board?.uiStandalone !== false;
+}
+
 function tagFamilyUiGroup(family, target = null) {
   return normalizeUiGroup(target?.uiGroup) || inferUiGroup(target || family);
 }
@@ -1113,6 +1134,9 @@ function availableUiGroups(config, attributeBoards = {}, tagFamilies = {}, uiCom
     groups.add(tagFamilyUiGroup(family, target));
   }
   for (const board of Object.values(attributeBoards ?? {})) {
+    if (!attributeBoardStandalone(board)) {
+      continue;
+    }
     groups.add(attributeBoardUiGroup(board));
   }
   for (const composite of Object.values(uiComposites ?? {})) {
@@ -1159,7 +1183,7 @@ function allCategoryEntries(node) {
 function visibleAttributeBoardEntries(node) {
   const active = activeUiGroup(node);
   return Object.entries(node.promptboardYamlModel?.attributeBoards ?? {}).filter(([, board]) =>
-    attributeBoardUiGroup(board) === active,
+    attributeBoardStandalone(board) && attributeBoardUiGroup(board) === active,
   );
 }
 
@@ -1325,6 +1349,36 @@ function tagItemsForTagSet(tagSet) {
   return tagItemsForTags(tagSet?.tags ?? [], tagSet?.tagItems);
 }
 
+function attributeTargetNavigatorItem(node, boardId, targetId, uiGroupOverride = "") {
+  const board = node.promptboardYamlModel?.attributeBoards?.[boardId];
+  const target = board?.targets?.[targetId];
+  if (!board || !target) {
+    return null;
+  }
+  const uiGroup = normalizeUiGroup(uiGroupOverride) || attributeBoardUiGroup(board);
+  return {
+    kind: "attributeTarget",
+    boardId,
+    targetId,
+    label: target.label || targetId,
+    context: board.label || boardId,
+    uiGroup,
+    attributes: target.attributes ?? {},
+  };
+}
+
+function categoryPanelItems(node, item) {
+  const uiGroup = categoryUiGroup(item);
+  return (item?.uiPanels ?? [])
+    .map((panel) => {
+      if (panel?.type !== "attributeTarget") {
+        return null;
+      }
+      return attributeTargetNavigatorItem(node, panel.board, panel.target, uiGroup);
+    })
+    .filter(Boolean);
+}
+
 function compositeChildKey(child) {
   if (child?.kind === "category") {
     return `category\u0000${child.category}`;
@@ -1419,6 +1473,7 @@ function navigatorItems(node) {
       uiGroup,
       tags: item.tags ?? [],
       tagItems: tagItemsForCategory(item),
+      uiPanels: item.uiPanels ?? [],
     });
   }
   for (const { familyId, family, targetId, target } of visibleTagFamilyEntries(node)) {
@@ -1448,17 +1503,11 @@ function navigatorItems(node) {
     });
   }
   for (const [boardId, board] of visibleAttributeBoardEntries(node)) {
-    const uiGroup = attributeBoardUiGroup(board);
     for (const [targetId, target] of Object.entries(board.targets ?? {})) {
-      items.push({
-        kind: "attributeTarget",
-        boardId,
-        targetId,
-        label: target.label || targetId,
-        context: board.label || boardId,
-        uiGroup,
-        attributes: target.attributes ?? {},
-      });
+      const item = attributeTargetNavigatorItem(node, boardId, targetId, attributeBoardUiGroup(board));
+      if (item) {
+        items.push(item);
+      }
     }
   }
   return mergeNavigatorItems(items, node.promptboardYamlModel?.uiComposites);
@@ -3252,6 +3301,131 @@ function stopWheelEvents(element) {
   element.addEventListener("wheel", (event) => event.stopPropagation(), { passive: true });
 }
 
+function isBlankCanvasDragTarget(target) {
+  return target instanceof Element && !target.closest(BLANK_CANVAS_DRAG_INTERACTIVE_SELECTOR);
+}
+
+function canScrollWithPointerDelta(element, deltaY) {
+  const maxScrollTop = element.scrollHeight - element.clientHeight;
+  if (maxScrollTop <= 1 || Math.abs(deltaY) < 1) {
+    return false;
+  }
+  if (deltaY > 0) {
+    return element.scrollTop > 0;
+  }
+  return element.scrollTop < maxScrollTop - 1;
+}
+
+function graphCanvasElement() {
+  return app.canvas?.canvas || document.getElementById("graph-canvas");
+}
+
+function canvasPointerOptions(event, buttons) {
+  return {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    clientX: event.clientX,
+    clientY: event.clientY,
+    screenX: event.screenX,
+    screenY: event.screenY,
+    button: 0,
+    buttons,
+    pointerId: event.pointerId || 1,
+    pointerType: "mouse",
+    isPrimary: true,
+  };
+}
+
+function dispatchCanvasPointerEvent(canvas, type, event, buttons) {
+  const options = canvasPointerOptions(event, buttons);
+  try {
+    canvas.dispatchEvent(new PointerEvent(type, options));
+  } catch {
+    // Some older mobile WebViews may not construct PointerEvent reliably.
+  }
+  const mouseType = type === "pointerdown"
+    ? "mousedown"
+    : type === "pointermove"
+      ? "mousemove"
+      : type === "pointerup"
+        ? "mouseup"
+        : "";
+  if (mouseType) {
+    canvas.dispatchEvent(new MouseEvent(mouseType, options));
+  }
+}
+
+function installBlankCanvasDragBridge(element) {
+  let drag = null;
+
+  element.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" || event.button !== 0 || !isBlankCanvasDragTarget(event.target)) {
+      drag = null;
+      return;
+    }
+    drag = {
+      pointerId: event.pointerId,
+      startEvent: event,
+      lastY: event.clientY,
+      active: false,
+      canvas: null,
+    };
+  }, { capture: true });
+
+  element.addEventListener("pointermove", (event) => {
+    if (!drag || event.pointerId !== drag.pointerId) {
+      return;
+    }
+    const dx = event.clientX - drag.startEvent.clientX;
+    const dy = event.clientY - drag.startEvent.clientY;
+    if (!drag.active) {
+      if (dx * dx + dy * dy < 36) {
+        return;
+      }
+      if (canScrollWithPointerDelta(element, event.clientY - drag.lastY)) {
+        drag = null;
+        return;
+      }
+      const canvas = graphCanvasElement();
+      if (!canvas) {
+        drag = null;
+        return;
+      }
+      drag.active = true;
+      drag.canvas = canvas;
+      dispatchCanvasPointerEvent(canvas, "pointermove", drag.startEvent, 1);
+      dispatchCanvasPointerEvent(canvas, "pointerdown", drag.startEvent, 1);
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    dispatchCanvasPointerEvent(drag.canvas, "pointermove", event, 1);
+    drag.lastY = event.clientY;
+  }, { capture: true });
+
+  element.addEventListener("pointerup", (event) => {
+    if (!drag || event.pointerId !== drag.pointerId) {
+      return;
+    }
+    if (drag.active && drag.canvas) {
+      event.preventDefault();
+      event.stopPropagation();
+      dispatchCanvasPointerEvent(drag.canvas, "pointerup", event, 0);
+    }
+    drag = null;
+  }, { capture: true });
+
+  element.addEventListener("pointercancel", (event) => {
+    if (!drag || event.pointerId !== drag.pointerId) {
+      return;
+    }
+    if (drag.active && drag.canvas) {
+      dispatchCanvasPointerEvent(drag.canvas, "pointerup", event, 0);
+    }
+    drag = null;
+  }, { capture: true });
+}
+
 function createButton(text, title, onClick) {
   const button = document.createElement("button");
   button.type = "button";
@@ -4014,6 +4188,21 @@ function appendAttributeTagItems(container, node, state, boardId, targetId, attr
   }
 }
 
+function appendAttributeTargetItems(container, node, state, item, accent = null, options = {}) {
+  const target = node.promptboardYamlModel?.attributeBoards?.[item.boardId]?.targets?.[item.targetId];
+  if (!target) {
+    return;
+  }
+  if (options.title) {
+    container.append(createTagSection(options.title));
+  }
+  for (const [attributeId, attribute] of Object.entries(target.attributes ?? {})) {
+    const tagSet = node.promptboardYamlModel?.tagSets?.[attribute.source];
+    container.append(createTagSection(attribute.label || attributeId));
+    appendAttributeTagItems(container, node, state, item.boardId, item.targetId, attributeId, tagSet, accent);
+  }
+}
+
 function appendNavigatorTagItems(container, node, state, item) {
   const accent = navigatorItemAccent(item);
   if (item?.kind === "composite") {
@@ -4031,12 +4220,7 @@ function appendNavigatorTagItems(container, node, state, item) {
     return;
   }
   if (item?.kind === "attributeTarget") {
-    const target = node.promptboardYamlModel?.attributeBoards?.[item.boardId]?.targets?.[item.targetId];
-    for (const [attributeId, attribute] of Object.entries(target?.attributes ?? {})) {
-      const tagSet = node.promptboardYamlModel?.tagSets?.[attribute.source];
-      container.append(createTagSection(attribute.label || attributeId));
-      appendAttributeTagItems(container, node, state, item.boardId, item.targetId, attributeId, tagSet, accent);
-    }
+    appendAttributeTargetItems(container, node, state, item, accent);
     return;
   }
   for (const tagItem of item?.tagItems ?? []) {
@@ -4052,6 +4236,18 @@ function appendNavigatorTagItems(container, node, state, item) {
           container.append(modifierPanel);
         }
       }
+    }
+  }
+  if (item?.kind === "category") {
+    for (const panelItem of categoryPanelItems(node, item)) {
+      appendAttributeTargetItems(
+        container,
+        node,
+        state,
+        panelItem,
+        accent,
+        { title: `${panelItem.label} 속성` },
+      );
     }
   }
 }
@@ -4420,7 +4616,7 @@ function renderNavigator(node, scroll, state) {
   }
 
   appendNavigatorTagItems(tags, node, state, active);
-  if (active.kind === "category" && !active.tags?.length) {
+  if (active.kind === "category" && !active.tags?.length && !categoryPanelItems(node, active).length) {
     const empty = document.createElement("div");
     empty.className = "promptboard-empty";
     empty.textContent = "No tags";
@@ -4647,7 +4843,7 @@ async function refreshYamlFileOptions(node) {
 
 async function refreshBoardTemplates(node, selectedTemplate = node.promptboardSelectedTemplate ?? "") {
   try {
-    const response = await fetch("/promptboard/templates", { cache: "no-store" });
+    const response = await fetch(noCacheUrl("/promptboard/templates"), { cache: "no-store" });
     const data = await response.json();
     if (!response.ok || data.error) {
       throw new Error(data.error || `HTTP ${response.status}`);
@@ -4789,7 +4985,10 @@ async function loadBoardTemplate(node, name, options = {}) {
     }
 
     if (yamlFile && yamlFile !== INLINE_YAML_OPTION) {
-      const yamlResponse = await fetch(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`, { cache: "no-store" });
+      const yamlResponse = await fetch(
+        noCacheUrl(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`),
+        { cache: "no-store" },
+      );
       const yamlData = await yamlResponse.json();
       if (!yamlResponse.ok || yamlData.error) {
         throw new Error(yamlData.error || `HTTP ${yamlResponse.status}`);
@@ -4821,7 +5020,10 @@ async function loadSelectedYaml(node, options = {}) {
   }
 
   try {
-    const response = await fetch(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`, { cache: "no-store" });
+    const response = await fetch(
+      noCacheUrl(`/promptboard/yaml/file?name=${encodeURIComponent(yamlFile)}`),
+      { cache: "no-store" },
+    );
     const data = await response.json();
     if (!response.ok || data.error) {
       throw new Error(data.error || `HTTP ${response.status}`);
@@ -4837,6 +5039,20 @@ async function loadSelectedYaml(node, options = {}) {
     setStatus(node, `Load error: ${error.message}`);
     return false;
   }
+}
+
+function queueInitialYamlFileSync(node) {
+  if (node.promptboardInitialYamlFileSyncQueued) {
+    return;
+  }
+  node.promptboardInitialYamlFileSyncQueued = true;
+
+  Promise.resolve().then(async () => {
+    const loaded = await loadSelectedYaml(node, { resetState: false });
+    if (loaded) {
+      scheduleLayoutSizeSync(node);
+    }
+  });
 }
 
 async function saveSelectedYaml(node) {
@@ -4962,6 +5178,7 @@ function createSplitElement(node) {
   stopWheelEvents(groupFilter);
   stopWheelEvents(scroll);
   stopWheelEvents(navigatorRailHost);
+  installBlankCanvasDragBridge(scroll);
 
   select.addEventListener("change", () => {
     setWidgetValue(node, "yaml_file", select.value);
@@ -5113,6 +5330,7 @@ function createSplitElement(node) {
   node.promptboardScroll = scroll;
   setYamlPanelOpen(node, !!node.promptboardYamlPanelOpen);
   renderFromYaml(node);
+  queueInitialYamlFileSync(node);
   if (YAML_SOURCE_PANEL_ENABLED) {
     createCodeMirrorEditor(node, editorHost, textarea);
   }

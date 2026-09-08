@@ -25,8 +25,9 @@ The following source and state names are reserved:
 - `$attributes`: attribute selections inside `selected_state`
 - `$families`: tag-family selections inside `selected_state`
 - `$attribute:`: prefix for synthetic attribute-target entries in
-  `selection_json`
-- `$family:`: prefix for synthetic tag-family entries in `selection_json`
+  the internal selection payload
+- `$family:`: prefix for synthetic tag-family entries in the internal
+  selection payload
 
 Category names may contain Korean text and spaces, but they must not equal
 `_promptboard`, `$attributes`, or `$families`, and must not begin with
