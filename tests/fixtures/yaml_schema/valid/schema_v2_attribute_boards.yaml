@@ -23,6 +23,7 @@ _promptboard:
     clothing:
       label: 의상 속성
       uiGroup: 의상
+      uiStandalone: false
       targets:
         top:
           label: 상의
@@ -50,6 +51,10 @@ _promptboard:
 상의:
   placeholder: <CLOTHES>
   uiGroup: 의상
+  uiPanels:
+  - type: attributeTarget
+    board: clothing
+    target: top
   tags:
   - text: <TOP_ATTRS> sports bra
     label: 스포츠 브라
@@ -57,6 +62,10 @@ _promptboard:
 하의:
   placeholder: <CLOTHES>
   uiGroup: 의상
+  uiPanels:
+  - type: attributeTarget
+    board: clothing
+    target: bottom
   tags:
   - text: <BOTTOM_ATTRS> skirt
     label: 치마

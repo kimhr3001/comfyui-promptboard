@@ -517,6 +517,39 @@ function normalizeTagFamilies(settings, schemaVersion, tagSets) {
   return tagFamilies;
 }
 
+function normalizeCategoryUiPanel(value, path) {
+  const panel = assertMapping(value, path);
+  assertKnownFields(panel, new Set(["type", "board", "target"]), path);
+  const panelType = textValue(panel.type);
+  if (panelType !== "attributeTarget") {
+    fail(
+      "unsupported_ui_panel_type",
+      `${path}.type`,
+      `Unsupported UI panel type: ${panelType || "<empty>"}`,
+    );
+  }
+  if (!hasOwn(panel, "board")) {
+    fail("missing_required_field", `${path}.board`, `Missing required field: ${path}.board`);
+  }
+  if (!hasOwn(panel, "target")) {
+    fail("missing_required_field", `${path}.target`, `Missing required field: ${path}.target`);
+  }
+  return {
+    type: panelType,
+    board: assertIdentifier(panel.board, `${path}.board`),
+    target: assertIdentifier(panel.target, `${path}.target`),
+  };
+}
+
+function normalizeCategoryUiPanels(value, path) {
+  if (value == null) {
+    return [];
+  }
+  return assertList(value, path).map((panel, index) =>
+    normalizeCategoryUiPanel(panel, `${path}[${index}]`),
+  );
+}
+
 function normalizeCategory(category, rawValue, schemaVersion, tagSets, modifiers) {
   const path = category;
   const value = assertMapping(rawValue, path);
@@ -524,7 +557,7 @@ function normalizeCategory(category, rawValue, schemaVersion, tagSets, modifiers
   if (strict) {
     assertKnownFields(
       value,
-      new Set(["label", "placeholder", "uiGroup", "replaceInsideTags", "tags", "tagSet"]),
+      new Set(["label", "placeholder", "uiGroup", "replaceInsideTags", "tags", "tagSet", "uiPanels"]),
       path,
     );
   }
@@ -568,6 +601,10 @@ function normalizeCategory(category, rawValue, schemaVersion, tagSets, modifiers
   const tagItems = hasTags ? directTags.tagItems : tagSetItems;
   if (tagItems) {
     normalized.tagItems = tagItems;
+  }
+  const uiPanels = normalizeCategoryUiPanels(value.uiPanels, `${path}.uiPanels`);
+  if (uiPanels.length) {
+    normalized.uiPanels = uiPanels;
   }
   const label = textValue(value.label);
   if (label) {
@@ -681,7 +718,7 @@ function normalizeAttributeBoards(settings, schemaVersion, tagSets, categories) 
     const boardId = assertIdentifier(rawBoardId, `_promptboard.attributeBoards.${rawBoardId}`);
     const boardPath = `_promptboard.attributeBoards.${boardId}`;
     const board = assertMapping(rawBoard, boardPath);
-    assertKnownFields(board, new Set(["label", "uiGroup", "targets"]), boardPath);
+    assertKnownFields(board, new Set(["label", "uiGroup", "uiStandalone", "targets"]), boardPath);
     const rawTargets = board.targets == null ? {} : assertMapping(board.targets, `${boardPath}.targets`);
     const targets = {};
 
@@ -703,13 +740,35 @@ function normalizeAttributeBoards(settings, schemaVersion, tagSets, categories) 
       targets[targetId] = target;
     }
 
-    attributeBoards[boardId] = {
+    const normalizedBoard = {
       label: textValue(board.label, boardId) || boardId,
       uiGroup: textValue(board.uiGroup),
       targets,
     };
+    if (hasOwn(board, "uiStandalone")) {
+      normalizedBoard.uiStandalone = normalizeBool(board.uiStandalone);
+    }
+    attributeBoards[boardId] = normalizedBoard;
   }
   return attributeBoards;
+}
+
+function validateCategoryUiPanels(categories, attributeBoards) {
+  for (const [category, item] of Object.entries(categories)) {
+    for (const [index, panel] of (item.uiPanels ?? []).entries()) {
+      if (panel.type !== "attributeTarget") {
+        continue;
+      }
+      const board = attributeBoards[panel.board];
+      const path = `${category}.uiPanels[${index}]`;
+      if (!board) {
+        fail("unknown_ui_panel_board", `${path}.board`, `Unknown attribute board: ${panel.board}`);
+      }
+      if (!hasOwn(board.targets ?? {}, panel.target)) {
+        fail("unknown_ui_panel_target", `${path}.target`, `Unknown attribute target: ${panel.target}`);
+      }
+    }
+  }
 }
 
 function normalizeUiCompositeItem(value, path, categories, tagFamilies) {
@@ -795,6 +854,7 @@ export function normalizeYamlDocument(yamlText) {
   const tagFamilies = normalizeTagFamilies(settings, schemaVersion, tagSets);
   const categories = normalizeCategories(root, schemaVersion, tagSets, modifiers);
   const attributeBoards = normalizeAttributeBoards(settings, schemaVersion, tagSets, categories);
+  validateCategoryUiPanels(categories, attributeBoards);
   const uiComposites = normalizeUiComposites(settings, schemaVersion, categories, tagFamilies);
   const normalized = { schemaVersion, tagSets, attributeBoards, categories };
   if (Object.keys(modifiers).length) {
